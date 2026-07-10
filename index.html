@@ -8914,7 +8914,10 @@ function renderAnalysis(stats, game){
   }
 
   if(cfg.isDigit){
-    const scores = buildComposite(stats, 0, 9);
+    const scores = buildComposite(stats, 0, 9, {
+      freq: stats.overallFreq, overdue: stats.overallOverdue, recentFreq: stats.recentFreq,
+      hazard: stats.hazard, momentum: stats.momentum, zScore: stats.zScore, pairSynergy: {}
+    });
     const probs = scoresToProbabilities(scores, 7);
     const items = Object.keys(probs).map(k=>({n:Number(k), p:probs[k]}));
     buildGrid(items, digitEl, 3);
