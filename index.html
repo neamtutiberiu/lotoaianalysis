@@ -304,6 +304,13 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
 }
 </style>
 <body>
+<div id="accessOverlay" style="display:none; position:fixed; inset:0; background:rgba(6,7,9,.92); z-index:9999; align-items:center; justify-content:center; flex-direction:column; gap:14px; padding:24px; text-align:center;">
+  <h2 style="color:var(--gold); font-family:'Space Grotesk',sans-serif;">Cod de acces</h2>
+  <p style="color:var(--muted); max-width:420px; font-size:14.5px; line-height:1.6;">Alege un cod pe care îl ții minte. Introdu-l pe orice dispozitiv vrei să vezi aceleași date (telefon, laptop etc). Prima dată creezi unul, apoi îl refolosești mereu.</p>
+  <input type="text" id="accessCodeInput" placeholder="ex: tibi-loto-2026" style="padding:11px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:14px; width:280px;">
+  <button id="accessSubmitBtn" class="gen-btn">Continuă</button>
+  <p id="accessError" style="color:var(--red); font-size:12.5px; min-height:16px;"></p>
+</div>
 <div class="wrap">
 
   <div class="topbar">
@@ -311,6 +318,7 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <span class="label">Astăzi</span>
       <span class="value" id="todayDate">—</span>
       <span class="next-draw" id="nextDraw"></span>
+      <span class="label" style="margin-top:6px;">Cod acces: <span id="accessCodeLabel" class="mono" style="color:var(--gold);">—</span> · <a href="#" id="changeCodeLink" style="color:var(--blue); text-decoration:none;">schimbă</a></span>
     </div>
     <div class="countdown-block">
       <span class="label">Countdown tragere</span>
@@ -509,6 +517,21 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
   <footer>Date istorice preluate de pe loto49.ro · Analiză generată local, în browser · Joacă responsabil</footer>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBn3A223CAGqL6Dsv_aHqbz8-oekdN9pRk",
+  authDomain: "lotoaianalyser.firebaseapp.com",
+  projectId: "lotoaianalyser",
+  storageBucket: "lotoaianalyser.firebasestorage.app",
+  messagingSenderId: "983027680672",
+  appId: "1:983027680672:web:448e32332b4b36f53b50c5",
+  measurementId: "G-9CBMTMYK2Q"
+};
+firebase.initializeApp(firebaseConfig);
+</script>
 <script>
 const RAW = {
   '649': `date,n1,n2,n3,n4,n5,n6
@@ -9562,31 +9585,79 @@ function renderEvCalculator(cfg){
   computeEvSummary();
 }
 
-async function loadStoredDraws(){
-  for(const game of GAME_ORDER){
-    try{
-      const res = await window.storage.get('draws:'+game, false);
-      storeData[game] = res ? JSON.parse(res.value) : [];
-    }catch(e){ storeData[game] = []; }
+// ---------- FIREBASE STORAGE ----------
+// Same function names/signatures as the old window.storage-based version, so nothing else
+// in the app needs to change — only the storage backend underneath.
+let userDocRef = null;
+
+async function ensureFirebaseAuth(){
+  return new Promise((resolve, reject)=>{
+    firebase.auth().onAuthStateChanged(user=>{
+      if(user) resolve(user);
+    });
+    firebase.auth().signInAnonymously().catch(err=>{
+      console.error('Firebase auth error', err);
+      reject(err);
+    });
+  });
+}
+
+function getStoredAccessCode(){
+  try{ return localStorage.getItem('lotoAccessCode'); }catch(e){ return null; }
+}
+function setStoredAccessCode(code){
+  try{ localStorage.setItem('lotoAccessCode', code); }catch(e){}
+}
+
+function promptForAccessCode(){
+  return new Promise(resolve=>{
+    const overlay = document.getElementById('accessOverlay');
+    overlay.style.display = 'flex';
+    document.getElementById('accessSubmitBtn').addEventListener('click', function handler(){
+      const val = document.getElementById('accessCodeInput').value.trim();
+      if(val.length < 4){
+        document.getElementById('accessError').textContent = 'Codul trebuie să aibă cel puțin 4 caractere.';
+        return;
+      }
+      overlay.style.display = 'none';
+      resolve(val);
+    });
+  });
+}
+
+async function ensureAccessCode(){
+  let code = getStoredAccessCode();
+  if(!code){
+    code = await promptForAccessCode();
+    setStoredAccessCode(code);
   }
+  userDocRef = firebase.firestore().collection('lotoUsers').doc(code);
+  document.getElementById('accessCodeLabel').textContent = code;
+}
+
+async function loadStoredDraws(){
+  const snap = await userDocRef.get();
+  const data = snap.exists ? snap.data() : {};
+  GAME_ORDER.forEach(game=>{
+    storeData[game] = data['draws_'+game] || [];
+  });
 }
 async function saveDraw(game, draw){
   const arr = storeData[game] || [];
   arr.push(draw);
   storeData[game] = arr;
-  await window.storage.set('draws:'+game, JSON.stringify(arr), false);
+  await userDocRef.set({ ['draws_'+game]: arr }, {merge:true});
 }
 
 // ---------- JOURNAL STORAGE ----------
 let journalEntries = [];
 async function loadJournal(){
-  try{
-    const res = await window.storage.get('journal', false);
-    journalEntries = res ? JSON.parse(res.value) : [];
-  }catch(e){ journalEntries = []; }
+  const snap = await userDocRef.get();
+  const data = snap.exists ? snap.data() : {};
+  journalEntries = data.journal || [];
 }
 async function persistJournal(){
-  await window.storage.set('journal', JSON.stringify(journalEntries), false);
+  await userDocRef.set({ journal: journalEntries }, {merge:true});
 }
 async function addJournalEntry(entry){
   journalEntries.push(entry);
@@ -9882,11 +9953,19 @@ document.getElementById('addDrawBtn').addEventListener('click', async ()=>{
   }
 });
 
+document.getElementById('changeCodeLink').addEventListener('click', (e)=>{
+  e.preventDefault();
+  try{ localStorage.removeItem('lotoAccessCode'); }catch(err){}
+  location.reload();
+});
+
 (async function init(){
   const now = new Date();
   document.getElementById('todayDate').textContent = `${now.getDate().toString().padStart(2,'0')}.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getFullYear()}`;
   document.getElementById('nextDraw').innerHTML = nextDrawInfo();
   buildDatasets(RAW);
+  await ensureFirebaseAuth();
+  await ensureAccessCode();
   await loadStoredDraws();
   await loadJournal();
   populateJeGameSelect();
