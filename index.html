@@ -304,12 +304,52 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
 }
 </style>
 <body>
-<div id="accessOverlay" style="display:none; position:fixed; inset:0; background:rgba(6,7,9,.92); z-index:9999; align-items:center; justify-content:center; flex-direction:column; gap:14px; padding:24px; text-align:center;">
-  <h2 style="color:var(--gold); font-family:'Space Grotesk',sans-serif;">Cod de acces</h2>
-  <p style="color:var(--muted); max-width:420px; font-size:14.5px; line-height:1.6;">Alege un cod pe care îl ții minte. Introdu-l pe orice dispozitiv vrei să vezi aceleași date (telefon, laptop etc). Prima dată creezi unul, apoi îl refolosești mereu.</p>
-  <input type="text" id="accessCodeInput" placeholder="ex: tibi-loto-2026" style="padding:11px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:14px; width:280px;">
-  <button id="accessSubmitBtn" class="gen-btn">Continuă</button>
-  <p id="accessError" style="color:var(--red); font-size:12.5px; min-height:16px;"></p>
+<div id="accessOverlay" style="display:none; position:fixed; inset:0; background:rgba(6,7,9,.92); z-index:9999; align-items:center; justify-content:center; padding:24px;">
+
+  <div id="accessSetupView" style="display:none; flex-direction:column; align-items:center; gap:14px; text-align:center; max-width:420px;">
+    <h2 style="color:var(--gold); font-family:'Space Grotesk',sans-serif;">Creează parola aplicației</h2>
+    <p style="color:var(--muted); font-size:14.5px; line-height:1.6;">Ești primul care deschide aplicația — alege o parolă și o frază de recuperare (folosită doar dacă uiți parola, ca să nu rămâi blocat definitiv afară). Ține minte pe amândouă.</p>
+    <input type="text" id="setupPasswordInput" placeholder="Parolă nouă (min. 4 caractere)" style="padding:11px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:14px; width:280px;">
+    <input type="text" id="setupRecoveryInput" placeholder="Frază de recuperare (ex: numele câinelui)" style="padding:11px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:14px; width:280px;">
+    <button id="setupSubmitBtn" class="gen-btn">Creează</button>
+    <p id="setupError" style="color:var(--red); font-size:12.5px; min-height:16px;"></p>
+  </div>
+
+  <div id="accessLoginView" style="display:none; flex-direction:column; align-items:center; gap:14px; text-align:center; max-width:420px;">
+    <h2 style="color:var(--gold); font-family:'Space Grotesk',sans-serif;">Cod de acces</h2>
+    <p style="color:var(--muted); font-size:14.5px; line-height:1.6;">Introdu parola aplicației. Ți se va cere de fiecare dată când deschizi sau reîmprospătezi pagina.</p>
+    <input type="text" id="accessCodeInput" placeholder="Parola aplicației" style="padding:11px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:14px; width:280px;">
+    <button id="accessSubmitBtn" class="gen-btn">Continuă</button>
+    <a href="#" id="forgotPasswordLink" style="color:var(--blue); text-decoration:none; font-size:13px;">Am uitat parola</a>
+    <p id="accessError" style="color:var(--red); font-size:12.5px; min-height:16px;"></p>
+  </div>
+
+  <div id="accessRecoverView" style="display:none; flex-direction:column; align-items:center; gap:14px; text-align:center; max-width:420px;">
+    <h2 style="color:var(--gold); font-family:'Space Grotesk',sans-serif;">Recuperare parolă</h2>
+    <p style="color:var(--muted); font-size:14.5px; line-height:1.6;">Introdu fraza de recuperare pe care ai stabilit-o când ai creat parola.</p>
+    <input type="text" id="recoveryPhraseInput" placeholder="Frază de recuperare" style="padding:11px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:14px; width:280px;">
+    <button id="recoverySubmitBtn" class="gen-btn">Verifică</button>
+    <a href="#" id="backToLoginLink" style="color:var(--blue); text-decoration:none; font-size:13px;">Înapoi la login</a>
+    <p id="recoveryError" style="color:var(--red); font-size:12.5px; min-height:16px;"></p>
+  </div>
+
+  <div id="accessResetView" style="display:none; flex-direction:column; align-items:center; gap:14px; text-align:center; max-width:420px;">
+    <h2 style="color:var(--gold); font-family:'Space Grotesk',sans-serif;">Setează parolă nouă</h2>
+    <p style="color:var(--muted); font-size:14.5px; line-height:1.6;">Datele tale (arhive, jurnal) rămân neatinse — doar parola se schimbă.</p>
+    <input type="text" id="newPasswordInput" placeholder="Parolă nouă" style="padding:11px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:14px; width:280px;">
+    <input type="text" id="newPasswordConfirm" placeholder="Confirmă parola nouă" style="padding:11px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:14px; width:280px;">
+    <button id="resetSubmitBtn" class="gen-btn">Salvează parola nouă</button>
+    <p id="resetError" style="color:var(--red); font-size:12.5px; min-height:16px;"></p>
+  </div>
+
+  <div id="accessAddRecoveryView" style="display:none; flex-direction:column; align-items:center; gap:14px; text-align:center; max-width:420px;">
+    <h2 style="color:var(--gold); font-family:'Space Grotesk',sans-serif;">Setează o frază de recuperare</h2>
+    <p style="color:var(--muted); font-size:14.5px; line-height:1.6;">Parola ta nu are încă o frază de recuperare asociată — fă asta acum, o singură dată, ca să nu rămâi blocat definitiv dacă uiți parola pe viitor.</p>
+    <input type="text" id="addRecoveryInput" placeholder="Frază de recuperare (min. 4 caractere)" style="padding:11px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:14px; width:280px;">
+    <button id="addRecoverySubmitBtn" class="gen-btn">Salvează</button>
+    <p id="addRecoveryError" style="color:var(--red); font-size:12.5px; min-height:16px;"></p>
+  </div>
+
 </div>
 <div class="wrap">
 
@@ -318,7 +358,7 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <span class="label">Astăzi</span>
       <span class="value" id="todayDate">—</span>
       <span class="next-draw" id="nextDraw"></span>
-      <span class="label" style="margin-top:6px;">Cod acces: <span id="accessCodeLabel" class="mono" style="color:var(--gold);">—</span> · <a href="#" id="changeCodeLink" style="color:var(--blue); text-decoration:none;">schimbă</a></span>
+      <span class="label" style="margin-top:6px;">Acces: <span id="accessCodeLabel" class="mono" style="color:var(--gold);">—</span></span>
     </div>
     <div class="countdown-block">
       <span class="label">Countdown tragere</span>
@@ -9585,10 +9625,11 @@ function renderEvCalculator(cfg){
   computeEvSummary();
 }
 
-// ---------- FIREBASE STORAGE ----------
+// ---------- FIREBASE STORAGE & ACCESS CONTROL ----------
 // Same function names/signatures as the old window.storage-based version, so nothing else
 // in the app needs to change — only the storage backend underneath.
 let userDocRef = null;
+const APP_DATA_DOC_ID = 'tibi-loto-main'; // fixed document for this personal deployment
 
 async function ensureFirebaseAuth(){
   return new Promise((resolve, reject)=>{
@@ -9602,37 +9643,158 @@ async function ensureFirebaseAuth(){
   });
 }
 
-function getStoredAccessCode(){
-  try{ return localStorage.getItem('lotoAccessCode'); }catch(e){ return null; }
-}
-function setStoredAccessCode(code){
-  try{ localStorage.setItem('lotoAccessCode', code); }catch(e){}
+// SHA-256 hash — the password and recovery phrase are never stored or compared in plain text.
+async function sha256Hex(text){
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
-function promptForAccessCode(){
+function showView(id){
+  ['accessSetupView','accessLoginView','accessRecoverView','accessResetView','accessAddRecoveryView'].forEach(v=>{
+    document.getElementById(v).style.display = (v===id) ? 'flex' : 'none';
+  });
+}
+function showAccessOverlay(){ document.getElementById('accessOverlay').style.display = 'flex'; }
+function hideAccessOverlay(){ document.getElementById('accessOverlay').style.display = 'none'; }
+
+// Resolves 'primary' if the main button is clicked, 'secondary' if the side link is clicked —
+// used so a screen can offer a normal action plus an escape hatch (e.g. "forgot password").
+function waitForEither(primaryBtnId, secondaryLinkId){
   return new Promise(resolve=>{
-    const overlay = document.getElementById('accessOverlay');
-    overlay.style.display = 'flex';
-    document.getElementById('accessSubmitBtn').addEventListener('click', function handler(){
-      const val = document.getElementById('accessCodeInput').value.trim();
-      if(val.length < 4){
-        document.getElementById('accessError').textContent = 'Codul trebuie să aibă cel puțin 4 caractere.';
-        return;
-      }
-      overlay.style.display = 'none';
-      resolve(val);
+    const btn = document.getElementById(primaryBtnId);
+    const link = document.getElementById(secondaryLinkId);
+    function onBtn(){ cleanup(); resolve('primary'); }
+    function onLink(e){ e.preventDefault(); cleanup(); resolve('secondary'); }
+    function cleanup(){ btn.removeEventListener('click', onBtn); link.removeEventListener('click', onLink); }
+    btn.addEventListener('click', onBtn);
+    link.addEventListener('click', onLink);
+  });
+}
+function waitForClick(btnId){
+  return new Promise(resolve=>{
+    document.getElementById(btnId).addEventListener('click', function h(){
+      document.getElementById(btnId).removeEventListener('click', h);
+      resolve();
     });
   });
 }
 
-async function ensureAccessCode(){
-  let code = getStoredAccessCode();
-  if(!code){
-    code = await promptForAccessCode();
-    setStoredAccessCode(code);
+async function runSetupFlow(){
+  showView('accessSetupView');
+  const errEl = document.getElementById('setupError');
+  while(true){
+    await waitForClick('setupSubmitBtn');
+    const pass = document.getElementById('setupPasswordInput').value;
+    const recovery = document.getElementById('setupRecoveryInput').value;
+    if(pass.trim().length < 4){ errEl.textContent = 'Parola trebuie să aibă minim 4 caractere.'; continue; }
+    if(recovery.trim().length < 4){ errEl.textContent = 'Fraza de recuperare trebuie să aibă minim 4 caractere.'; continue; }
+    const passHash = await sha256Hex(pass);
+    const recHash = await sha256Hex(recovery.toLowerCase().trim());
+    await userDocRef.set({ passwordHash: passHash, recoveryHash: recHash }, {merge:true});
+    return;
   }
-  userDocRef = firebase.firestore().collection('lotoUsers').doc(code);
-  document.getElementById('accessCodeLabel').textContent = code;
+}
+
+async function runResetFlow(){
+  showView('accessResetView');
+  const errEl = document.getElementById('resetError');
+  while(true){
+    await waitForClick('resetSubmitBtn');
+    const p1 = document.getElementById('newPasswordInput').value;
+    const p2 = document.getElementById('newPasswordConfirm').value;
+    if(p1.trim().length < 4){ errEl.textContent = 'Parola nouă trebuie să aibă minim 4 caractere.'; continue; }
+    if(p1 !== p2){ errEl.textContent = 'Parolele nu coincid.'; continue; }
+    const hash = await sha256Hex(p1);
+    await userDocRef.set({ passwordHash: hash }, {merge:true});
+    return;
+  }
+}
+
+// Returns true once the password has actually been changed (recovery phrase confirmed + reset
+// flow completed); false if the person backs out to the normal login screen instead.
+async function runRecoverFlow(){
+  showView('accessRecoverView');
+  const errEl = document.getElementById('recoveryError');
+  const inputEl = document.getElementById('recoveryPhraseInput');
+  while(true){
+    const action = await waitForEither('recoverySubmitBtn', 'backToLoginLink');
+    if(action==='secondary') return false;
+    const entered = inputEl.value.toLowerCase().trim();
+    if(entered.length < 4){ errEl.textContent = 'Introdu fraza de recuperare.'; continue; }
+    const hash = await sha256Hex(entered);
+    const snap = await userDocRef.get();
+    const data = snap.exists ? snap.data() : {};
+    if(data.recoveryHash && data.recoveryHash === hash){
+      await runResetFlow();
+      return true;
+    }
+    errEl.textContent = 'Frază de recuperare incorectă.';
+    inputEl.value = '';
+  }
+}
+
+async function runAddRecoveryFlow(){
+  showView('accessAddRecoveryView');
+  const errEl = document.getElementById('addRecoveryError');
+  while(true){
+    await waitForClick('addRecoverySubmitBtn');
+    const val = document.getElementById('addRecoveryInput').value;
+    if(val.trim().length < 4){ errEl.textContent = 'Fraza trebuie să aibă minim 4 caractere.'; continue; }
+    const hash = await sha256Hex(val.toLowerCase().trim());
+    await userDocRef.set({ recoveryHash: hash }, {merge:true});
+    return;
+  }
+}
+
+// Logs in against the currently-stored password only — never auto-creates one here (that only
+// happens in runSetupFlow, the very first time the app is ever opened).
+async function runLoginFlow(){
+  showView('accessLoginView');
+  const errEl = document.getElementById('accessError');
+  const inputEl = document.getElementById('accessCodeInput');
+  errEl.textContent = '';
+  while(true){
+    const action = await waitForEither('accessSubmitBtn', 'forgotPasswordLink');
+    if(action==='secondary'){
+      const recovered = await runRecoverFlow();
+      if(recovered) return;
+      showView('accessLoginView');
+      continue;
+    }
+    const entered = inputEl.value;
+    if(entered.trim().length < 4){ errEl.textContent = 'Codul trebuie să aibă cel puțin 4 caractere.'; continue; }
+    const hash = await sha256Hex(entered);
+    const snap = await userDocRef.get();
+    const data = snap.exists ? snap.data() : {};
+    if(data.passwordHash === hash) return;
+    errEl.textContent = 'Cod incorect. Încearcă din nou.';
+    inputEl.value = '';
+  }
+}
+
+// Always prompts — on purpose, per requirement: password is required on every open/refresh,
+// nothing is remembered in localStorage across sessions.
+async function ensureAccessCode(){
+  userDocRef = firebase.firestore().collection('lotoUsers').doc(APP_DATA_DOC_ID);
+  showAccessOverlay();
+
+  const snap = await userDocRef.get();
+  const data = snap.exists ? snap.data() : {};
+
+  if(!data.passwordHash){
+    await runSetupFlow();
+  } else {
+    await runLoginFlow();
+    const snap2 = await userDocRef.get();
+    const data2 = snap2.data();
+    if(!data2.recoveryHash){
+      await runAddRecoveryFlow();
+    }
+  }
+
+  hideAccessOverlay();
+  document.getElementById('accessCodeLabel').textContent = '••••••';
 }
 
 async function loadStoredDraws(){
@@ -9951,12 +10113,6 @@ document.getElementById('addDrawBtn').addEventListener('click', async ()=>{
   }catch(e){
     statusEl.className='status-msg err'; statusEl.textContent='Eroare la salvare: '+e.message;
   }
-});
-
-document.getElementById('changeCodeLink').addEventListener('click', (e)=>{
-  e.preventDefault();
-  try{ localStorage.removeItem('lotoAccessCode'); }catch(err){}
-  location.reload();
 });
 
 (async function init(){
