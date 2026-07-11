@@ -175,6 +175,10 @@ input[type=range]::-moz-range-thumb{
 .pop-tag.pop-low{ background:rgba(62,207,110,.12); color:var(--green); }
 .pop-tag.pop-mid{ background:rgba(212,175,55,.14); color:var(--gold); }
 .pop-tag.pop-high{ background:rgba(224,87,74,.13); color:var(--red); }
+.repeat-info{ display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
+.repeat-info .pop-tag{ margin-top:0; white-space:normal; text-align:left; }
+.repeat-info-compact{ gap:4px; padding:8px 0 2px; }
+.repeat-info-compact .pop-tag{ font-size:10px; padding:3px 7px; }
 .pop-result-box{ background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
 .pop-score-bar{ height:8px; border-radius:4px; background:var(--surface3); overflow:hidden; margin:10px 0 10px; }
 .pop-score-fill{ height:100%; }
@@ -384,6 +388,7 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     <h2 id="lastDrawTitle">Ultima extragere <span class="sub" id="lastDrawDate"></span></h2>
     <div class="ballgrid" id="numberGrid"></div>
     <p class="small-note">Numerele exacte extrase la ultima tragere pentru jocul selectat.</p>
+    <div id="lastDrawRepeatInfo" style="margin-top:6px;"></div>
     <div class="countdown-inline" id="panelCountdownWrap">
       <span class="ci-label">⏱ Timp rămas până la următoarea extragere <b id="panelCountdownGame"></b></span>
       <span class="ci-clock mono" id="panelCountdown">—</span>
@@ -8747,9 +8752,11 @@ function renderLastDraw(game){
   const cfg = GAMES[game];
   const draws = getAllDraws(game);
   const last = draws[draws.length-1];
-  if(!last) return;
+  const repeatBox = document.getElementById('lastDrawRepeatInfo');
+  if(!last){ if(repeatBox) repeatBox.innerHTML=''; return; }
   if(cfg.isDigit){
     last.digits.forEach(dg=> wrap.appendChild(digitEl(dg)));
+    if(repeatBox){ repeatBox.innerHTML=''; repeatBox.appendChild(repeatInfoBlock(last, draws, cfg.digits, true, false)); }
     return;
   }
   last.nums.slice().sort((a,b)=>a-b).forEach(nm=> wrap.appendChild(ballEl(nm,'hit')));
@@ -8760,6 +8767,7 @@ function renderLastDraw(game){
     wrap.appendChild(sep);
     wrap.appendChild(ballEl(last.joker,'hit joker-ball'));
   }
+  if(repeatBox){ repeatBox.innerHTML=''; repeatBox.appendChild(repeatInfoBlock(last, draws, cfg.pick, false, false)); }
 }
 
 function renderHeatmap(stats, game){
@@ -9169,6 +9177,12 @@ function renderLastDrawsTable(game){
     }
     tr.appendChild(tdDate); tr.appendChild(tdNums);
     table.appendChild(tr);
+
+    const trInfo = document.createElement('tr');
+    const tdInfo = document.createElement('td'); tdInfo.colSpan = 2;
+    tdInfo.appendChild(repeatInfoBlock(d, draws, cfg.isDigit ? cfg.digits : cfg.pick, cfg.isDigit, true));
+    trInfo.appendChild(tdInfo);
+    table.appendChild(trInfo);
   });
   card.appendChild(table);
   wrap.appendChild(card);
@@ -9284,31 +9298,61 @@ function generate3NorocTickets(stats){
 // same 5-index method used to generate it (NOT a promise of future results — a lottery draw is
 // still a fully independent random event; this only measures fit against the historical model).
 
-// (a) Exact-match check against the whole archive. For ball games, order doesn't matter (a
-// ticket wins regardless of the order balls are drawn in), so we compare as sets. Returns the
-// draw date if found, otherwise null. Also returns how many times any of the 3 variants overlap
-// heavily (5+/6 numbers) with a past draw, which is more realistic to encounter than an exact hit.
-function findArchiveMatch(combo, draws){
-  const target = combo.slice().sort((a,b)=>a-b).join(',');
-  let bestPartial = null; // {date, matches}
-  for(const d of draws){
-    const dn = d.nums.slice().sort((a,b)=>a-b);
-    if(dn.join(',') === target) return { exact:true, date:d.date, matches:combo.length, total:combo.length };
-    const overlap = dn.filter(n=>combo.includes(n)).length;
-    if(overlap >= combo.length-1){ // 5/6 or better, "near-miss" historical overlap
-      if(!bestPartial || overlap > bestPartial.matches) bestPartial = { date:d.date, matches:overlap };
+// ---------- REAL-DRAW REPEAT CHECK ("Ultima extragere" / "Ultimele 10 extrageri" / "Generator de variante") ----------
+// For a REAL historical draw (not a generated ticket), checks the rest of the archive for the
+// top 3 overlap levels — e.g. for a 6-number game: 6/6 (exact repeat), 5/6, 4/6 — and reports,
+// for each level, whether it ever happened elsewhere in the archive and, if so, when (most
+// recent occurrence + total count). Ball games compare as sets (order doesn't matter); Noroc
+// compares digit-by-digit position (since it's a fixed 7-digit sequence, order matters).
+function computeRepeatLevels(target, draws, pick, isDigit){
+  const levels = [pick, pick-1, pick-2].filter(l=>l>=1);
+  const out = levels.map(L=> ({ level:L, count:0, mostRecentDate:null, firstDate:null }));
+  const targetVals = isDigit ? target.digits : target.nums;
+  draws.forEach(d=>{
+    if(d === target || d.date === target.date) return; // skip the draw itself
+    let m;
+    if(isDigit){
+      m = 0;
+      for(let i=0;i<7;i++) if(d.digits[i] === targetVals[i]) m++;
+    } else {
+      const dSet = d.nums;
+      m = targetVals.filter(n=> dSet.includes(n)).length;
     }
-  }
-  return bestPartial ? { exact:false, date:bestPartial.date, matches:bestPartial.matches, total:combo.length } : { exact:false, date:null, matches:0, total:combo.length };
+    out.forEach(r=>{
+      if(m === r.level){
+        r.count++;
+        if(!r.firstDate) r.firstDate = d.date;
+        r.mostRecentDate = d.date; // draws are stored chronologically ascending
+      }
+    });
+  });
+  return out;
 }
-// Same idea for the Noroc digit-sequence (order DOES matter here — it's a 7-digit number).
-function findArchiveMatchNoroc(digits, draws){
-  const target = digits.join('');
-  for(const d of draws){
-    if(d.digits.join('') === target) return { exact:true, date:d.date };
-  }
-  return { exact:false, date:null };
+// Short human-readable line for one overlap level, e.g. "6/6: nu s-a mai repetat niciodată" or
+// "5/6: da — de 340× în arhivă, cel mai recent la 03.01.2026".
+function formatRepeatLine(r, total){
+  const label = `${r.level}/${total}`;
+  if(r.count === 0) return `${label}: nu s-a mai repetat niciodată în arhivă`;
+  return `${label}: da — de ${r.count}× în arhivă, cel mai recent la ${fmtDateShort(r.mostRecentDate)}`;
 }
+// Builds the badge block shown under "Ultima extragere". Exact match (top level) is styled as
+// an attention-grabbing badge when found (it's astronomically unlikely); the partial-overlap
+// levels are styled more neutrally, since finding those is common and not itself notable.
+function repeatInfoBlock(target, draws, pick, isDigit, compact){
+  const levels = computeRepeatLevels(target, draws, pick, isDigit);
+  const wrap = document.createElement('div');
+  wrap.className = compact ? 'repeat-info repeat-info-compact' : 'repeat-info';
+  levels.forEach((r, idx)=>{
+    const tag = document.createElement('div');
+    const found = r.count > 0;
+    const cls = idx===0 ? (found ? 'pop-high' : 'pop-low') : (found ? 'pop-mid' : 'pop-low');
+    tag.className = 'pop-tag ' + cls;
+    tag.textContent = formatRepeatLine(r, pick);
+    wrap.appendChild(tag);
+  });
+  return wrap;
+}
+
 
 // (b) 1-10 quality score for a ball-game combo: blends how well the picked numbers score under
 // the composite method (mean percentile among all numbers) with how closely the ticket's overall
@@ -9358,25 +9402,14 @@ function scoreNorocTicketQuality(digits, posScoresArr){
   return { score10, notes:[`scor mediu de percentilă pe cele 7 poziții: ${Math.round(avgPercentile*100)}%`] };
 }
 // Small badge element, styled like the existing popularity badge, shown under each ticket.
-function ticketInfoEl(archiveInfo, qualityInfo, isNoroc){
+function ticketInfoEl(target, draws, pick, isDigit, qualityInfo){
   const wrap = document.createElement('div');
   wrap.className = 'ticket-info';
 
-  const archiveTag = document.createElement('div');
-  let archiveCls, archiveTxt;
-  if(archiveInfo.exact){
-    archiveCls = 'pop-high';
-    archiveTxt = `⚠ Combinație identică găsită în arhivă — a mai ieșit exact așa la ${fmtDateShort(archiveInfo.date)}`;
-  } else if(!isNoroc && archiveInfo.matches > 0){
-    archiveCls = 'pop-mid';
-    archiveTxt = `Nu s-a repetat exact, dar ${archiveInfo.matches}/${archiveInfo.total} numere au coincis cu extragerea din ${fmtDateShort(archiveInfo.date)}`;
-  } else {
-    archiveCls = 'pop-low';
-    archiveTxt = 'Nu s-a mai repetat niciodată exact în toată arhiva disponibilă';
-  }
-  archiveTag.className = 'pop-tag ' + archiveCls;
-  archiveTag.textContent = archiveTxt;
-  wrap.appendChild(archiveTag);
+  // Same 3-level repeat check used at "Ultima extragere" / "Ultimele 10 extrageri": for a
+  // 6-number game this shows 6/6 (exact repeat), 5/6 and 4/6 — each with yes/no + date, checked
+  // against the WHOLE archive (this ticket is synthetic, so nothing needs to be excluded).
+  wrap.appendChild(repeatInfoBlock(target, draws, pick, isDigit, true));
 
   const scoreRow = document.createElement('div');
   scoreRow.className = 'ticket-score-row';
@@ -9406,9 +9439,8 @@ function renderTickets(game, stats){
       const numsWrap = document.createElement('div'); numsWrap.className='nums';
       digits.forEach(dg=> numsWrap.appendChild(digitEl(dg)));
       div.appendChild(numsWrap);
-      const archiveInfo = findArchiveMatchNoroc(digits, stats.draws);
       const qualityInfo = scoreNorocTicketQuality(digits, posScores);
-      div.appendChild(ticketInfoEl(archiveInfo, qualityInfo, true));
+      div.appendChild(ticketInfoEl({ digits, date:null }, stats.draws, cfg.digits, true, qualityInfo));
       wrap.appendChild(div);
     });
   } else {
@@ -9426,9 +9458,8 @@ function renderTickets(game, stats){
       }
       div.appendChild(numsWrap);
       div.appendChild(popBadgeEl(combo, cfg));
-      const archiveInfo = findArchiveMatch(combo, stats.draws);
       const qualityInfo = scoreTicketQuality(combo, cfg, stats, compositeScores);
-      div.appendChild(ticketInfoEl(archiveInfo, qualityInfo, false));
+      div.appendChild(ticketInfoEl({ nums: combo, date:null }, stats.draws, cfg.pick, false, qualityInfo));
       wrap.appendChild(div);
     });
   }
