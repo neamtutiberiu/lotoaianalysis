@@ -145,6 +145,8 @@ h1,h2,h3{ font-family:'Space Grotesk',sans-serif; margin:0; }
   border-radius:8px; padding:9px 16px; cursor:pointer; font-size:13px; font-weight:600;
 }
 .btn2:hover{ border-color:var(--gold-dim); }
+.btn2-outline{ background:transparent; }
+.export-btn-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:4px; }
 .status-msg{ font-size:12px; margin-top:8px; }
 .status-msg.ok{ color:var(--green); }
 .status-msg.err{ color:var(--red); }
@@ -214,6 +216,8 @@ input[type=range]::-moz-range-thumb{
 .data-table{ border-collapse:collapse; font-size:12.5px; }
 .data-table th{ text-align:left; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; padding:6px 8px; border-bottom:1px solid var(--border); }
 .data-table td{ padding:7px 8px; border-bottom:1px solid var(--border); }
+.repeat-scan-section{ margin-bottom:20px; }
+.repeat-scan-section h3{ font-size:13px; color:var(--text); margin-bottom:8px; display:flex; align-items:center; flex-wrap:wrap; gap:4px; }
 .ev-table input{
   background:var(--surface3); border:1px solid var(--border); border-radius:6px;
   padding:6px 8px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12.5px; width:100px;
@@ -274,6 +278,15 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
 .countdown-inline .ci-label{ font-size:12px; color:var(--muted); }
 .countdown-inline .ci-label b{ color:var(--gold); }
 .countdown-inline .ci-clock{ font-size:17px; font-weight:700; color:var(--blue); }
+.sales-cutoff-banner{
+  margin-top:10px; padding:10px 14px; border-radius:10px; font-size:13px; font-weight:700;
+  background:rgba(224,87,74,.14); color:var(--red); border:1px solid rgba(224,87,74,.35);
+  display:none;
+}
+.sales-cutoff-banner.show{ display:block; }
+.sales-cutoff-banner.muted{
+  background:rgba(139,143,152,.10); color:var(--muted); border-color:var(--border); font-weight:600;
+}
 
 /* ANALYSIS / PROBABILITY GRID */
 .prob-grid{ display:flex; flex-wrap:wrap; gap:10px; }
@@ -315,9 +328,19 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
 .ldg-table .digitbox{ width:22px; height:30px; font-size:12px; }
 
 @media (max-width:640px){
+  .wrap{ padding:0 10px; }
   .ball{ width:32px; height:32px; font-size:11px; }
-  .topbar{ flex-direction:column; align-items:flex-start; }
+  .topbar{ flex-direction:column; align-items:flex-start; padding:14px; }
   .countdown-inline{ flex-direction:column; align-items:flex-start; }
+  .panel{ padding:14px 12px; }
+  .panel h2{ flex-wrap:wrap; font-size:14px; }
+  .field{ width:100%; }
+  .field input, .field select{ width:100%; box-sizing:border-box; }
+  .gen-btn, .btn2{ width:100%; box-sizing:border-box; text-align:center; }
+  .table-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .table-scroll table{ min-width:480px; }
+  .tickets{ grid-template-columns:1fr; }
+  .stats-grid, .mc-strategy-grid, .last-draws-grid{ grid-template-columns:1fr; }
 }
 </style>
 <body>
@@ -392,6 +415,13 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     <div class="countdown-inline" id="panelCountdownWrap">
       <span class="ci-label">⏱ Timp rămas până la următoarea extragere <b id="panelCountdownGame"></b></span>
       <span class="ci-clock mono" id="panelCountdown">—</span>
+    </div>
+    <div id="salesCutoffBanner" class="sales-cutoff-banner"></div>
+    <div class="category-results-block">
+      <h3 style="font-size:13px; color:var(--gold); margin:16px 0 8px;">Câștigători pe categorii — ultima extragere</h3>
+      <div id="categoryResultsDisplay"></div>
+      <button class="btn2 btn2-outline" id="categoryResultsUpdateBtn" style="margin-top:8px;">Actualizează de pe site-ul Loteriei Române</button>
+      <div id="categoryResultsForm"></div>
     </div>
   </div>
 
@@ -472,9 +502,16 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     <h2>Generator de variante <span class="sub">— 3 combinații generate din analiza complexă a arhivei complete</span></h2>
     <div class="small-note" id="ticketsMethodInfo" style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px;"></div>
     <button class="gen-btn" id="genBtn">Recalculează variantele</button>
+    <button class="btn2 btn2-outline" id="autoFillMissingBtn" style="margin-top:10px;">Introdu automat extragerile care lipsesc</button>
+    <div id="autoFillStatus" class="status-msg"></div>
+    <div id="autoFillForm"></div>
     <div style="height:14px;"></div>
     <div class="tickets" id="ticketsWrap"></div>
     <p class="small-note" id="ticketsGenNote"></p>
+    <div class="export-btn-row" style="margin-top:10px;">
+      <button class="btn2 btn2-outline" id="ticketsExportCsvBtn">Exportă variantele (CSV)</button>
+      <button class="btn2 btn2-outline" id="ticketsExportPdfBtn">Exportă variantele (PDF)</button>
+    </div>
   </div>
 
   <div class="panel" id="backtestPanel">
@@ -492,6 +529,21 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     <button class="gen-btn" id="backtestRunBtn">Rulează backtesting</button>
     <div id="backtestStatus" class="status-msg" style="margin-top:10px;"></div>
     <div id="backtestResults" style="margin-top:16px;"></div>
+  </div>
+
+  <div class="panel" id="pairNetworkPanel">
+    <h2>Rețea de sinergie a perechilor <span class="sub">— ce numere "merg des împreună" istoric, vizual</span></h2>
+    <p class="small-note" style="margin-bottom:14px;">Fiecare linie leagă două numere care au ieșit împreună, în aceeași extragere, de multe ori în arhivă — cu cât linia e mai groasă și mai aurie, cu atât au apărut împreună mai des. Sunt afișate doar cele mai puternice 30 de perechi, ca să rămână lizibil. Pentru extragerile exacte în care au apărut potriviri mari între extrageri reale (<span id="pairNetworkLevelsTxt">—</span>), vezi secțiunea "Repetări istorice între extrageri" de mai jos.</p>
+    <div id="pairNetworkWrap" style="display:flex; justify-content:center;"></div>
+    <div id="pairNetworkTopList" style="margin-top:14px;"></div>
+  </div>
+
+  <div class="panel" id="repeatScanPanel">
+    <h2>Repetări istorice între extrageri <span class="sub" id="repeatScanSub">— arhiva completă, comparată cu ea însăși</span></h2>
+    <p class="small-note" style="margin-bottom:14px;">Scanează TOATE perechile posibile de extrageri reale din arhivă (nu doar față de ultima extragere) și arată câte ori s-a întâmplat ca două extrageri diferite să coincidă în <span id="repeatScanLevelsTxt">—</span> — și exact care sunt acele extrageri, cu dată.</p>
+    <button class="gen-btn" id="repeatScanBtn">Scanează arhiva</button>
+    <div id="repeatScanStatus" class="status-msg" style="margin-top:10px;"></div>
+    <div id="repeatScanResults" style="margin-top:16px;"></div>
   </div>
 
   <div class="panel" id="wheelPanel">
@@ -554,6 +606,12 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     <p class="small-note">Valorile implicite de mai sus sunt orientative (prețul variantei simple + taxa de bilet, conform informațiilor publice găsite pentru 2026) — reportul și premiile categoriilor I-III variază la fiecare extragere, așa că editează-le cu sumele afișate pe loto.ro înainte să tragi concluzii. Calculul nu ține cont separat de bonusul Joker, doar de cele 5 numere principale la acel joc.</p>
   </div>
 
+  <div class="panel" id="budgetPanel">
+    <h2>Buget &amp; randament real <span class="sub">— cât ai cheltuit, cât ai câștigat, comparat cu randamentul teoretic al jocului</span></h2>
+    <p class="small-note" style="margin-bottom:14px;">Calculat din biletele marcate "jucat real" în Jurnal (mai jos), pentru toate cele 4 jocuri. Randamentul teoretic (RTP) se calculează din prețurile categoriilor de câștig completate la calculatorul EV al fiecărui joc — completează-le o singură dată acolo, rămân salvate.</p>
+    <div id="budgetResults"></div>
+  </div>
+
   <div class="panel" id="journalPanel">
     <h2>Jurnal variante <span class="sub">— tot ce ai jucat (sau ai vrut să joci), cu rezultatul comparat automat cu extragerea reală</span></h2>
     <div class="journal-form">
@@ -574,6 +632,10 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
         <input type="text" id="jeCost" placeholder="8.5" style="width:90px;">
       </div>
       <div class="field">
+        <label>Premiu câștigat (lei, opțional)</label>
+        <input type="text" id="jePrize" placeholder="0" style="width:110px;">
+      </div>
+      <div class="field">
         <label>Status</label>
         <select id="jeStatus">
           <option value="real">Jucat real</option>
@@ -585,6 +647,10 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
         <textarea id="jeNotes" placeholder="ex: variantă din wheeling"></textarea>
       </div>
       <button class="btn2" id="jeAddBtn">Adaugă în jurnal</button>
+      <div class="export-btn-row">
+        <button class="btn2 btn2-outline" id="journalExportCsvBtn">Exportă jurnal (CSV)</button>
+        <button class="btn2 btn2-outline" id="journalExportPdfBtn">Exportă jurnal (PDF)</button>
+      </div>
     </div>
     <div class="status-msg" id="jeStatusMsg"></div>
     <div class="journal-list" id="journalList"></div>
@@ -8757,6 +8823,7 @@ function renderLastDraw(game){
   if(cfg.isDigit){
     last.digits.forEach(dg=> wrap.appendChild(digitEl(dg)));
     if(repeatBox){ repeatBox.innerHTML=''; repeatBox.appendChild(repeatInfoBlock(last, draws, cfg.digits, true, false)); }
+    renderCategoryResultsDisplay(game);
     return;
   }
   last.nums.slice().sort((a,b)=>a-b).forEach(nm=> wrap.appendChild(ballEl(nm,'hit')));
@@ -8768,6 +8835,7 @@ function renderLastDraw(game){
     wrap.appendChild(ballEl(last.joker,'hit joker-ball'));
   }
   if(repeatBox){ repeatBox.innerHTML=''; repeatBox.appendChild(repeatInfoBlock(last, draws, cfg.pick, false, false)); }
+  renderCategoryResultsDisplay(game);
 }
 
 function renderHeatmap(stats, game){
@@ -9426,10 +9494,49 @@ function ticketInfoEl(target, draws, pick, isDigit, qualityInfo){
   return wrap;
 }
 
+let lastGeneratedTickets = null;
+function exportTicketsCSV(){
+  if(!lastGeneratedTickets || !lastGeneratedTickets.items.length){ alert('Generează întâi variantele.'); return; }
+  const cfg = GAMES[lastGeneratedTickets.game];
+  const header = lastGeneratedTickets.isDigit ? ['Varianta','Cifre','Scor performanta (1-10)'] : ['Varianta','Numere', cfg.hasJoker?'Joker':null, 'Scor performanta (1-10)'].filter(Boolean);
+  const rows = [header];
+  lastGeneratedTickets.items.forEach((it,i)=>{
+    if(lastGeneratedTickets.isDigit){
+      rows.push([`Varianta ${i+1}`, it.digits.join(''), it.quality]);
+    } else {
+      const row = [`Varianta ${i+1}`, it.combo.join(' ')];
+      if(cfg.hasJoker) row.push(it.joker!=null? it.joker : '');
+      row.push(it.quality);
+      rows.push(row);
+    }
+  });
+  const csv = rows.map(r=> r.map(csvEscape).join(',')).join('\n');
+  downloadTextFile(`variante-${cfg.label.replace(/\W+/g,'-')}-${new Date().toISOString().slice(0,10)}.csv`, 'text/csv;charset=utf-8', '\uFEFF'+csv);
+}
+function exportTicketsPDF(){
+  if(!lastGeneratedTickets || !lastGeneratedTickets.items.length){ alert('Generează întâi variantele.'); return; }
+  const cfg = GAMES[lastGeneratedTickets.game];
+  const rowsHtml = lastGeneratedTickets.items.map((it,i)=>{
+    const numsStr = lastGeneratedTickets.isDigit ? it.digits.join(' ') : it.combo.join(', ') + (cfg.hasJoker && it.joker!=null ? ' + '+it.joker : '');
+    return `<tr><td>Varianta ${i+1}</td><td>${numsStr}</td><td>${it.quality}/10</td></tr>`;
+  }).join('');
+  const body = `
+    <h1>Variante generate — ${cfg.label}</h1>
+    <p class="meta">Exportat la ${new Date().toLocaleString('ro-RO')} — generate din analiza pe 5 indici a arhivei complete</p>
+    <table>
+      <thead><tr><th>Variantă</th><th>Numere</th><th>Scor performanță</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+  openPrintWindow('Variante generate — export', body);
+}
+document.getElementById('ticketsExportCsvBtn').addEventListener('click', exportTicketsCSV);
+document.getElementById('ticketsExportPdfBtn').addEventListener('click', exportTicketsPDF);
+
 function renderTickets(game, stats){
   const cfg = GAMES[game];
   const wrap = document.getElementById('ticketsWrap');
   wrap.innerHTML='';
+  lastGeneratedTickets = { game, isDigit: cfg.isDigit, items: [] };
 
   if(cfg.isDigit){
     const { tickets, posScores } = generate3NorocTickets(stats);
@@ -9442,6 +9549,7 @@ function renderTickets(game, stats){
       const qualityInfo = scoreNorocTicketQuality(digits, posScores);
       div.appendChild(ticketInfoEl({ digits, date:null }, stats.draws, cfg.digits, true, qualityInfo));
       wrap.appendChild(div);
+      lastGeneratedTickets.items.push({ digits: digits.slice(), quality: qualityInfo.score10 });
     });
   } else {
     const tickets = generate3BallTickets(stats, cfg);
@@ -9461,6 +9569,7 @@ function renderTickets(game, stats){
       const qualityInfo = scoreTicketQuality(combo, cfg, stats, compositeScores);
       div.appendChild(ticketInfoEl({ nums: combo, date:null }, stats.draws, cfg.pick, false, qualityInfo));
       wrap.appendChild(div);
+      lastGeneratedTickets.items.push({ combo: combo.slice(), joker, quality: qualityInfo.score10 });
     });
   }
 
@@ -9560,6 +9669,77 @@ function drawWheel(game, stats, poolSize){
     : `Cele 2 variante nu au niciun număr în comun — acoperă toate cele ${poolSize} numere din pool, fiecare o singură dată.`;
   noteEl.textContent = `Pool de ${poolSize} numere alese automat din scorul compus (frecvență, restanță, momentum, z-score, sinergie de perechi — aceleași 5 metode ca la Generatorul de variante), împărțit apoi în cele 2 variante de ${cfg.pick} numere de mai sus. ${overlapTxt} Important: cu doar 2 variante nu există o garanție matematică de tip sistem redus (acelea necesită zeci de combinații pentru un pool de peste ${cfg.pick} numere) — e doar un mod de a-ți distribui cele mai bine punctate numere în cele 2 bilete pe care oricum vrei să le joci.`;
 }
+
+// ---------- PAIR SYNERGY NETWORK GRAPH ----------
+// Circular layout: every number 1..range sits on a circle; the strongest co-occurring pairs
+// (by raw historical count, from stats.pairCount) are drawn as lines between them, thicker and
+// more golden the more often that pair was drawn together. Purely descriptive/historical — same
+// honesty caveat as everywhere else: doesn't predict anything about the next draw.
+function buildPairNetworkSVG(cfg, stats, topK){
+  const range = cfg.range;
+  const size = 640, cx = size/2, cy = size/2, R = size/2 - 46;
+  const pos = {};
+  for(let i=1;i<=range;i++){
+    const angle = (2*Math.PI*(i-1)/range) - Math.PI/2;
+    pos[i] = { x: cx + R*Math.cos(angle), y: cy + R*Math.sin(angle) };
+  }
+  const pairs = Object.entries(stats.pairCount)
+    .map(([k,v])=>{ const [a,b] = k.split('-').map(Number); return {a,b,count:v}; })
+    .sort((x,y)=> y.count-x.count)
+    .slice(0, topK);
+  const maxCount = pairs.length ? pairs[0].count : 1;
+  const minCount = pairs.length ? pairs[pairs.length-1].count : 0;
+  const countRange = (maxCount-minCount) || 1;
+
+  const linesSvg = pairs.map(p=>{
+    const t = (p.count-minCount)/countRange; // 0..1 strength
+    const width = 1 + t*3.5;
+    const opacity = 0.18 + t*0.65;
+    return `<line x1="${pos[p.a].x.toFixed(1)}" y1="${pos[p.a].y.toFixed(1)}" x2="${pos[p.b].x.toFixed(1)}" y2="${pos[p.b].y.toFixed(1)}" style="stroke:var(--gold); stroke-width:${width.toFixed(2)}; opacity:${opacity.toFixed(2)};"/>`;
+  }).join('');
+
+  const involved = new Set();
+  pairs.forEach(p=>{ involved.add(p.a); involved.add(p.b); });
+
+  const nodesSvg = [];
+  for(let i=1;i<=range;i++){
+    const highlighted = involved.has(i);
+    const r = highlighted ? 13 : 9;
+    nodesSvg.push(`<circle cx="${pos[i].x.toFixed(1)}" cy="${pos[i].y.toFixed(1)}" r="${r}" style="fill:${highlighted?'var(--surface3)':'var(--surface2)'}; stroke:${highlighted?'var(--gold)':'var(--border)'}; stroke-width:${highlighted?2:1};"/>`);
+    nodesSvg.push(`<text x="${pos[i].x.toFixed(1)}" y="${pos[i].y.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="${highlighted?11:9.5}" font-family="'JetBrains Mono',monospace" style="fill:${highlighted?'var(--gold)':'var(--muted)'}; font-weight:${highlighted?700:400};">${i}</text>`);
+  }
+
+  return `<svg viewBox="0 0 ${size} ${size}" width="100%" style="max-width:640px;">
+    ${linesSvg}
+    ${nodesSvg.join('')}
+  </svg>`;
+}
+function renderPairNetwork(game, stats){
+  const cfg = GAMES[game];
+  const wrap = document.getElementById('pairNetworkWrap');
+  const listBox = document.getElementById('pairNetworkTopList');
+  const levelsTxt = document.getElementById('pairNetworkLevelsTxt');
+  if(levelsTxt){
+    levelsTxt.textContent = cfg.isDigit
+      ? `7/7, 6/7, 5/7 — doar pentru Noroc, mai jos`
+      : `${cfg.pick}/${cfg.pick}, ${cfg.pick-1}/${cfg.pick}, ${cfg.pick-2}/${cfg.pick} pentru ${cfg.label}`;
+  }
+  if(!wrap) return;
+  if(cfg.isDigit){
+    wrap.innerHTML = '<p class="small-note">Nu se aplică la Noroc — e un cod de 7 cifre pe poziții fixe, nu o combinație de numere care se pot "asocia" între ele ca la jocurile cu bile.</p>';
+    if(listBox) listBox.innerHTML = '';
+    return;
+  }
+  const topK = 30;
+  wrap.innerHTML = buildPairNetworkSVG(cfg, stats, topK);
+  const pairs = Object.entries(stats.pairCount)
+    .map(([k,v])=>{ const [a,b] = k.split('-').map(Number); return {a,b,count:v}; })
+    .sort((x,y)=> y.count-x.count)
+    .slice(0, 10);
+  listBox.innerHTML = `<p class="small-note" style="margin-bottom:8px;"><b style="color:var(--gold);">Cele mai puternice 10 perechi</b> (de câte ori au ieșit împreună, din ${stats.n} extrageri):</p>
+    <div class="repeat-info">${pairs.map(p=> `<div class="pop-tag pop-mid">${p.a} + ${p.b}: împreună de ${p.count}× (${(100*p.count/stats.n).toFixed(1)}% din extrageri)</div>`).join('')}</div>`;
+}
+
 
 function renderWheel(game, stats){
   const panel = document.getElementById('wheelPanel');
@@ -9965,25 +10145,39 @@ function renderEvCalculator(cfg){
   panel.style.display='';
 
   const cats = getEvCategories(cfg);
+  const saved = evPrizesByGame[cfg.key] || {};
   const table = document.getElementById('evTable');
   table.innerHTML = `
     <tr><th>Categorie</th><th>Probabilitate</th><th>Premiu (lei)</th></tr>
     <tr>
       <td>Preț bilet (variantă simplă + taxă)</td><td class="mono">—</td>
-      <td><input type="text" id="evPrice" value="8.5"></td>
+      <td><input type="text" id="evPrice" value="${saved.__price!=null? saved.__price : '8.5'}"></td>
     </tr>
     ${cats.map(c=>{
       const prob = hyperGeomProb(cfg.range, cfg.pick, c.matches);
       const oneIn = prob>0 ? Math.round(1/prob).toLocaleString('ro-RO') : '—';
+      const val = saved[c.matches] != null ? saved[c.matches] : c.defaultPrize;
       return `<tr>
         <td>${c.label}</td>
         <td class="mono">1 la ${oneIn}</td>
-        <td><input type="text" class="evPrizeInput" data-prob="${prob}" value="${c.defaultPrize}"></td>
+        <td><input type="text" class="evPrizeInput" data-matches="${c.matches}" data-prob="${prob}" value="${val}"></td>
       </tr>`;
     }).join('')}
   `;
+  const persist = ()=>{
+    const price = parseFloat(document.getElementById('evPrice').value) || 0;
+    const obj = { __price: price };
+    document.querySelectorAll('.evPrizeInput').forEach(inp=>{ obj[inp.dataset.matches] = parseFloat(inp.value)||0; });
+    evPrizesByGame[cfg.key] = obj;
+    persistEvPrizes();
+    renderBudgetPanel();
+  };
   document.getElementById('evPrice').addEventListener('input', computeEvSummary);
-  document.querySelectorAll('.evPrizeInput').forEach(inp=> inp.addEventListener('input', computeEvSummary));
+  document.getElementById('evPrice').addEventListener('change', persist);
+  document.querySelectorAll('.evPrizeInput').forEach(inp=>{
+    inp.addEventListener('input', computeEvSummary);
+    inp.addEventListener('change', persist);
+  });
   computeEvSummary();
 }
 
@@ -9994,7 +10188,7 @@ let userDocRef = null;
 const APP_DATA_DOC_ID = 'tibi-loto-main'; // fixed document for this personal deployment
 
 async function ensureFirebaseAuth(){
-  return new Promise((resolve, reject)=>{
+  const authPromise = new Promise((resolve, reject)=>{
     firebase.auth().onAuthStateChanged(user=>{
       if(user) resolve(user);
     });
@@ -10003,6 +10197,10 @@ async function ensureFirebaseAuth(){
       reject(err);
     });
   });
+  const timeoutPromise = new Promise((_, reject)=>{
+    setTimeout(()=> reject(new Error('Firebase auth timeout (10s) — posibil blocat de setările browserului (ex: Safari "Prevent Cross-Site Tracking" sau un content blocker).')), 10000);
+  });
+  return Promise.race([authPromise, timeoutPromise]);
 }
 
 // SHA-256 hash — the password and recovery phrase are never stored or compared in plain text.
@@ -10166,6 +10364,114 @@ async function loadStoredDraws(){
     storeData[game] = data['draws_'+game] || [];
   });
 }
+// ---------- CATEGORY WINNERS ("Câștigători pe categorii — ultima extragere") ----------
+// Same honest constraint as the missing-draws feature: no live auto-fetch is possible from a
+// static page (CORS). This lets the person paste in, per category, whether it was won at the
+// most recent draw and the official prize/winner count from loto.ro — then remembers it
+// permanently and displays it automatically every time that draw is the "current" one.
+let categoryResultsByGame = {}; // { game: { date: [{matches, won, prize, winners}, ...] } }
+async function persistCategoryResults(){
+  await userDocRef.set({ categoryResults: categoryResultsByGame }, {merge:true});
+}
+function categoryListForGame(cfg){
+  if(cfg.isDigit) return [{matches:7, label:'Categoria I (7/7 cifre)'}];
+  return getEvCategories(cfg).map(c=> ({matches:c.matches, label:c.label}));
+}
+function renderCategoryResultsDisplay(game){
+  const box = document.getElementById('categoryResultsDisplay');
+  if(!box) return;
+  const cfg = GAMES[game];
+  const draws = getAllDraws(game);
+  const last = draws[draws.length-1];
+  if(!last){ box.innerHTML = ''; return; }
+  const saved = (categoryResultsByGame[game] || {})[last.date];
+  if(!saved){
+    box.innerHTML = `<p class="small-note">Nu ai completat încă rezultatele pe categorii pentru extragerea din ${fmtDateShort(last.date)}. Apasă butonul de mai jos.</p>`;
+    return;
+  }
+  box.innerHTML = `<div class="repeat-info">${saved.map(c=>{
+    if(c.won){
+      return `<div class="pop-tag pop-high">${c.label}: CÂȘTIGATĂ — ${c.winners||0} câștigător(i), ${Number(c.prize||0).toLocaleString('ro-RO')} lei${c.prize? '/câștigător' : ''}</div>`;
+    }
+    return `<div class="pop-tag pop-low">${c.label}: neacordată — se reportează</div>`;
+  }).join('')}</div>
+  <p class="small-note" style="margin-top:8px;">Completat pentru extragerea din ${fmtDateShort(last.date)}.</p>`;
+}
+function renderCategoryResultsForm(game){
+  const cfg = GAMES[game];
+  const draws = getAllDraws(game);
+  const last = draws[draws.length-1];
+  const form = document.getElementById('categoryResultsForm');
+  if(!last || !form) return;
+  const cats = categoryListForGame(cfg);
+  const saved = (categoryResultsByGame[game] || {})[last.date] || [];
+  const savedByMatches = {}; saved.forEach(s=> savedByMatches[s.matches]=s);
+
+  form.innerHTML = `
+    <p class="small-note" style="margin:10px 0;">
+      Deschide <a href="https://www.loto.ro/loto-new/newLotoSiteNexioFinalVersion/web/app2.php/jocuri/rezultate_extragere.html" target="_blank" rel="noopener" style="color:var(--blue);">rezultatele oficiale Loteria Română</a> pentru extragerea din ${fmtDate(last.date)}, apoi completează mai jos pentru fiecare categorie dacă a fost câștigată și, dacă da, premiul și numărul de câștigători (opțional).
+    </p>
+    <div id="categoryResultsRows"></div>
+    <button class="btn2" id="categoryResultsSaveBtn" style="margin-top:10px;">Salvează rezultatele</button>
+    <div id="categoryResultsSaveStatus" class="status-msg"></div>
+  `;
+  const rowsBox = document.getElementById('categoryResultsRows');
+  cats.forEach(c=>{
+    const prev = savedByMatches[c.matches];
+    const row = document.createElement('div');
+    row.className = 'form-row';
+    row.style.marginBottom = '8px';
+    row.innerHTML = `
+      <div class="field" style="min-width:160px;">
+        <label>${c.label}</label>
+        <select class="catResWon" data-matches="${c.matches}">
+          <option value="no" ${!prev||!prev.won?'selected':''}>Neacordată</option>
+          <option value="yes" ${prev&&prev.won?'selected':''}>Câștigată</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Premiu per câștigător (lei)</label>
+        <input type="text" class="catResPrize" data-matches="${c.matches}" value="${prev&&prev.prize? prev.prize : ''}" style="width:140px;">
+      </div>
+      <div class="field">
+        <label>Nr. câștigători</label>
+        <input type="text" class="catResWinners" data-matches="${c.matches}" value="${prev&&prev.winners? prev.winners : ''}" style="width:100px;">
+      </div>
+    `;
+    rowsBox.appendChild(row);
+  });
+
+  document.getElementById('categoryResultsSaveBtn').addEventListener('click', async ()=>{
+    const statusEl = document.getElementById('categoryResultsSaveStatus');
+    const result = cats.map(c=>{
+      const wonSel = document.querySelector(`.catResWon[data-matches="${c.matches}"]`);
+      const prizeInp = document.querySelector(`.catResPrize[data-matches="${c.matches}"]`);
+      const winnersInp = document.querySelector(`.catResWinners[data-matches="${c.matches}"]`);
+      return {
+        matches: c.matches, label: c.label,
+        won: wonSel.value==='yes',
+        prize: parseFloat(prizeInp.value.replace(',','.'))||0,
+        winners: parseInt(winnersInp.value)||0
+      };
+    });
+    statusEl.className='status-msg'; statusEl.textContent='Se salvează...';
+    try{
+      if(!categoryResultsByGame[game]) categoryResultsByGame[game] = {};
+      categoryResultsByGame[game][last.date] = result;
+      await persistCategoryResults();
+      statusEl.className='status-msg ok'; statusEl.textContent='Salvat ✓';
+      form.innerHTML = '';
+      renderCategoryResultsDisplay(game);
+    }catch(e){
+      statusEl.className='status-msg err'; statusEl.textContent='Eroare la salvare: '+e.message;
+    }
+  });
+}
+document.getElementById('categoryResultsUpdateBtn').addEventListener('click', ()=>{
+  renderCategoryResultsForm(currentGame);
+});
+
+
 async function saveDraw(game, draw){
   const arr = storeData[game] || [];
   arr.push(draw);
@@ -10173,15 +10479,157 @@ async function saveDraw(game, draw){
   await userDocRef.set({ ['draws_'+game]: arr }, {merge:true});
 }
 
+// ---------- AUTO-DETECT & BULK-ADD MISSING DRAWS ----------
+// Important honesty note: this app is a static page on GitHub Pages with no server of its own.
+// The official Loteria Română site does not expose a public API and does not allow cross-origin
+// JavaScript requests from other websites (CORS) — a browser security rule neither this app nor
+// any other static site can bypass. So "automatic" here means: the app automatically figures out
+// EXACTLY which draw dates are missing (comparing the archive's last date against today, using
+// the known Thursday/Sunday 18:30 schedule) and automatically validates, sorts, stores, and
+// re-runs the entire analysis once you paste in the numbers — the only manual step left is
+// copying the numbers themselves from the official results page, which this opens for you.
+function computeMissingDrawDates(game){
+  const draws = getAllDraws(game);
+  if(draws.length===0) return [];
+  const lastDate = draws[draws.length-1].date;
+  const cursor = new Date(lastDate+'T00:00:00');
+  const now = new Date();
+  const missing = [];
+  cursor.setDate(cursor.getDate()+1);
+  while(cursor.getTime() <= now.getTime()){
+    const dow = cursor.getDay();
+    if(dow===4 || dow===0){
+      const drawDateTime = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate(), 18,30,0,0);
+      if(drawDateTime.getTime() <= now.getTime()){
+        missing.push(`${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}-${String(cursor.getDate()).padStart(2,'0')}`);
+      }
+    }
+    cursor.setDate(cursor.getDate()+1);
+  }
+  return missing;
+}
+
+function renderAutoFillIdle(){
+  const form = document.getElementById('autoFillForm');
+  const statusEl = document.getElementById('autoFillStatus');
+  if(form) form.innerHTML = '';
+  if(statusEl){ statusEl.className='status-msg'; statusEl.textContent=''; }
+}
+
+function autoFillNumsPlaceholder(cfg){
+  if(cfg.isDigit) return 'ex: 0234508';
+  if(cfg.hasJoker) return 'ex: 4,12,19,23,31 + 7';
+  return `ex: 4,12,19,23,31,45`;
+}
+
+function renderAutoFillForm(game){
+  const cfg = GAMES[game];
+  const statusEl = document.getElementById('autoFillStatus');
+  const form = document.getElementById('autoFillForm');
+  const missing = computeMissingDrawDates(game);
+
+  if(missing.length===0){
+    statusEl.className = 'status-msg ok';
+    statusEl.textContent = `Arhiva ${cfg.label} e la zi — nu lipsește nicio extragere (ultima din bază: ${fmtDateShort(getAllDraws(game)[getAllDraws(game).length-1].date)}).`;
+    form.innerHTML = '';
+    return;
+  }
+
+  statusEl.className = 'status-msg';
+  statusEl.textContent = `Lipsesc ${missing.length} extrag${missing.length===1?'ere':'eri'} pentru ${cfg.label} (comparat cu data de azi și programul obișnuit joi/duminică, ora 18:30).`;
+
+  form.innerHTML = `
+    <p class="small-note" style="margin:10px 0;">
+      Aplicația nu poate prelua rezultatele automat, în fundal — site-ul oficial nu permite cereri directe din alte site-uri (regulă de securitate a browserului, nu ceva ce putem ocoli). Deschide
+      <a href="https://www.loto.ro/loto-new/newLotoSiteNexioFinalVersion/web/app2.php/jocuri/rezultate_extragere.html" target="_blank" rel="noopener" style="color:var(--blue);">rezultatele oficiale Loteria Română</a>
+      într-un tab nou, copiază numerele pentru fiecare dată de mai jos, apoi apasă "Adaugă toate extragerile" — restul (validare, salvare permanentă, recalcularea întregii analize) se face automat.
+    </p>
+    <div id="autoFillRows"></div>
+    <button class="btn2" id="autoFillSubmitBtn" style="margin-top:10px;">Adaugă toate extragerile</button>
+    <div id="autoFillSubmitStatus" class="status-msg"></div>
+  `;
+  const rowsBox = document.getElementById('autoFillRows');
+  missing.forEach(dateStr=>{
+    const row = document.createElement('div');
+    row.className = 'form-row';
+    row.style.marginBottom = '8px';
+    row.innerHTML = `
+      <div class="field" style="min-width:140px;">
+        <label>${fmtDate(dateStr)}</label>
+        <input type="text" disabled value="${dateStr}" class="autoFillDate" style="opacity:.6;">
+      </div>
+      <div class="field">
+        <label>Numere</label>
+        <input type="text" class="nums autoFillNums" placeholder="${autoFillNumsPlaceholder(cfg)}" data-date="${dateStr}">
+      </div>
+    `;
+    rowsBox.appendChild(row);
+  });
+
+  document.getElementById('autoFillSubmitBtn').addEventListener('click', async ()=>{
+    const submitStatus = document.getElementById('autoFillSubmitStatus');
+    const inputs = Array.from(document.querySelectorAll('.autoFillNums'));
+    const parsed = [];
+    for(const inp of inputs){
+      const dateStr = inp.dataset.date;
+      const numsVal = inp.value.trim();
+      if(!numsVal){ submitStatus.className='status-msg err'; submitStatus.textContent=`Completează numerele pentru ${fmtDateShort(dateStr)}.`; return; }
+      try{
+        if(cfg.isDigit){
+          const digitsVal = numsVal.replace(/\D/g,'');
+          if(digitsVal.length!==7) throw new Error(`Extragerea din ${fmtDateShort(dateStr)}: introdu exact 7 cifre.`);
+          parsed.push({date:dateStr, raw:digitsVal, digits:digitsVal.split('').map(Number)});
+        } else {
+          let nums, joker=null;
+          if(cfg.hasJoker){
+            const parts = numsVal.split('+');
+            if(parts.length!==2) throw new Error(`Extragerea din ${fmtDateShort(dateStr)}: format așteptat 5 numere + Joker, ex: 4,12,19,23,31 + 7.`);
+            nums = parts[0].split(',').map(s=>Number(s.trim()));
+            joker = Number(parts[1].trim());
+          } else {
+            nums = numsVal.split(',').map(s=>Number(s.trim()));
+          }
+          if(nums.some(isNaN) || nums.length!==cfg.pick) throw new Error(`Extragerea din ${fmtDateShort(dateStr)}: introdu exact ${cfg.pick} numere valide.`);
+          parsed.push({date:dateStr, nums, joker});
+        }
+      }catch(e){
+        submitStatus.className='status-msg err'; submitStatus.textContent = e.message; return;
+      }
+    }
+    submitStatus.className = 'status-msg'; submitStatus.textContent = 'Se salvează...';
+    try{
+      for(const draw of parsed){ await saveDraw(game, draw); }
+      submitStatus.className = 'status-msg ok';
+      submitStatus.textContent = `${parsed.length} extrageri adăugate și salvate permanent ✓ — analiza completă s-a recalculat automat, inclusiv acestea.`;
+      renderAutoFillIdle();
+      renderAll();
+    }catch(e){
+      submitStatus.className='status-msg err'; submitStatus.textContent='Eroare la salvare: '+e.message;
+    }
+  });
+}
+
+document.getElementById('autoFillMissingBtn').addEventListener('click', ()=>{
+  renderAutoFillForm(currentGame);
+});
+
+
+
 // ---------- JOURNAL STORAGE ----------
 let journalEntries = [];
+let evPrizesByGame = {}; // persisted EV category prize inputs per game, used for theoretical RTP in Buget panel
 async function loadJournal(){
   const snap = await userDocRef.get();
   const data = snap.exists ? snap.data() : {};
   journalEntries = data.journal || [];
+  evPrizesByGame = data.evPrizes || {};
+  categoryResultsByGame = data.categoryResults || {};
 }
 async function persistJournal(){
   await userDocRef.set({ journal: journalEntries }, {merge:true});
+}
+async function persistEvPrizes(){
+  await userDocRef.set({ evPrizes: evPrizesByGame }, {merge:true});
 }
 async function addJournalEntry(entry){
   journalEntries.push(entry);
@@ -10214,6 +10662,24 @@ function fmtCountdown(ms){
   const pad = x=>String(x).padStart(2,'0');
   return (days>0 ? days+'z ' : '') + `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
 }
+function renderSalesCutoffBanner(){
+  const el = document.getElementById('salesCutoffBanner');
+  if(!el) return;
+  const now = new Date();
+  const draw = nextDrawDate || computeNextDrawDate();
+  const isDrawDay = now.getFullYear()===draw.getFullYear() && now.getMonth()===draw.getMonth() && now.getDate()===draw.getDate();
+  const cutoff = new Date(draw.getFullYear(), draw.getMonth(), draw.getDate(), 15, 30, 0, 0);
+  if(isDrawDay && now.getTime() < cutoff.getTime()){
+    el.className = 'sales-cutoff-banner show';
+    el.textContent = 'Grăbește-te, depunerea biletelor se face exclusiv până la 15:30 iar ora extragerii este 18:30!';
+  } else if(isDrawDay && now.getTime() < draw.getTime()){
+    el.className = 'sales-cutoff-banner show muted';
+    el.textContent = 'Vânzarea biletelor pentru extragerea de azi s-a închis (15:30) — extragerea are loc la 18:30.';
+  } else {
+    el.className = 'sales-cutoff-banner';
+    el.textContent = '';
+  }
+}
 function tickCountdown(){
   const now = new Date();
   if(!nextDrawDate || nextDrawDate.getTime() <= now.getTime()){
@@ -10222,12 +10688,81 @@ function tickCountdown(){
   const str = fmtCountdown(nextDrawDate.getTime()-now.getTime());
   const top = document.getElementById('topCountdown'); if(top) top.textContent = str;
   const panel = document.getElementById('panelCountdown'); if(panel) panel.textContent = str;
+  renderSalesCutoffBanner();
 }
 
 function nextDrawInfo(){
   const d = computeNextDrawDate();
   const dayName = d.getDay()===4 ? 'joi' : 'duminică';
   return `Următoarea extragere (toate jocurile): <b>${dayName}, ${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}</b>, ora 18:30`;
+}
+
+// ---------- BUDGET & REAL RETURN ----------
+// Theoretical RTP for a game, computed from whatever prize values the person filled in at that
+// game's EV calculator (persisted in evPrizesByGame). Returns null if not configured yet —
+// we never fabricate official prize numbers (they're pari-mutuel and vary every draw), so this
+// stays honestly blank until the person fills it in themselves.
+function theoreticalRtpForGame(cfg){
+  const saved = evPrizesByGame[cfg.key];
+  if(!saved || !saved.__price) return null;
+  const cats = getEvCategories(cfg);
+  let expectedReturn = 0;
+  cats.forEach(c=>{
+    const prob = hyperGeomProb(cfg.range, cfg.pick, c.matches);
+    const prize = saved[c.matches] != null ? saved[c.matches] : 0;
+    expectedReturn += prob*prize;
+  });
+  return { rtpPct: 100*expectedReturn/saved.__price };
+}
+
+function renderBudgetPanel(){
+  const box = document.getElementById('budgetResults');
+  if(!box) return;
+  const perGame = {};
+  GAME_ORDER.forEach(g=> perGame[g] = {spent:0, won:0, count:0});
+  let totalSpent=0, totalWon=0;
+  journalEntries.forEach(e=>{
+    if(e.status !== 'real' || !perGame[e.game]) return;
+    perGame[e.game].spent += Number(e.cost||0);
+    perGame[e.game].won += Number(e.prizeWon||0);
+    perGame[e.game].count++;
+    totalSpent += Number(e.cost||0);
+    totalWon += Number(e.prizeWon||0);
+  });
+  const netTotal = totalWon-totalSpent;
+  const realRtpTotal = totalSpent>0 ? 100*totalWon/totalSpent : null;
+
+  let html = `<div class="metric-row" style="margin-bottom:16px;">
+    <div class="metric"><div class="k">Total cheltuit (bilete reale)</div><div class="v">${totalSpent.toFixed(2)} lei</div></div>
+    <div class="metric"><div class="k">Total câștigat</div><div class="v" style="color:${totalWon>0?'var(--green)':'var(--muted)'};">${totalWon.toFixed(2)} lei</div></div>
+    <div class="metric"><div class="k">Net</div><div class="v" style="color:${netTotal>=0?'var(--green)':'var(--red)'};">${netTotal>=0?'+':''}${netTotal.toFixed(2)} lei</div></div>
+    <div class="metric"><div class="k">Randament real</div><div class="v">${realRtpTotal!=null? realRtpTotal.toFixed(1)+'%' : '—'}</div></div>
+  </div>`;
+
+  html += `<div class="table-scroll"><table class="data-table" style="width:100%;">
+    <thead><tr><th>Joc</th><th>Bilete reale</th><th>Cheltuit</th><th>Câștigat</th><th>Net</th><th>Randament real</th><th>Randament teoretic (RTP)</th></tr></thead>
+    <tbody>${GAME_ORDER.map(g=>{
+      const cfg = GAMES[g];
+      const d = perGame[g];
+      const net = d.won-d.spent;
+      const realRtp = d.spent>0 ? 100*d.won/d.spent : null;
+      const theo = theoreticalRtpForGame(cfg);
+      return `<tr>
+        <td>${cfg.label}</td>
+        <td class="mono">${d.count}</td>
+        <td class="mono">${d.spent.toFixed(2)} lei</td>
+        <td class="mono">${d.won.toFixed(2)} lei</td>
+        <td class="mono" style="color:${net>=0?'var(--green)':'var(--red)'};">${net>=0?'+':''}${net.toFixed(2)} lei</td>
+        <td class="mono">${realRtp!=null? realRtp.toFixed(1)+'%' : '—'}</td>
+        <td class="mono">${theo!=null? theo.rtpPct.toFixed(1)+'%' : '<span style="color:var(--muted);">necompletat</span>'}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>
+  <p class="small-note" style="margin-top:12px;">
+    <b style="color:var(--gold);">Randament real</b> = ce ai câștigat efectiv ÷ ce ai cheltuit, pe biletele marcate "jucat real" în jurnal (introdu premiul câștigat manual, după ce vezi rezultatul oficial pe loto.ro). <b style="color:var(--gold);">Randament teoretic (RTP)</b> = ce ar trebui să întoarcă jocul în medie, pe termen foarte lung, dacă premiile completate la calculatorul EV al fiecărui joc sunt realiste — completează-le acolo o singură dată, rămân salvate. Diferența dintre cele două e complet normală: pe termen scurt domină norocul; randamentul teoretic abia se vede pe eșantioane foarte mari (mii de bilete).
+  </p>`;
+
+  box.innerHTML = html;
 }
 
 // ---------- JOURNAL RENDER ----------
@@ -10262,11 +10797,97 @@ function computeJournalMatch(entry, cfg, actualDraw){
   return { matches: correct.length, correct, wrong, avgClosest, jokerMatch, isDigit:false };
 }
 
+// ---------- EXPORT (CSV / PDF) ----------
+function downloadTextFile(filename, mime, content){
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 1000);
+}
+function csvEscape(v){
+  const s = String(v==null?'':v);
+  return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+}
+function openPrintWindow(title, bodyHtml){
+  const w = window.open('', '_blank');
+  if(!w){ alert('Browserul a blocat fereastra de printare — permite pop-up-uri pentru acest site.'); return; }
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{ font-family:Arial,sans-serif; color:#1a1a1a; padding:24px; }
+      h1{ font-size:18px; margin-bottom:4px; }
+      p.meta{ color:#666; font-size:12px; margin-top:0; margin-bottom:18px; }
+      table{ width:100%; border-collapse:collapse; font-size:12px; }
+      th,td{ text-align:left; padding:6px 8px; border-bottom:1px solid #ddd; }
+      th{ background:#f2f2f2; text-transform:uppercase; font-size:10px; letter-spacing:.03em; }
+      .win{ color:#1a8a3e; font-weight:700; }
+      .lose{ color:#999; }
+    </style></head><body>${bodyHtml}
+    <script>window.onload=()=>{window.print();};<\/script>
+    </body></html>`);
+  w.document.close();
+}
+
+function exportJournalCSV(){
+  const header = ['Joc','Data extragerii','Numere jucate','Cost (lei)','Premiu castigat (lei)','Status','Rezultat (potriviri)','Note'];
+  const rows = [header];
+  journalEntries.slice().sort((a,b)=> a.date < b.date ? -1 : 1).forEach(entry=>{
+    const cfg = GAMES[entry.game];
+    const actualDraw = getAllDraws(entry.game).find(d=> d.date === entry.date);
+    const numsStr = cfg.isDigit ? entry.raw : entry.nums.join(' ') + (entry.joker!=null ? ' +'+entry.joker : '');
+    let resultStr = 'extragere neconfirmata inca';
+    if(actualDraw){
+      const m = computeJournalMatch(entry, cfg, actualDraw);
+      resultStr = cfg.isDigit ? `${m.matches}/7 cifre pe pozitie` : `${m.matches}/${cfg.pick}`;
+    }
+    rows.push([cfg.label, entry.date, numsStr, Number(entry.cost||0).toFixed(2), Number(entry.prizeWon||0).toFixed(2),
+      entry.status==='real'?'jucat real':'ipotetic', resultStr, entry.notes||'']);
+  });
+  const csv = rows.map(r=> r.map(csvEscape).join(',')).join('\n');
+  downloadTextFile(`jurnal-loto-${new Date().toISOString().slice(0,10)}.csv`, 'text/csv;charset=utf-8', '\uFEFF'+csv);
+}
+
+function exportJournalPDF(){
+  const sorted = journalEntries.slice().sort((a,b)=> a.date < b.date ? 1 : -1);
+  const rowsHtml = sorted.map(entry=>{
+    const cfg = GAMES[entry.game];
+    const actualDraw = getAllDraws(entry.game).find(d=> d.date === entry.date);
+    const numsStr = cfg.isDigit ? entry.raw : entry.nums.join(', ') + (entry.joker!=null ? ' + '+entry.joker : '');
+    let resultStr = '—', cls='';
+    if(actualDraw){
+      const m = computeJournalMatch(entry, cfg, actualDraw);
+      resultStr = cfg.isDigit ? `${m.matches}/7 poz.` : `${m.matches}/${cfg.pick}`;
+      cls = (Number(entry.prizeWon||0) > 0) ? 'win' : 'lose';
+    }
+    return `<tr>
+      <td>${cfg.label}</td><td>${fmtDateShort(entry.date)}</td><td>${numsStr}</td>
+      <td>${Number(entry.cost||0).toFixed(2)} lei</td>
+      <td class="${cls}">${Number(entry.prizeWon||0).toFixed(2)} lei</td>
+      <td>${resultStr}</td><td>${(entry.notes||'').replace(/</g,'&lt;')}</td>
+    </tr>`;
+  }).join('');
+  const totalCost = sorted.reduce((a,e)=>a+Number(e.cost||0),0);
+  const totalPrize = sorted.reduce((a,e)=>a+Number(e.prizeWon||0),0);
+  const body = `
+    <h1>Jurnal variante — Loto AI Analyser</h1>
+    <p class="meta">Exportat la ${new Date().toLocaleString('ro-RO')} · ${sorted.length} intrări · Total cheltuit: ${totalCost.toFixed(2)} lei · Total câștigat: ${totalPrize.toFixed(2)} lei</p>
+    <table>
+      <thead><tr><th>Joc</th><th>Data</th><th>Numere jucate</th><th>Cost</th><th>Premiu</th><th>Rezultat</th><th>Note</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+  openPrintWindow('Jurnal variante — export', body);
+}
+
+document.getElementById('journalExportCsvBtn').addEventListener('click', exportJournalCSV);
+document.getElementById('journalExportPdfBtn').addEventListener('click', exportJournalPDF);
+
 function renderJournal(){
   const wrap = document.getElementById('journalList');
   wrap.innerHTML = '';
   if(journalEntries.length===0){
     wrap.innerHTML = '<p class="small-note">Niciun bilet notat încă. Adaugă unul mai sus — real sau ipotetic.</p>';
+    renderBudgetPanel();
     return;
   }
   const sorted = journalEntries.slice().sort((a,b)=> a.date < b.date ? 1 : (a.date > b.date ? -1 : 0));
@@ -10277,7 +10898,7 @@ function renderJournal(){
 
     const top = document.createElement('div'); top.className='je-top';
     const left = document.createElement('div');
-    left.innerHTML = `<b>${cfg.label}</b><div class="je-meta">${fmtDateShort(entry.date)} · ${entry.status==='real'?'jucat real':'ipotetic'} · cost ${Number(entry.cost||0).toFixed(2)} lei${entry.notes? ' · '+entry.notes.replace(/</g,'&lt;') : ''}</div>`;
+    left.innerHTML = `<b>${cfg.label}</b><div class="je-meta">${fmtDateShort(entry.date)} · ${entry.status==='real'?'jucat real':'ipotetic'} · cost ${Number(entry.cost||0).toFixed(2)} lei${entry.prizeWon>0 ? ` · <span style="color:var(--green);">premiu ${Number(entry.prizeWon).toFixed(2)} lei</span>` : ''}${entry.notes? ' · '+entry.notes.replace(/</g,'&lt;') : ''}</div>`;
     top.appendChild(left);
 
     const numsWrap = document.createElement('div'); numsWrap.className='je-nums';
@@ -10325,6 +10946,7 @@ function renderJournal(){
     div.appendChild(detail);
     wrap.appendChild(div);
   });
+  renderBudgetPanel();
 }
 
 function populateJeGameSelect(){
@@ -10356,6 +10978,7 @@ document.getElementById('jeAddBtn').addEventListener('click', async ()=>{
   const dateVal = document.getElementById('jeDate').value.trim();
   const numsVal = document.getElementById('jeNums').value.trim();
   const costVal = document.getElementById('jeCost').value.trim();
+  const prizeVal = document.getElementById('jePrize').value.trim();
   const statusVal = document.getElementById('jeStatus').value;
   const notesVal = document.getElementById('jeNotes').value.trim();
   const msgEl = document.getElementById('jeStatusMsg');
@@ -10364,7 +10987,8 @@ document.getElementById('jeAddBtn').addEventListener('click', async ()=>{
     msgEl.className='status-msg err'; msgEl.textContent='Format dată invalid. Folosește AAAA-LL-ZZ.'; return;
   }
   const cost = parseFloat(costVal.replace(',','.')) || 0;
-  const entry = { id: Date.now()+'-'+Math.random().toString(36).slice(2,8), game, date: dateVal, cost, status: statusVal, notes: notesVal };
+  const prizeWon = parseFloat(prizeVal.replace(',','.')) || 0;
+  const entry = { id: Date.now()+'-'+Math.random().toString(36).slice(2,8), game, date: dateVal, cost, prizeWon, status: statusVal, notes: notesVal };
 
   try{
     if(cfg.isDigit){
@@ -10389,7 +11013,7 @@ document.getElementById('jeAddBtn').addEventListener('click', async ()=>{
     await addJournalEntry(entry);
     msgEl.className='status-msg ok'; msgEl.textContent='Adăugat în jurnal ✓';
     document.getElementById('jeDate').value=''; document.getElementById('jeNums').value='';
-    document.getElementById('jeCost').value=''; document.getElementById('jeNotes').value='';
+    document.getElementById('jeCost').value=''; document.getElementById('jePrize').value=''; document.getElementById('jeNotes').value='';
     renderJournal();
   }catch(e){
     msgEl.className='status-msg err'; msgEl.textContent='Eroare la salvare: '+e.message;
@@ -10425,12 +11049,16 @@ function renderAll(){
   renderLastDrawsTable(currentGame);
   renderTickets(currentGame, stats);
   renderWheel(currentGame, stats);
+  renderPairNetwork(currentGame, stats);
   renderChiSquare(stats, cfg);
   renderEvCalculator(cfg);
   renderJournal();
   document.getElementById('popularityPanel').style.display = cfg.isDigit ? 'none' : '';
   document.getElementById('mcPanel').style.display = cfg.isDigit ? 'none' : '';
   renderBacktestIdle(currentGame);
+  renderRepeatScanIdle();
+  renderAutoFillIdle();
+  const catForm = document.getElementById('categoryResultsForm'); if(catForm) catForm.innerHTML='';
   tickCountdown();
 }
 
@@ -10477,6 +11105,95 @@ document.getElementById('addDrawBtn').addEventListener('click', async ()=>{
     statusEl.className='status-msg err'; statusEl.textContent='Eroare la salvare: '+e.message;
   }
 });
+
+// ---------- ARCHIVE-WIDE REPEAT SCAN ("Repetări istorice între extrageri") ----------
+// Compares EVERY real draw in the archive against every other real draw (not just the most
+// recent one) and buckets the pairs by overlap level (6/6, 5/6, 4/6 for a 6-number game). Uses a
+// reusable marker array per outer draw so each inner comparison is O(pick) instead of O(pick^2).
+function scanArchiveRepeats(game, cfg){
+  const draws = getAllDraws(game);
+  const n = draws.length;
+  const levels = cfg.isDigit ? [7,6,5] : [cfg.pick, cfg.pick-1, cfg.pick-2];
+  const buckets = {}; levels.forEach(l=> buckets[l]=[]);
+
+  if(cfg.isDigit){
+    for(let i=0;i<n;i++){
+      const di = draws[i].digits;
+      for(let j=i+1;j<n;j++){
+        const dj = draws[j].digits;
+        let m=0;
+        for(let k=0;k<7;k++) if(di[k]===dj[k]) m++;
+        if(buckets[m]) buckets[m].push([draws[i].date, draws[j].date]);
+      }
+    }
+  } else {
+    const range = cfg.range;
+    const mark = new Uint8Array(range+1);
+    for(let i=0;i<n;i++){
+      mark.fill(0);
+      draws[i].nums.forEach(x=> mark[x]=1);
+      for(let j=i+1;j<n;j++){
+        let m=0;
+        const nj = draws[j].nums;
+        for(let k=0;k<nj.length;k++) if(mark[nj[k]]) m++;
+        if(buckets[m]) buckets[m].push([draws[i].date, draws[j].date]);
+      }
+    }
+  }
+  return { buckets, levels, n };
+}
+
+function levelsLabelForGame(cfg){
+  return cfg.isDigit ? '7/7, 6/7 sau 5/7 poziții (Noroc)' : `${cfg.pick}/${cfg.pick}, ${cfg.pick-1}/${cfg.pick} sau ${cfg.pick-2}/${cfg.pick} numere`;
+}
+function renderRepeatScanIdle(){
+  const box = document.getElementById('repeatScanResults');
+  const statusEl = document.getElementById('repeatScanStatus');
+  if(!box) return;
+  const cfg = GAMES[currentGame];
+  const levelsTxt = document.getElementById('repeatScanLevelsTxt');
+  if(levelsTxt) levelsTxt.textContent = levelsLabelForGame(cfg);
+  const sub = document.getElementById('repeatScanSub');
+  if(sub) sub.textContent = `— arhiva ${cfg.label}, comparată cu ea însăși`;
+  statusEl.className='status-msg'; statusEl.textContent='';
+  box.innerHTML = '<p class="small-note">Apasă "Scanează arhiva" — durează câteva secunde pe arhivele mari (6/49, 5/40).</p>';
+}
+function renderRepeatScanResults(game, out){
+  const cfg = GAMES[game];
+  const box = document.getElementById('repeatScanResults');
+  const statusEl = document.getElementById('repeatScanStatus');
+  const levelsTxt = document.getElementById('repeatScanLevelsTxt');
+  if(levelsTxt) levelsTxt.textContent = levelsLabelForGame(cfg);
+  const { buckets, levels, n } = out;
+  const totalPairs = n*(n-1)/2;
+  statusEl.className='status-msg ok';
+  statusEl.textContent = `Scanate ${totalPairs.toLocaleString('ro-RO')} perechi posibile din ${n} extrageri reale ale ${cfg.label}.`;
+
+  const CAP = 30;
+  const sections = levels.map(L=>{
+    const total = cfg.isDigit ? `${L}/7` : `${L}/${cfg.pick}`;
+    const list = buckets[L];
+    if(list.length===0){
+      return `<div class="repeat-scan-section">
+        <h3>${total} — nu s-a întâmplat niciodată în arhivă <span class="pop-tag pop-low" style="margin-left:8px;">0 cazuri</span></h3>
+      </div>`;
+    }
+    const shown = list.slice(-CAP).reverse(); // most recent first
+    const rows = shown.map(([d1,d2])=> `<tr><td class="mono">${fmtDateShort(d1)}</td><td class="mono">${fmtDateShort(d2)}</td></tr>`).join('');
+    const cappedNote = list.length > CAP ? `<p class="small-note" style="margin-top:6px;">Afișate cele mai recente ${CAP} din ${list.length.toLocaleString('ro-RO')} cazuri găsite în total.</p>` : '';
+    return `<div class="repeat-scan-section">
+      <h3>${total} — s-a întâmplat de <span style="color:var(--gold);">${list.length.toLocaleString('ro-RO')}</span> ori în arhivă</h3>
+      <div class="table-scroll"><table class="data-table" style="width:100%;">
+        <thead><tr><th>Extragerea A</th><th>Extragerea B</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      ${cappedNote}
+    </div>`;
+  }).join('');
+
+  box.innerHTML = sections + `<p class="small-note" style="margin-top:14px;">Numărul de cazuri e exact ce ar prezice teoria probabilităților pentru extrageri complet independente — nu e un semn de "tipar" sau regularitate ascunsă. Arată doar cât de des se întâmplă coincidențe de acest fel pe termen lung, pur din hazard.</p>`;
+}
+
 
 function renderBacktestIdle(game){
   const cfg = GAMES[game];
@@ -10531,15 +11248,19 @@ function renderBacktestResults(game, backtestOut, testedDrawsRequested){
     <p class="small-note" style="margin-bottom:10px;">
       <b style="color:var(--gold);">Reper aleatoriu (baseline):</b> o alegere pur întâmplătoare ar nimeri, în medie, <b class="mono">${baseline.toFixed(2)}</b> din ${cfg.isDigit?'7 poziții':cfg.pick+' numere'} — orice metodă statistică serioasă trebuie comparată cu acest reper, nu privită izolat.
     </p>
+    <div class="table-scroll">
     <table class="data-table" style="width:100%; margin-bottom:18px;">
       <thead><tr><th>Combinație de ponderi</th><th>Ponderi (F/H/M/Z/P)</th><th>Meciuri medii/extragere</th><th>Față de aleatoriu</th>${cfg.hasJoker?'<th>Acuratețe Joker</th>':''}</tr></thead>
       <tbody>${rows}</tbody>
     </table>
+    </div>
     <p class="small-note" style="margin-bottom:8px;"><b style="color:var(--gold);">Distribuția rezultatelor — metoda actuală (★)</b> — pe cele ${defaultResult.testedDraws} extrageri testate:</p>
+    <div class="table-scroll">
     <table class="data-table" style="width:100%; max-width:420px;">
       <thead><tr><th>Numere nimerite</th><th>Nr. extrageri</th><th>%</th></tr></thead>
       <tbody>${histRows}</tbody>
     </table>
+    </div>
     <p class="small-note" style="margin-top:14px;">
       Important: acest test arată performanța <i>istorică</i> a metodei, nu o garanție pentru viitor. Testarea a 10 combinații de ponderi pe aceleași date istorice înseamnă și un risc firesc de "supra-potrivire" (in-sample overfitting) — combinația câștigătoare aici nu e sigur că va rămâne cea mai bună pe extrageri viitoare, pentru că fiecare extragere reală e un eveniment independent, indiferent de tiparele din trecut.
     </p>`;
@@ -10557,15 +11278,42 @@ document.getElementById('backtestRunBtn').addEventListener('click', ()=>{
   }, 30);
 });
 
+document.getElementById('repeatScanBtn').addEventListener('click', ()=>{
+  const cfg = GAMES[currentGame];
+  const statusEl = document.getElementById('repeatScanStatus');
+  statusEl.className = 'status-msg'; statusEl.textContent = 'Se scanează toată arhiva — poate dura câteva secunde...';
+  document.getElementById('repeatScanResults').innerHTML = '';
+  setTimeout(()=>{
+    const out = scanArchiveRepeats(currentGame, cfg);
+    renderRepeatScanResults(currentGame, out);
+  }, 30);
+});
+
 (async function init(){
   const now = new Date();
   document.getElementById('todayDate').textContent = `${now.getDate().toString().padStart(2,'0')}.${(now.getMonth()+1).toString().padStart(2,'0')}.${now.getFullYear()}`;
   document.getElementById('nextDraw').innerHTML = nextDrawInfo();
   buildDatasets(RAW);
-  await ensureFirebaseAuth();
-  await ensureAccessCode();
-  await loadStoredDraws();
-  await loadJournal();
+
+  // Everything below this line needs Firebase (cloud storage for password, journal, manually
+  // added draws). If it fails for any reason — blocked by the browser, network issue, ad/tracker
+  // blocker, Safari's "Prevent Cross-Site Tracking", etc. — the app must NOT stay stuck on a
+  // blank page. It falls back to a local-only mode: full statistical analysis still works
+  // (it only needs the built-in archive), just without cloud save/password protection.
+  try{
+    await ensureFirebaseAuth();
+    await ensureAccessCode();
+    await loadStoredDraws();
+    await loadJournal();
+  }catch(e){
+    console.error('Cloud storage unavailable, falling back to local-only mode:', e);
+    hideAccessOverlay();
+    const warn = document.createElement('div');
+    warn.style.cssText = 'max-width:1100px; margin:0 auto 14px; padding:12px 16px; border-radius:10px; background:rgba(224,87,74,.14); border:1px solid rgba(224,87,74,.35); color:var(--red); font-size:13px; font-weight:600;';
+    warn.textContent = 'Nu s-a putut conecta la stocarea cloud (posibil blocată de setările browserului — ex. Safari "Prevent Cross-Site Tracking", sau un ad/content blocker). Analiza statistică funcționează normal, dar jurnalul, extragerile adăugate manual și parola nu se vor salva până la reîncărcarea paginii cu conexiunea funcțională.';
+    document.body.insertBefore(warn, document.body.firstChild);
+  }
+
   populateJeGameSelect();
   renderAll();
   tickCountdown();
