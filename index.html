@@ -46,6 +46,10 @@ h1,h2,h3{ font-family:'Space Grotesk',sans-serif; margin:0; }
 .date-block .value{ font-family:'JetBrains Mono',monospace; font-size:20px; color:var(--gold); font-weight:700; }
 .next-draw{ font-size:12px; color:var(--muted); }
 .next-draw b{ color:var(--blue); }
+.version-block{ display:flex; flex-direction:column; align-items:flex-end; gap:2px; margin-left:auto; }
+.version-block .version-num{ font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:var(--gold); }
+.version-block .version-date{ font-size:10.5px; color:var(--muted); }
+.version-block .version-note{ font-size:9.5px; color:var(--muted2); max-width:200px; text-align:right; line-height:1.3; }
 
 .tabs{ display:flex; gap:8px; flex-wrap:wrap; }
 .tab{
@@ -405,6 +409,11 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <div class="countdown-clock mono" id="topCountdown">—</div>
     </div>
     <div class="tabs" id="gameTabs"></div>
+    <div class="version-block">
+      <span class="version-num">Ver 2.2</span>
+      <span class="version-date">Actualizat: 11.07.2026</span>
+      <span class="version-note">Secțiune nouă: "Variante recomandate pentru extragerea curentă" — 3 variante deterministe (nu aleatorii), legate de data extragerii curente, recalculate automat doar când arhiva se actualizează</span>
+    </div>
   </div>
 
   <div class="panel">
@@ -512,6 +521,14 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <button class="btn2 btn2-outline" id="ticketsExportCsvBtn">Exportă variantele (CSV)</button>
       <button class="btn2 btn2-outline" id="ticketsExportPdfBtn">Exportă variantele (PDF)</button>
     </div>
+  </div>
+
+  <div class="panel" id="recommendedPanel">
+    <h2 id="recommendedTitle">Variante recomandate pentru extragerea curentă</h2>
+    <p class="small-note" style="margin-bottom:14px;">
+      Diferit de generatorul de mai sus (care alege aleatoriu, ponderat, o combinație nouă la fiecare click), secțiunea asta e <b>stabilă și deterministă</b>: e cea mai bine cotată alegere posibilă, conform metodei pe 5 indici, aplicată pe toată arhiva disponibilă acum. Rămâne identică până când extragerea de mai sus chiar are loc și e adăugată în arhivă (manual sau prin "Introdu automat extragerile care lipsesc") — abia atunci se recalculează, ținând cont și de acea extragere nouă. Metodologie: frecvență istorică, indice de regularitate/hazard, momentum exponențial recent, deviație z-score, sinergie de perechi — combinate în același scor compus verificat prin backtesting mai jos — plus verificare de repetări în arhivă și scor de aliniere per variantă. Nu e o predicție reală (nicio metodă nu poate fi, pentru un joc corect) — e cea mai riguroasă recomandare posibilă din datele disponibile.
+    </p>
+    <div class="tickets" id="recommendedTicketsWrap"></div>
   </div>
 
   <div class="panel" id="backtestPanel">
@@ -9271,6 +9288,36 @@ function renderLastDrawsTable(game){
 // proportional to its composite score (a 0.0001 floor keeps zero-score numbers pickable, just
 // very unlikely). This is what makes "Recalculează variantele" give a different result every
 // time it's pressed, while still strongly favoring the numbers the 5-index method rates highest.
+// Deterministic rank-based pick, without replacement: within each band, sorts remaining
+// candidates by score descending and takes the number at position `rank` (0 = best, 1 = second
+// best, ...). Unlike weightedPickFromCandidates, this is 100% deterministic — same archive always
+// gives the same result — which is exactly what "Variante recomandate pentru extragerea curentă"
+// needs: a stable pick tied to a specific draw, not a fresh roll on every click.
+function pickBandRank(scores, pick, range, usedSet, rank){
+  const bandSize = range / pick;
+  const chosen = [];
+  for(let b=0; b<pick; b++){
+    const lo = Math.floor(b*bandSize) + 1;
+    const hi = (b === pick-1) ? range : Math.floor((b+1)*bandSize);
+    const candidates = [];
+    for(let n=lo; n<=hi; n++){ if(!usedSet.has(n)) candidates.push(n); }
+    candidates.sort((a,b2)=> (scores[b2]||0)-(scores[a]||0));
+    if(candidates.length){
+      const picked = candidates[Math.min(rank, candidates.length-1)];
+      chosen.push(picked); usedSet.add(picked);
+    }
+  }
+  while(chosen.length < pick){
+    const candidates = [];
+    for(let n=1; n<=range; n++){ if(!usedSet.has(n)) candidates.push(n); }
+    candidates.sort((a,b2)=> (scores[b2]||0)-(scores[a]||0));
+    if(!candidates.length) break;
+    const picked = candidates[Math.min(rank, candidates.length-1)];
+    chosen.push(picked); usedSet.add(picked);
+  }
+  return chosen.sort((a,b)=>a-b);
+}
+
 function weightedPickFromCandidates(candidates, scores){
   if(candidates.length===0) return null;
   const weights = candidates.map(n=> Math.max(0.0001, scores[n]||0));
@@ -9358,6 +9405,69 @@ function generate3NorocTickets(stats){
   }
   return { tickets, posScores };
 }
+
+// ---------- "VARIANTE RECOMANDATE PENTRU EXTRAGEREA CURENTĂ" ----------
+// Same 5-index composite method, same full archive — but deterministic (rank-based) instead of
+// weighted-random, and framed around one specific, named target draw. Variant 1 = the single
+// highest-scoring number in each band; Variant 2 = the second-highest per band; Variant 3 = the
+// third-highest per band. Because it's deterministic, it automatically stays IDENTICAL across
+// visits until the archive actually changes (a new real draw gets added) — at which point it
+// recomputes on its own, using the newly completed draw as part of the analysis. That's the
+// full cycle requested: previous draws + whole archive + composite analysis → this draw's picks.
+function generate3RecommendedBallTickets(stats, cfg){
+  const baseScores = buildComposite(stats, 1, cfg.range);
+  const jokerScores = cfg.hasJoker ? buildComposite(stats, 1, cfg.jokerRange, {
+    freq: stats.jokerFreq, overdue: stats.jokerOverdue, recentFreq: stats.jokerRecentFreq,
+    hazard: stats.jokerHazard, momentum: stats.jokerMomentum, zScore: {}, pairSynergy: {}
+  }) : null;
+  const usedMain = new Set();
+  const usedJoker = new Set();
+  const tickets = [];
+  for(let t=0; t<3; t++){
+    const combo = pickBandRank(baseScores, cfg.pick, cfg.range, usedMain, t);
+    let jok = null;
+    if(jokerScores) jok = pickBandRank(jokerScores, 1, cfg.jokerRange, usedJoker, t)[0];
+    tickets.push({ combo, joker: jok });
+  }
+  return { tickets, baseScores };
+}
+function generate3RecommendedNorocTickets(stats){
+  const posScores = [];
+  for(let pos=0; pos<7; pos++){
+    const freqObj={}, overdueObj={}, recentObj={}, hazObj={}, momObj={};
+    for(let d=0; d<10; d++){
+      freqObj[d]=stats.posFreq[pos][d];
+      overdueObj[d]=stats.posOverdue[pos][d];
+      recentObj[d]=stats.posRecentFreq[pos][d];
+      hazObj[d]=stats.posGapProfile[pos].hazard[d];
+      momObj[d]=stats.posMomentum[pos][d];
+    }
+    posScores.push(buildComposite(stats, 0, 9, {
+      freq: freqObj, overdue: overdueObj, recentFreq: recentObj, hazard: hazObj, momentum: momObj, zScore: {}, pairSynergy: {}
+    }));
+  }
+  const tickets = [[],[],[]];
+  for(let pos=0; pos<7; pos++){
+    const usedDigits = new Set();
+    for(let t=0;t<3;t++){
+      const candidates = [];
+      for(let d=0; d<10; d++){ if(!usedDigits.has(d)) candidates.push(d); }
+      candidates.sort((a,b)=> (posScores[pos][b]||0)-(posScores[pos][a]||0));
+      const picked = candidates[Math.min(t, candidates.length-1)];
+      usedDigits.add(picked);
+      tickets[t].push(picked);
+    }
+  }
+  return { tickets, posScores };
+}
+// Locally-computed synthesis paragraph — reuses the same real, already-computed statistics as
+// the quality score (no external AI call, no fabricated numbers; see the note at the top of the
+// Generator de variante section on why this app never calls a live AI API from the browser).
+function buildRecommendationNarrative(qualityInfo, rankLabel){
+  const strength = qualityInfo.score10>=8 ? 'foarte bine aliniată' : qualityInfo.score10>=6 ? 'bine aliniată' : qualityInfo.score10>=4 ? 'moderat aliniată' : 'slab aliniată';
+  return `${rankLabel} — ${strength} cu metoda pe 5 indici (scor ${qualityInfo.score10}/10). ${qualityInfo.notes.map(n=> n.charAt(0).toUpperCase()+n.slice(1)).join('. ')}.`;
+}
+
 
 // ---------- TICKET ENRICHMENT: archive repeat-check + 1-10 quality score ----------
 // Honest, transparent add-ons requested for the "Generator de variante" section: for every
@@ -9593,6 +9703,64 @@ function renderTickets(game, stats){
     noteEl.textContent = `Cele 3 variante de mai sus sunt alese aleatoriu, dar ponderat de scorul compus pe 5 indici — apasă "Recalculează variantele" oricând vrei alte 3 combinații (numerele cu scor mai mare tot au șanse mult mai mari să apară, dar rezultatul nu mai e fix). Fiecare extragere reală e totuși un eveniment independent — nicio metodă statistică nu poate garanta câștigul, indiferent cât de riguroasă e analiza.`;
   }
 }
+
+function renderRecommendedPanel(game, stats){
+  const cfg = GAMES[game];
+  const wrap = document.getElementById('recommendedTicketsWrap');
+  const titleEl = document.getElementById('recommendedTitle');
+  if(!wrap || !titleEl) return;
+
+  const draw = nextDrawDate || computeNextDrawDate();
+  const dateStr = `${draw.getDate().toString().padStart(2,'0')}.${(draw.getMonth()+1).toString().padStart(2,'0')}.${draw.getFullYear()}`;
+  titleEl.innerHTML = `Variante recomandate pentru extragerea curentă <span class="sub">— ${cfg.label}, ${dateStr}</span>`;
+  wrap.innerHTML = '';
+
+  const rankLabels = ['Varianta 1 — cel mai bine cotat număr din fiecare interval', 'Varianta 2 — a doua cea mai bună alegere din fiecare interval', 'Varianta 3 — a treia cea mai bună alegere din fiecare interval'];
+
+  if(cfg.isDigit){
+    const { tickets, posScores } = generate3RecommendedNorocTickets(stats);
+    tickets.forEach((digits,t)=>{
+      const div = document.createElement('div'); div.className='ticket';
+      div.innerHTML = `<div class="idx">Varianta ${t+1}</div>`;
+      const numsWrap = document.createElement('div'); numsWrap.className='nums';
+      digits.forEach(dg=> numsWrap.appendChild(digitEl(dg)));
+      div.appendChild(numsWrap);
+      const qualityInfo = scoreNorocTicketQuality(digits, posScores);
+      div.appendChild(ticketInfoEl({ digits, date:null }, stats.draws, cfg.digits, true, qualityInfo));
+      const narrative = document.createElement('p');
+      narrative.className = 'small-note';
+      narrative.style.cssText = 'margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);';
+      narrative.textContent = buildRecommendationNarrative(qualityInfo, rankLabels[t]);
+      div.appendChild(narrative);
+      wrap.appendChild(div);
+    });
+  } else {
+    const { tickets, baseScores } = generate3RecommendedBallTickets(stats, cfg);
+    tickets.forEach(({combo, joker},t)=>{
+      const div = document.createElement('div'); div.className='ticket';
+      div.innerHTML = `<div class="idx">Varianta ${t+1}</div>`;
+      const numsWrap = document.createElement('div'); numsWrap.className='nums';
+      combo.forEach(nm=> numsWrap.appendChild(ballEl(nm)));
+      if(joker!==null){
+        const sep=document.createElement('span'); sep.className='mono'; sep.style.cssText='color:var(--muted);align-self:center;margin:0 2px;'; sep.textContent='+';
+        numsWrap.appendChild(sep);
+        numsWrap.appendChild(ballEl(joker,'joker-ball'));
+      }
+      div.appendChild(numsWrap);
+      div.appendChild(popBadgeEl(combo, cfg));
+      const qualityInfo = scoreTicketQuality(combo, cfg, stats, baseScores);
+      div.appendChild(ticketInfoEl({ nums: combo, date:null }, stats.draws, cfg.pick, false, qualityInfo));
+      const narrative = document.createElement('p');
+      narrative.className = 'small-note';
+      narrative.style.cssText = 'margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);';
+      narrative.textContent = buildRecommendationNarrative(qualityInfo, rankLabels[t]);
+      div.appendChild(narrative);
+      wrap.appendChild(div);
+    });
+  }
+}
+
+
 
 // ---------- WHEELING ----------
 // Not a formal mathematically-guaranteed wheel (those require dozens of tickets for a pool
@@ -11048,6 +11216,7 @@ function renderAll(){
   renderMethods(stats, currentGame);
   renderLastDrawsTable(currentGame);
   renderTickets(currentGame, stats);
+  renderRecommendedPanel(currentGame, stats);
   renderWheel(currentGame, stats);
   renderPairNetwork(currentGame, stats);
   renderChiSquare(stats, cfg);
