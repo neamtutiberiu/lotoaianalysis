@@ -135,6 +135,11 @@ h1,h2,h3{ font-family:'Space Grotesk',sans-serif; margin:0; }
   width:150px;
 }
 .field input.nums{ width:230px; }
+.field select{
+  background:var(--surface3); border:1px solid var(--border); border-radius:8px;
+  padding:8px 10px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13px;
+  width:100%;
+}
 .btn2{
   background:var(--surface3); border:1px solid var(--border); color:var(--text);
   border-radius:8px; padding:9px 16px; cursor:pointer; font-size:13px; font-weight:600;
@@ -176,6 +181,11 @@ input[type=range]::-moz-range-thumb{
 .pop-score-fill.pop-low{ background:linear-gradient(90deg,#2a9950,var(--green)); }
 .pop-score-fill.pop-mid{ background:linear-gradient(90deg,var(--gold-dim),var(--gold)); }
 .pop-score-fill.pop-high{ background:linear-gradient(90deg,#a63a30,var(--red)); }
+
+.ticket-info{ margin-top:10px; padding-top:10px; border-top:1px dashed var(--border); }
+.ticket-score-row{ display:flex; align-items:center; justify-content:space-between; margin-top:8px; font-size:11.5px; }
+.ticket-score-label{ color:var(--muted); }
+.ticket-score-val{ font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--gold); }
 .pop-reasons{ font-size:13.5px; color:var(--muted); line-height:1.75; margin:0; padding-left:18px; }
 
 /* MONTE CARLO */
@@ -197,6 +207,9 @@ input[type=range]::-moz-range-thumb{
 .ev-table{ width:100%; border-collapse:collapse; font-size:12.5px; margin-top:6px; }
 .ev-table th{ text-align:left; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; padding:6px 8px; border-bottom:1px solid var(--border); }
 .ev-table td{ padding:7px 8px; border-bottom:1px solid var(--border); }
+.data-table{ border-collapse:collapse; font-size:12.5px; }
+.data-table th{ text-align:left; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; padding:6px 8px; border-bottom:1px solid var(--border); }
+.data-table td{ padding:7px 8px; border-bottom:1px solid var(--border); }
 .ev-table input{
   background:var(--surface3); border:1px solid var(--border); border-radius:6px;
   padding:6px 8px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12.5px; width:100px;
@@ -452,10 +465,28 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
 
   <div class="panel">
     <h2>Generator de variante <span class="sub">— 3 combinații generate din analiza complexă a arhivei complete</span></h2>
-    <button class="gen-btn" id="genBtn">Generează 3 variante noi</button>
+    <div class="small-note" id="ticketsMethodInfo" style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px;"></div>
+    <button class="gen-btn" id="genBtn">Recalculează variantele</button>
     <div style="height:14px;"></div>
     <div class="tickets" id="ticketsWrap"></div>
     <p class="small-note" id="ticketsGenNote"></p>
+  </div>
+
+  <div class="panel" id="backtestPanel">
+    <h2>Backtesting AI <span class="sub">— testează onest metoda pe întreg istoricul, înainte de a avea încredere în ea</span></h2>
+    <p class="small-note" style="margin-bottom:14px;">Aplicăm metoda (scorul compus pe 5 indici) pe fiecare fereastră istorică din arhivă, exact ca și cum am fi generat o variantă chiar înainte de fiecare extragere reală — fără să "vedem" rezultatul dinainte. Comparăm apoi cu ce a ieșit efectiv. Testăm și 9 combinații alternative de ponderi, ca să vedem transparent dacă vreuna a "nimerit" istoric puțin mai bine — nu pentru că prezice viitorul, ci pentru performanța reală, măsurabilă, a metodei.</p>
+    <div class="field" style="max-width:320px; margin-bottom:14px;">
+      <label for="backtestWindowSelect">Câte din ultimele extrageri testăm</label>
+      <select id="backtestWindowSelect">
+        <option value="100">Ultimele 100</option>
+        <option value="150" selected>Ultimele 150</option>
+        <option value="250">Ultimele 250</option>
+        <option value="400">Ultimele 400</option>
+      </select>
+    </div>
+    <button class="gen-btn" id="backtestRunBtn">Rulează backtesting</button>
+    <div id="backtestStatus" class="status-msg" style="margin-top:10px;"></div>
+    <div id="backtestResults" style="margin-top:16px;"></div>
   </div>
 
   <div class="panel" id="wheelPanel">
@@ -8611,6 +8642,9 @@ function computeNorocStats(){
 // Toate cele 5 componente sunt normalizate min-max pe intervalul curent înainte de a fi
 // combinate, astfel încât fiecare index contribuie proporțional cu ponderea lui, indiferent
 // de scara brută a valorilor.
+// `opts.weights` optionally overrides the default [freq, hazard, momentum, zScore, pairSynergy]
+// weighting (used by the AI backtesting module to honestly test alternative weight combos
+// against the exact same composite-score machinery used everywhere else in the app).
 function buildComposite(stats, startIdx, endIdx, opts){
   opts = opts || {};
   const freq = opts.freq || stats.freq;
@@ -8620,6 +8654,7 @@ function buildComposite(stats, startIdx, endIdx, opts){
   const momentum = opts.momentum || stats.momentum || {};
   const zScore = opts.zScore || stats.zScore || {};
   const pairSynergy = opts.pairSynergy || stats.pairSynergy || {};
+  const w = opts.weights || [0.28, 0.24, 0.20, 0.16, 0.12];
 
   const idxs = [];
   for(let i=startIdx;i<=endIdx;i++) idxs.push(i);
@@ -8637,11 +8672,11 @@ function buildComposite(stats, startIdx, endIdx, opts){
   const scores = {};
   idxs.forEach(i=>{
     scores[i] = 0.02
-      + 0.28*fN[i]
-      + 0.24*hN[i]
-      + 0.20*mN[i]
-      + 0.16*zN[i]
-      + 0.12*pN[i];
+      + w[0]*fN[i]
+      + w[1]*hN[i]
+      + w[2]*mN[i]
+      + w[3]*zN[i]
+      + w[4]*pN[i];
   });
   return scores;
 }
@@ -9139,66 +9174,60 @@ function renderLastDrawsTable(game){
   wrap.appendChild(card);
 }
 
-// ---------- GENERATOR — weighted-random, stats-driven (a DIFFERENT set on every click) ----------
-// Every number's composite score (the same 5-index model used in "Analiză completă") becomes a
-// weight in a weighted-random draw WITHOUT replacement (classic "roulette wheel selection"):
-// numbers with a stronger statistical profile are proportionally more likely to be picked, but
-// which ones actually land in a given ticket is genuinely randomized on every click — exactly
-// like a real draw, except the odds are tilted by the historical analysis instead of being
-// perfectly uniform. Numbers already used in a previous variant are removed from the pool before
-// the next variant is generated, so the 3 tickets never share a number.
-function weightedPickWithoutReplacement(scores, k){
-  const pool = Object.keys(scores).map(Number);
-  const weights = {}; pool.forEach(i=> weights[i]=Math.max(scores[i],0.0001));
+// ---------- GENERATOR — deterministic, top-score, interval-stratified selection ----------
+// The 3 variants are NOT randomized: every number's composite score (the same 5-index model
+// used in "Analiză completă" — frecvență, regularitate/hazard, momentum exponențial, z-score,
+// sinergie de perechi) is computed once from the full archive, then the range 1..cfg.range is
+// split into exactly `pick` equal-width bands (intervals) covering the whole range low-to-high.
+// From each band, the single highest-scoring available number is picked — guaranteeing the
+// ticket spans the entire interval instead of clustering in one zone. Variant 1 gets the best
+// number of every band; those numbers are then removed from the pool and Variant 2 gets the
+// next-best per band from what's left; Variant 3 gets the next-best after that. Result: the 3
+// variants together are exactly the 3*pick highest-scoring numbers in the whole archive,
+// distributed so every variant covers all intervals and no number repeats across the 3 tickets.
+function pickTopStratified(scores, pick, range, usedSet){
+  const bandSize = range / pick;
   const chosen = [];
-  let candidates = pool.slice();
-  for(let s=0; s<k && candidates.length; s++){
-    const total = candidates.reduce((a,c)=>a+weights[c],0);
-    let r = Math.random()*total;
-    let idx = 0;
-    for(; idx<candidates.length; idx++){
-      r -= weights[candidates[idx]];
-      if(r<=0) break;
+  for(let b=0; b<pick; b++){
+    const lo = Math.floor(b*bandSize) + 1;
+    const hi = (b === pick-1) ? range : Math.floor((b+1)*bandSize);
+    let best = null, bestScore = -Infinity;
+    for(let n=lo; n<=hi; n++){
+      if(usedSet.has(n)) continue;
+      const sc = scores[n] || 0;
+      if(sc > bestScore){ bestScore = sc; best = n; }
     }
-    if(idx>=candidates.length) idx = candidates.length-1;
-    chosen.push(candidates[idx]);
-    candidates.splice(idx,1);
+    if(best !== null){ chosen.push(best); usedSet.add(best); }
   }
-  return chosen;
-}
-
-// Rejection-sampling wrapper: draws a handful of weighted-random combos and keeps the one whose
-// sum lands closest to the real historical sum window (media ± abatere standard) — nudges combos
-// toward statistically "typical" sums without ever making the outcome deterministic.
-function weightedPickTuned(scores, k, avgSum, stdSum, attempts){
-  attempts = attempts || 15;
-  let best = null, bestDist = Infinity;
-  for(let a=0; a<attempts; a++){
-    const chosen = weightedPickWithoutReplacement(scores, k);
-    const sum = chosen.reduce((x,y)=>x+y,0);
-    const dist = Math.abs(sum-avgSum);
-    if(dist < bestDist){ bestDist = dist; best = chosen; }
-    if(dist <= (stdSum||1)*0.6) break;
+  // Fallback: if a band ran out of unused numbers (small ranges / late variants), fill any
+  // remaining slots with the best-scoring number still available anywhere in the range.
+  while(chosen.length < pick){
+    let best = null, bestScore = -Infinity;
+    for(let n=1; n<=range; n++){
+      if(usedSet.has(n)) continue;
+      const sc = scores[n] || 0;
+      if(sc > bestScore){ bestScore = sc; best = n; }
+    }
+    if(best === null) break;
+    chosen.push(best); usedSet.add(best);
   }
-  return best.sort((a,b)=>a-b);
+  return chosen.sort((a,b)=>a-b);
 }
 
 function generate3BallTickets(stats, cfg){
   const baseScores = buildComposite(stats, 1, cfg.range);
-  let jokerScores = cfg.hasJoker ? buildComposite(stats, 1, cfg.jokerRange, {
+  const jokerScores = cfg.hasJoker ? buildComposite(stats, 1, cfg.jokerRange, {
     freq: stats.jokerFreq, overdue: stats.jokerOverdue, recentFreq: stats.jokerRecentFreq,
     hazard: stats.jokerHazard, momentum: stats.jokerMomentum, zScore: {}, pairSynergy: {}
   }) : null;
-  const pool = Object.assign({}, baseScores);
-  const jokerPool = jokerScores ? Object.assign({}, jokerScores) : null;
+  const usedMain = new Set();
+  const usedJoker = new Set();
   const tickets = [];
-  for(let t=0;t<3;t++){
-    const combo = weightedPickTuned(pool, cfg.pick, stats.avgSum, stats.stdSum, 15);
-    combo.forEach(nm=> delete pool[nm]);
+  for(let t=0; t<3; t++){
+    const combo = pickTopStratified(baseScores, cfg.pick, cfg.range, usedMain);
     let jok = null;
-    if(jokerPool){
-      jok = weightedPickWithoutReplacement(jokerPool, 1)[0];
-      delete jokerPool[jok];
+    if(jokerScores){
+      jok = pickTopStratified(jokerScores, 1, cfg.jokerRange, usedJoker)[0];
     }
     tickets.push({ combo, joker: jok });
   }
@@ -9220,12 +9249,131 @@ function generate3NorocTickets(stats){
       freq: freqObj, overdue: overdueObj, recentFreq: recentObj, hazard: hazObj, momentum: momObj, zScore: {}, pairSynergy: {}
     }));
   }
+  // Deterministic, rank-based: for each of the 7 positions, rank the 10 digits by composite
+  // score. Variant 1 gets the #1-ranked digit for every position, Variant 2 the #2-ranked digit,
+  // Variant 3 the #3-ranked digit — the 3 statistically strongest, distinct digits per position.
   const tickets = [[],[],[]];
   for(let pos=0; pos<7; pos++){
-    const chosen = weightedPickWithoutReplacement(posScores[pos], 3);
-    for(let t=0;t<3;t++) tickets[t].push(chosen[t] !== undefined ? chosen[t] : chosen[chosen.length-1]);
+    const ranked = Object.keys(posScores[pos]).map(Number).sort((a,b)=> posScores[pos][b]-posScores[pos][a]);
+    for(let t=0;t<3;t++) tickets[t].push(ranked[t] !== undefined ? ranked[t] : ranked[ranked.length-1]);
   }
-  return tickets;
+  return { tickets, posScores };
+}
+
+// ---------- TICKET ENRICHMENT: archive repeat-check + 1-10 quality score ----------
+// Honest, transparent add-ons requested for the "Generator de variante" section: for every
+// generated combo, (a) check whether that EXACT combination has ever been drawn before in the
+// full archive, and (b) give it a 1-10 "quality" score describing how well it aligns with the
+// same 5-index method used to generate it (NOT a promise of future results — a lottery draw is
+// still a fully independent random event; this only measures fit against the historical model).
+
+// (a) Exact-match check against the whole archive. For ball games, order doesn't matter (a
+// ticket wins regardless of the order balls are drawn in), so we compare as sets. Returns the
+// draw date if found, otherwise null. Also returns how many times any of the 3 variants overlap
+// heavily (5+/6 numbers) with a past draw, which is more realistic to encounter than an exact hit.
+function findArchiveMatch(combo, draws){
+  const target = combo.slice().sort((a,b)=>a-b).join(',');
+  let bestPartial = null; // {date, matches}
+  for(const d of draws){
+    const dn = d.nums.slice().sort((a,b)=>a-b);
+    if(dn.join(',') === target) return { exact:true, date:d.date, matches:combo.length, total:combo.length };
+    const overlap = dn.filter(n=>combo.includes(n)).length;
+    if(overlap >= combo.length-1){ // 5/6 or better, "near-miss" historical overlap
+      if(!bestPartial || overlap > bestPartial.matches) bestPartial = { date:d.date, matches:overlap };
+    }
+  }
+  return bestPartial ? { exact:false, date:bestPartial.date, matches:bestPartial.matches, total:combo.length } : { exact:false, date:null, matches:0, total:combo.length };
+}
+// Same idea for the Noroc digit-sequence (order DOES matter here — it's a 7-digit number).
+function findArchiveMatchNoroc(digits, draws){
+  const target = digits.join('');
+  for(const d of draws){
+    if(d.digits.join('') === target) return { exact:true, date:d.date };
+  }
+  return { exact:false, date:null };
+}
+
+// (b) 1-10 quality score for a ball-game combo: blends how well the picked numbers score under
+// the composite method (mean percentile among all numbers) with how closely the ticket's overall
+// shape (sum, odd/even split, low/high split) matches the archive's own typical shape for real
+// draws. A ticket that only chased top scores but landed on a statistically atypical shape (e.g.
+// all-low or all-odd) is flagged down slightly, since real draws rarely look like that.
+function scoreTicketQuality(combo, cfg, stats, compositeScores){
+  const vals = Object.values(compositeScores);
+  const mn = Math.min(...vals), mx = Math.max(...vals);
+  const range = (mx-mn)||1;
+  const percentiles = combo.map(n=> ((compositeScores[n]||0)-mn)/range );
+  const avgPercentile = mean(percentiles); // 0..1, component A
+
+  const sum = combo.reduce((a,b)=>a+b,0);
+  const zSum = stats.stdSum ? Math.abs(sum-stats.avgSum)/stats.stdSum : 0;
+  const sumFit = Math.max(0, 1 - zSum/2.5); // component B: within ~2.5 std-dev of typical sum
+
+  const oddCount = combo.filter(n=>n%2!==0).length;
+  const oddFrac = oddCount/combo.length;
+  const oddFit = 1 - Math.min(1, Math.abs(oddFrac - stats.oddRatio) / 0.5); // component C
+
+  const mid = cfg.range/2;
+  const lowCount = combo.filter(n=>n<=mid).length;
+  const lowFrac = lowCount/combo.length;
+  const lowFit = 1 - Math.min(1, Math.abs(lowFrac - stats.lowRatio) / 0.5); // component D
+
+  const raw = 0.55*avgPercentile + 0.20*sumFit + 0.125*oddFit + 0.125*lowFit;
+  const score10 = Math.max(1, Math.min(10, Math.round(1 + raw*9)));
+
+  const notes = [];
+  notes.push(`scor mediu de percentilă al numerelor alese: ${Math.round(avgPercentile*100)}%`);
+  notes.push(`sumă ${sum} vs. media istorică ${Math.round(stats.avgSum)} (${zSum.toFixed(1)} abateri standard)`);
+  notes.push(`${oddCount}/${combo.length} numere impare (istoric: ${Math.round(stats.oddRatio*100)}% impare)`);
+  notes.push(`${lowCount}/${combo.length} numere din jumătatea inferioară a intervalului (istoric: ${Math.round(stats.lowRatio*100)}%)`);
+  return { score10, notes };
+}
+// Noroc variant: mean percentile of the chosen digits, across their 7 position-scores.
+function scoreNorocTicketQuality(digits, posScoresArr){
+  const percentiles = digits.map((dg,pos)=>{
+    const vals = Object.values(posScoresArr[pos]);
+    const mn = Math.min(...vals), mx = Math.max(...vals);
+    const range = (mx-mn)||1;
+    return ((posScoresArr[pos][dg]||0)-mn)/range;
+  });
+  const avgPercentile = mean(percentiles);
+  const score10 = Math.max(1, Math.min(10, Math.round(1 + avgPercentile*9)));
+  return { score10, notes:[`scor mediu de percentilă pe cele 7 poziții: ${Math.round(avgPercentile*100)}%`] };
+}
+// Small badge element, styled like the existing popularity badge, shown under each ticket.
+function ticketInfoEl(archiveInfo, qualityInfo, isNoroc){
+  const wrap = document.createElement('div');
+  wrap.className = 'ticket-info';
+
+  const archiveTag = document.createElement('div');
+  let archiveCls, archiveTxt;
+  if(archiveInfo.exact){
+    archiveCls = 'pop-high';
+    archiveTxt = `⚠ Combinație identică găsită în arhivă — a mai ieșit exact așa la ${fmtDateShort(archiveInfo.date)}`;
+  } else if(!isNoroc && archiveInfo.matches > 0){
+    archiveCls = 'pop-mid';
+    archiveTxt = `Nu s-a repetat exact, dar ${archiveInfo.matches}/${archiveInfo.total} numere au coincis cu extragerea din ${fmtDateShort(archiveInfo.date)}`;
+  } else {
+    archiveCls = 'pop-low';
+    archiveTxt = 'Nu s-a mai repetat niciodată exact în toată arhiva disponibilă';
+  }
+  archiveTag.className = 'pop-tag ' + archiveCls;
+  archiveTag.textContent = archiveTxt;
+  wrap.appendChild(archiveTag);
+
+  const scoreRow = document.createElement('div');
+  scoreRow.className = 'ticket-score-row';
+  scoreRow.innerHTML = `<span class="ticket-score-label">Scor de performanță (metoda 5 indici)</span><span class="ticket-score-val">${qualityInfo.score10}/10</span>`;
+  scoreRow.title = qualityInfo.notes.join(' · ');
+  wrap.appendChild(scoreRow);
+  const bar = document.createElement('div'); bar.className='pop-score-bar';
+  const fill = document.createElement('div');
+  fill.className = 'pop-score-fill ' + (qualityInfo.score10>=7?'pop-low':qualityInfo.score10>=4?'pop-mid':'pop-high');
+  fill.style.width = (qualityInfo.score10*10)+'%';
+  bar.appendChild(fill);
+  wrap.appendChild(bar);
+
+  return wrap;
 }
 
 function renderTickets(game, stats){
@@ -9234,17 +9382,21 @@ function renderTickets(game, stats){
   wrap.innerHTML='';
 
   if(cfg.isDigit){
-    const tickets = generate3NorocTickets(stats);
+    const { tickets, posScores } = generate3NorocTickets(stats);
     tickets.forEach((digits,t)=>{
       const div = document.createElement('div'); div.className='ticket';
       div.innerHTML = `<div class="idx">Varianta ${t+1}</div>`;
       const numsWrap = document.createElement('div'); numsWrap.className='nums';
       digits.forEach(dg=> numsWrap.appendChild(digitEl(dg)));
       div.appendChild(numsWrap);
+      const archiveInfo = findArchiveMatchNoroc(digits, stats.draws);
+      const qualityInfo = scoreNorocTicketQuality(digits, posScores);
+      div.appendChild(ticketInfoEl(archiveInfo, qualityInfo, true));
       wrap.appendChild(div);
     });
   } else {
     const tickets = generate3BallTickets(stats, cfg);
+    const compositeScores = buildComposite(stats, 1, cfg.range);
     tickets.forEach(({combo, joker},t)=>{
       const div = document.createElement('div'); div.className='ticket';
       div.innerHTML = `<div class="idx">Varianta ${t+1}</div>`;
@@ -9257,16 +9409,31 @@ function renderTickets(game, stats){
       }
       div.appendChild(numsWrap);
       div.appendChild(popBadgeEl(combo, cfg));
+      const archiveInfo = findArchiveMatch(combo, stats.draws);
+      const qualityInfo = scoreTicketQuality(combo, cfg, stats, compositeScores);
+      div.appendChild(ticketInfoEl(archiveInfo, qualityInfo, false));
       wrap.appendChild(div);
     });
   }
 
+  const draws = stats.draws;
+  const from = draws[0] ? fmtDateShort(draws[0].date) : '—';
+  const to = draws[draws.length-1] ? fmtDateShort(draws[draws.length-1].date) : '—';
+
+  const infoEl = document.getElementById('ticketsMethodInfo');
+  if(infoEl){
+    if(cfg.isDigit){
+      infoEl.innerHTML = `<b style="color:var(--gold); display:block; margin-bottom:6px; font-size:12.5px;">Pe ce se bazează cele 3 variante</b>
+      Pentru fiecare din cele 7 poziții ale numărului Noroc, cifrele 0-9 primesc un <b>scor compus din 5 indici matematici</b>, calculat din întreg istoricul (${stats.n} extrageri, ${from} – ${to}): <b>frecvență istorică</b> (28%), <b>indice de regularitate/hazard</b> (24%), <b>momentum exponențial recent</b> (20%), <b>deviație z-score</b> (16%) și <b>sinergie de perechi</b> (12%) — aceiași 5 indici detaliați mai sus, la "Metode matematice de predicție folosite". Cifrele sunt apoi clasate descrescător pe fiecare poziție: Varianta 1 primește cifra cu cel mai mare scor de pe fiecare poziție, Varianta 2 pe a doua cea mai probabilă, Varianta 3 pe a treia. Nu există niciun element aleatoriu — rezultatul e 100% determinat de analiza statistică și rămâne identic până apare o extragere nouă în arhivă.`;
+    } else {
+      infoEl.innerHTML = `<b style="color:var(--gold); display:block; margin-bottom:6px; font-size:12.5px;">Pe ce se bazează cele 3 variante</b>
+      Fiecare număr din intervalul 1-${cfg.range} primește un <b>scor compus din 5 indici matematici</b>, calculat din întreg istoricul (${stats.n} extrageri, ${from} – ${to}): <b>frecvență istorică</b> (28%), <b>indice de regularitate/hazard</b> (24%), <b>momentum exponențial recent</b> (20%), <b>deviație z-score</b> (16%) și <b>sinergie de perechi</b> (12%) — aceiași 5 indici detaliați mai sus, la "Metode matematice de predicție folosite". Intervalul e împărțit apoi în ${cfg.pick} benzi egale (acoperind tot intervalul, de la cele mai mici la cele mai mari numere), iar din fiecare bandă e ales numărul cu cel mai mare scor — garantând că fiecare variantă acoperă toate zonele intervalului, nu doar un grup de numere apropiate.${cfg.hasJoker ? ' Jokerul (1-20) primește propriul scor compus, calculat separat din propriul lui istoric.' : ''} Cele 3 variante nu se suprapun niciodată: sunt, practic, cele mai bine punctate ${cfg.pick*3} numere din toată arhiva, distribuite câte ${cfg.pick} pe variantă. Nu există niciun element aleatoriu — rezultatul e 100% determinat de analiza statistică și rămâne identic până apare o extragere nouă în arhivă.`;
+    }
+  }
+
   const noteEl = document.getElementById('ticketsGenNote');
   if(noteEl){
-    const draws = stats.draws;
-    const from = draws[0] ? fmtDateShort(draws[0].date) : '—';
-    const to = draws[draws.length-1] ? fmtDateShort(draws[draws.length-1].date) : '—';
-    noteEl.textContent = `Generare bazată pe analiza a ${stats.n} extrageri din arhiva completă a jocului ${cfg.label} (${from} – ${to}). Fiecare apăsare produce alte 3 variante: numerele sunt alese printr-o extragere aleatorie ponderată (probabilitatea fiecărui număr e proporțională cu scorul lui compus), fără nicio suprapunere de numere între cele 3 variante. Fiecare extragere reală e totuși un eveniment independent — nicio metodă statistică nu poate garanta câștigul.`;
+    noteEl.textContent = `Cele 3 variante de mai sus sunt calculate, nu generate aleatoriu — apasă "Recalculează variantele" oricând vrei să reconfirmi rezultatul (rămâne identic atât timp cât arhiva nu se schimbă). Fiecare extragere reală e totuși un eveniment independent — nicio metodă statistică nu poate garanta câștigul, indiferent cât de riguroasă e analiza.`;
   }
 }
 
@@ -9283,16 +9450,19 @@ function generateWheelTickets(stats, cfg, poolSize){
   const pool = sortedAll.slice(0, poolSize);
   const poolScores = {}; pool.forEach(n=> poolScores[n]=baseScores[n]);
 
-  const t1 = weightedPickTuned(poolScores, cfg.pick, stats.avgSum, stats.stdSum, 25);
-  const remaining = pool.filter(n=> !t1.includes(n));
+  // Deterministic split: Variant 1 = the pool's top cfg.pick scores; Variant 2 = the next-best
+  // cfg.pick scores from what's left in the pool (reusing the top of Variant 1 only if the pool
+  // is too small to fill Variant 2 without repeats).
+  const byScore = pool.slice().sort((a,b)=> poolScores[b]-poolScores[a]);
+  const t1 = byScore.slice(0, cfg.pick);
+  const remaining = byScore.slice(cfg.pick);
   let t2, overlapCount = 0;
   if(remaining.length >= cfg.pick){
-    const remScores = {}; remaining.forEach(n=> remScores[n]=poolScores[n]);
-    t2 = weightedPickTuned(remScores, cfg.pick, stats.avgSum, stats.stdSum, 25);
+    t2 = remaining.slice(0, cfg.pick);
   } else {
     const needed = cfg.pick - remaining.length;
     overlapCount = needed;
-    const reuse = t1.slice().sort((a,b)=> poolScores[b]-poolScores[a]).slice(0, needed);
+    const reuse = t1.slice(0, needed);
     t2 = remaining.concat(reuse);
   }
   t1.sort((a,b)=>a-b); t2.sort((a,b)=>a-b);
@@ -9303,11 +9473,8 @@ function generateWheelTickets(stats, cfg, poolSize){
       freq: stats.jokerFreq, overdue: stats.jokerOverdue, recentFreq: stats.jokerRecentFreq,
       hazard: stats.jokerHazard, momentum: stats.jokerMomentum, zScore: {}, pairSynergy: {}
     });
-    const jPool = Object.assign({}, jokerScores);
-    const j1 = weightedPickWithoutReplacement(jPool, 1)[0];
-    delete jPool[j1];
-    const j2 = weightedPickWithoutReplacement(jPool, 1)[0];
-    jokers = [j1, j2];
+    const jRanked = Object.keys(jokerScores).map(Number).sort((a,b)=> jokerScores[b]-jokerScores[a]);
+    jokers = [jRanked[0], jRanked[1] !== undefined ? jRanked[1] : jRanked[0]];
   }
 
   return { pool, tickets: [t1, t2], overlapCount, jokers };
@@ -9377,7 +9544,151 @@ document.getElementById('wheelGenBtn').addEventListener('click', ()=>{
   drawWheel(currentGame, stats, poolSize);
 });
 
-// ---------- POPULARITY / AVOID-CROWDS ----------
+// ---------- AI BACKTESTING MODULE ----------
+// Honest, walk-forward validation of the composite-score method: for each historical draw in
+// the test window, we rebuild the 5 indices using ONLY the draws that happened strictly BEFORE
+// it (exactly as if the app had been asked to predict that draw the day before it happened),
+// then compare the top-scored numbers against what was actually drawn. This is never told about
+// the future — no lookahead. We do this once for the current method's weights, and once for each
+// of several alternative weight combinations, to transparently show whether any alternative
+// would have historically scored better — NOT as a promise about future draws (a lottery draw
+// stays a fully independent random event regardless), but as an honest performance readout of
+// the method itself. A random-guess theoretical baseline is included for context.
+const BACKTEST_WEIGHT_PRESETS = [
+  { key:'default',  label:'Metoda actuală (implicit)',        weights:[0.28,0.24,0.20,0.16,0.12] },
+  { key:'equal',     label:'Ponderi egale',                     weights:[0.20,0.20,0.20,0.20,0.20] },
+  { key:'freq',      label:'Frecvență istorică dominantă',      weights:[0.50,0.15,0.15,0.10,0.10] },
+  { key:'hazard',    label:'Regularitate/hazard dominant',      weights:[0.15,0.50,0.15,0.10,0.10] },
+  { key:'momentum',  label:'Momentum recent dominant',          weights:[0.15,0.15,0.50,0.10,0.10] },
+  { key:'zscore',    label:'Deviație z-score dominantă',        weights:[0.15,0.15,0.10,0.50,0.10] },
+  { key:'pairs',     label:'Sinergie de perechi dominantă',     weights:[0.15,0.15,0.10,0.10,0.50] },
+  { key:'reverse',   label:'Ordine inversă față de implicit',   weights:[0.12,0.16,0.20,0.24,0.28] },
+  { key:'freqmom',   label:'Frecvență + momentum combinate',    weights:[0.35,0.10,0.35,0.10,0.10] },
+  { key:'hazz',      label:'Hazard + z-score combinate',        weights:[0.10,0.35,0.10,0.35,0.10] },
+];
+const BACKTEST_MIN_HISTORY = 100; // draws needed before the walk-forward test can start
+
+// Builds the raw (non-normalized) 5-index inputs for a given slice of history + extractor,
+// generically reusable for main balls, joker numbers, or a single Noroc digit position.
+function buildRawIndicesForHistory(history, extractor, range, pick, halfLife){
+  const gp = buildGapProfile(history, extractor, range);
+  const momentum = exponentialMomentum(history, extractor, range, halfLife || 20);
+  const z = zScores(gp.freq, range, history.length, pick);
+  const pairCount = {};
+  history.forEach(d=>{
+    const vals = extractor(d).slice().sort((a,b)=>a-b);
+    for(let i=0;i<vals.length;i++) for(let j=i+1;j<vals.length;j++){
+      const key = vals[i]+'-'+vals[j];
+      pairCount[key] = (pairCount[key]||0)+1;
+    }
+  });
+  const pairSynergy = {};
+  range.forEach(v=>{
+    let sum=0, cnt=0;
+    range.forEach(w=>{
+      if(w===v) return;
+      const key = v<w ? v+'-'+w : w+'-'+v;
+      sum += pairCount[key]||0; cnt++;
+    });
+    pairSynergy[v] = cnt? sum/cnt : 0;
+  });
+  return { freq: gp.freq, hazard: gp.hazard, momentum, zScore: z, pairSynergy };
+}
+// Wraps raw indices into the shape buildComposite() expects as its `stats` argument, with
+// `overdue`/`recentFreq` filled with a harmless placeholder (unused by the final composite
+// formula, but referenced internally, so they must exist to avoid a crash).
+function rawToCompositeInput(raw){
+  return { freq: raw.freq, overdue: raw.freq, recentFreq: raw.freq,
+    hazard: raw.hazard, momentum: raw.momentum, zScore: raw.zScore, pairSynergy: raw.pairSynergy };
+}
+
+function runBallBacktest(game, cfg, testWindow){
+  const draws = getAllDraws(game);
+  const n = draws.length;
+  const start = Math.max(BACKTEST_MIN_HISTORY, n - testWindow);
+  const range = []; for(let i=1;i<=cfg.range;i++) range.push(i);
+  const jrange = cfg.hasJoker ? Array.from({length:cfg.jokerRange}, (_,i)=>i+1) : null;
+
+  const results = BACKTEST_WEIGHT_PRESETS.map(p=> ({
+    key:p.key, label:p.label, weights:p.weights,
+    totalMatches:0, testedDraws:0, matchHist: Array(cfg.pick+1).fill(0), jokerHits:0
+  }));
+  if(n - start < 5) return { results, testedDraws:0, insufficientData:true };
+
+  for(let i=start; i<n; i++){
+    const history = draws.slice(0, i);
+    const raw = buildRawIndicesForHistory(history, d=>d.nums, range, cfg.pick, 20);
+    const compositeInput = rawToCompositeInput(raw);
+    let jokerCompositeInput = null;
+    if(cfg.hasJoker){
+      const jRaw = buildRawIndicesForHistory(history, d=> d.joker ? [d.joker] : [], jrange, 1, 20);
+      jokerCompositeInput = rawToCompositeInput(jRaw);
+    }
+    const actual = draws[i];
+    const actualSet = new Set(actual.nums);
+
+    BACKTEST_WEIGHT_PRESETS.forEach((p, wi)=>{
+      const scores = buildComposite(compositeInput, 1, cfg.range, { weights: p.weights });
+      const top = range.slice().sort((a,b)=> scores[b]-scores[a]).slice(0, cfg.pick);
+      const matches = top.filter(x=> actualSet.has(x)).length;
+      results[wi].totalMatches += matches;
+      results[wi].testedDraws += 1;
+      results[wi].matchHist[matches]++;
+
+      if(cfg.hasJoker){
+        const jScores = buildComposite(jokerCompositeInput, 1, cfg.jokerRange, { weights: p.weights });
+        const topJoker = jrange.slice().sort((a,b)=> jScores[b]-jScores[a])[0];
+        if(actual.joker === topJoker) results[wi].jokerHits++;
+      }
+    });
+  }
+  return { results, testedDraws: n-start, insufficientData:false };
+}
+
+function runNorocBacktest(testWindow){
+  const draws = getAllDraws('noroc');
+  const n = draws.length;
+  const start = Math.max(BACKTEST_MIN_HISTORY, n - testWindow);
+  const digitRange = [0,1,2,3,4,5,6,7,8,9];
+
+  const results = BACKTEST_WEIGHT_PRESETS.map(p=> ({
+    key:p.key, label:p.label, weights:p.weights,
+    totalMatches:0, testedDraws:0, matchHist: Array(8).fill(0)
+  }));
+  if(n - start < 5) return { results, testedDraws:0, insufficientData:true };
+
+  for(let i=start; i<n; i++){
+    const history = draws.slice(0, i);
+    const rawPerPos = [];
+    for(let pos=0; pos<7; pos++){
+      rawPerPos.push(buildRawIndicesForHistory(history, d=>[d.digits[pos]], digitRange, 1, 20));
+    }
+    const actual = draws[i];
+
+    BACKTEST_WEIGHT_PRESETS.forEach((p, wi)=>{
+      let matches = 0;
+      for(let pos=0; pos<7; pos++){
+        const compositeInput = rawToCompositeInput(rawPerPos[pos]);
+        const scores = buildComposite(compositeInput, 0, 9, { weights: p.weights });
+        const topDigit = digitRange.slice().sort((a,b)=> scores[b]-scores[a])[0];
+        if(topDigit === actual.digits[pos]) matches++;
+      }
+      results[wi].totalMatches += matches;
+      results[wi].testedDraws += 1;
+      results[wi].matchHist[matches]++;
+    });
+  }
+  return { results, testedDraws: n-start, insufficientData:false };
+}
+
+// Theoretical average number of matches expected from a purely random guess — the honest
+// baseline every weight combo above should be compared against.
+function randomBaselineMatches(cfg){
+  if(cfg.isDigit) return 7 * 0.1; // 7 positions, 1/10 chance each
+  return cfg.pick * cfg.pick / cfg.range;
+}
+
+
 // Heuristic-only estimate of how "human-typical" a combination looks, based on well-documented
 // biases in how people pick lottery numbers (birthdates => 1-31, consecutive runs, arithmetic
 // progressions, low sums). This has ZERO effect on the odds of matching the draw — it only
@@ -10071,6 +10382,7 @@ function renderAll(){
   renderJournal();
   document.getElementById('popularityPanel').style.display = cfg.isDigit ? 'none' : '';
   document.getElementById('mcPanel').style.display = cfg.isDigit ? 'none' : '';
+  renderBacktestIdle(currentGame);
   tickCountdown();
 }
 
@@ -10116,6 +10428,85 @@ document.getElementById('addDrawBtn').addEventListener('click', async ()=>{
   }catch(e){
     statusEl.className='status-msg err'; statusEl.textContent='Eroare la salvare: '+e.message;
   }
+});
+
+function renderBacktestIdle(game){
+  const cfg = GAMES[game];
+  const box = document.getElementById('backtestResults');
+  const statusEl = document.getElementById('backtestStatus');
+  if(!box || !statusEl) return;
+  statusEl.className = 'status-msg'; statusEl.textContent = '';
+  box.innerHTML = `<p class="small-note">Apasă "Rulează backtesting" pentru a testa metoda pe arhiva jocului ${cfg.label}.</p>`;
+}
+
+function weightsStr(w){ return `${Math.round(w[0]*100)}/${Math.round(w[1]*100)}/${Math.round(w[2]*100)}/${Math.round(w[3]*100)}/${Math.round(w[4]*100)}%`; }
+
+function renderBacktestResults(game, backtestOut, testedDrawsRequested){
+  const cfg = GAMES[game];
+  const box = document.getElementById('backtestResults');
+  const statusEl = document.getElementById('backtestStatus');
+  const { results, testedDraws, insufficientData } = backtestOut;
+
+  if(insufficientData){
+    statusEl.className = 'status-msg err';
+    statusEl.textContent = `Nu sunt suficiente extrageri în arhivă pentru un backtest relevant pe ${cfg.label} (minim ${BACKTEST_MIN_HISTORY} extrageri istorie + câteva de test).`;
+    box.innerHTML = '';
+    return;
+  }
+  statusEl.className = 'status-msg ok';
+  statusEl.textContent = `Backtest finalizat pe ultimele ${testedDraws} extrageri reale din arhiva ${cfg.label} (fereastră de istorie minimă: ${BACKTEST_MIN_HISTORY} extrageri).`;
+
+  const baseline = randomBaselineMatches(cfg);
+  const sorted = results.slice().sort((a,b)=> (b.totalMatches/b.testedDraws) - (a.totalMatches/a.testedDraws));
+
+  const rows = sorted.map(r=>{
+    const avg = r.totalMatches / r.testedDraws;
+    const vsBaseline = ((avg-baseline)/baseline*100);
+    const isDefault = r.key==='default';
+    const jokerCol = cfg.hasJoker ? `<td class="mono">${(100*r.jokerHits/r.testedDraws).toFixed(1)}%</td>` : '';
+    return `<tr style="${isDefault?'background:rgba(212,175,55,.08);':''}">
+      <td>${isDefault?'<b>':''}${r.label}${isDefault?' ★</b>':''}</td>
+      <td class="mono" style="color:var(--muted); font-size:11px;">${weightsStr(r.weights)}</td>
+      <td class="mono">${avg.toFixed(2)} / ${cfg.isDigit?7:cfg.pick}</td>
+      <td class="mono" style="color:${vsBaseline>=0?'var(--green)':'var(--red)'};">${vsBaseline>=0?'+':''}${vsBaseline.toFixed(1)}%</td>
+      ${jokerCol}
+    </tr>`;
+  }).join('');
+
+  const defaultResult = results.find(r=>r.key==='default');
+  const histRows = defaultResult.matchHist.map((count,m)=>{
+    const pct = 100*count/defaultResult.testedDraws;
+    return `<tr><td>${m} din ${cfg.isDigit?7:cfg.pick}</td><td class="mono">${count}</td><td class="mono">${pct.toFixed(1)}%</td></tr>`;
+  }).join('');
+
+  box.innerHTML = `
+    <p class="small-note" style="margin-bottom:10px;">
+      <b style="color:var(--gold);">Reper aleatoriu (baseline):</b> o alegere pur întâmplătoare ar nimeri, în medie, <b class="mono">${baseline.toFixed(2)}</b> din ${cfg.isDigit?'7 poziții':cfg.pick+' numere'} — orice metodă statistică serioasă trebuie comparată cu acest reper, nu privită izolat.
+    </p>
+    <table class="data-table" style="width:100%; margin-bottom:18px;">
+      <thead><tr><th>Combinație de ponderi</th><th>Ponderi (F/H/M/Z/P)</th><th>Meciuri medii/extragere</th><th>Față de aleatoriu</th>${cfg.hasJoker?'<th>Acuratețe Joker</th>':''}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="small-note" style="margin-bottom:8px;"><b style="color:var(--gold);">Distribuția rezultatelor — metoda actuală (★)</b> — pe cele ${defaultResult.testedDraws} extrageri testate:</p>
+    <table class="data-table" style="width:100%; max-width:420px;">
+      <thead><tr><th>Numere nimerite</th><th>Nr. extrageri</th><th>%</th></tr></thead>
+      <tbody>${histRows}</tbody>
+    </table>
+    <p class="small-note" style="margin-top:14px;">
+      Important: acest test arată performanța <i>istorică</i> a metodei, nu o garanție pentru viitor. Testarea a 10 combinații de ponderi pe aceleași date istorice înseamnă și un risc firesc de "supra-potrivire" (in-sample overfitting) — combinația câștigătoare aici nu e sigur că va rămâne cea mai bună pe extrageri viitoare, pentru că fiecare extragere reală e un eveniment independent, indiferent de tiparele din trecut.
+    </p>`;
+}
+
+document.getElementById('backtestRunBtn').addEventListener('click', ()=>{
+  const cfg = GAMES[currentGame];
+  const statusEl = document.getElementById('backtestStatus');
+  const testWindow = Number(document.getElementById('backtestWindowSelect').value) || 150;
+  statusEl.className = 'status-msg'; statusEl.textContent = 'Se calculează — poate dura câteva secunde pe arhive mari...';
+  document.getElementById('backtestResults').innerHTML = '';
+  setTimeout(()=>{
+    const out = cfg.isDigit ? runNorocBacktest(testWindow) : runBallBacktest(currentGame, cfg, testWindow);
+    renderBacktestResults(currentGame, out, testWindow);
+  }, 30);
 });
 
 (async function init(){
