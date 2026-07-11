@@ -9185,31 +9185,41 @@ function renderLastDrawsTable(game){
 // next-best per band from what's left; Variant 3 gets the next-best after that. Result: the 3
 // variants together are exactly the 3*pick highest-scoring numbers in the whole archive,
 // distributed so every variant covers all intervals and no number repeats across the 3 tickets.
+// Weighted random pick, without replacement: each candidate's chance of being picked is
+// proportional to its composite score (a 0.0001 floor keeps zero-score numbers pickable, just
+// very unlikely). This is what makes "Recalculează variantele" give a different result every
+// time it's pressed, while still strongly favoring the numbers the 5-index method rates highest.
+function weightedPickFromCandidates(candidates, scores){
+  if(candidates.length===0) return null;
+  const weights = candidates.map(n=> Math.max(0.0001, scores[n]||0));
+  const total = weights.reduce((a,b)=>a+b,0);
+  let r = Math.random()*total;
+  for(let i=0;i<candidates.length;i++){
+    r -= weights[i];
+    if(r<=0) return candidates[i];
+  }
+  return candidates[candidates.length-1];
+}
+
 function pickTopStratified(scores, pick, range, usedSet){
   const bandSize = range / pick;
   const chosen = [];
   for(let b=0; b<pick; b++){
     const lo = Math.floor(b*bandSize) + 1;
     const hi = (b === pick-1) ? range : Math.floor((b+1)*bandSize);
-    let best = null, bestScore = -Infinity;
-    for(let n=lo; n<=hi; n++){
-      if(usedSet.has(n)) continue;
-      const sc = scores[n] || 0;
-      if(sc > bestScore){ bestScore = sc; best = n; }
-    }
-    if(best !== null){ chosen.push(best); usedSet.add(best); }
+    const candidates = [];
+    for(let n=lo; n<=hi; n++){ if(!usedSet.has(n)) candidates.push(n); }
+    const picked = weightedPickFromCandidates(candidates, scores);
+    if(picked !== null){ chosen.push(picked); usedSet.add(picked); }
   }
   // Fallback: if a band ran out of unused numbers (small ranges / late variants), fill any
-  // remaining slots with the best-scoring number still available anywhere in the range.
+  // remaining slots with a weighted-random pick from whatever's still available anywhere in range.
   while(chosen.length < pick){
-    let best = null, bestScore = -Infinity;
-    for(let n=1; n<=range; n++){
-      if(usedSet.has(n)) continue;
-      const sc = scores[n] || 0;
-      if(sc > bestScore){ bestScore = sc; best = n; }
-    }
-    if(best === null) break;
-    chosen.push(best); usedSet.add(best);
+    const candidates = [];
+    for(let n=1; n<=range; n++){ if(!usedSet.has(n)) candidates.push(n); }
+    const picked = weightedPickFromCandidates(candidates, scores);
+    if(picked === null) break;
+    chosen.push(picked); usedSet.add(picked);
   }
   return chosen.sort((a,b)=>a-b);
 }
@@ -9249,13 +9259,20 @@ function generate3NorocTickets(stats){
       freq: freqObj, overdue: overdueObj, recentFreq: recentObj, hazard: hazObj, momentum: momObj, zScore: {}, pairSynergy: {}
     }));
   }
-  // Deterministic, rank-based: for each of the 7 positions, rank the 10 digits by composite
-  // score. Variant 1 gets the #1-ranked digit for every position, Variant 2 the #2-ranked digit,
-  // Variant 3 the #3-ranked digit — the 3 statistically strongest, distinct digits per position.
+  // Weighted-random, without replacement: for each of the 7 positions, the 10 digits are drawn
+  // one at a time with probability proportional to their composite score — so higher-scoring
+  // digits are much more likely to be picked, but the result changes every time you press
+  // "Recalculează variantele" instead of being frozen on the same top-3 ranked digits forever.
   const tickets = [[],[],[]];
   for(let pos=0; pos<7; pos++){
-    const ranked = Object.keys(posScores[pos]).map(Number).sort((a,b)=> posScores[pos][b]-posScores[pos][a]);
-    for(let t=0;t<3;t++) tickets[t].push(ranked[t] !== undefined ? ranked[t] : ranked[ranked.length-1]);
+    const usedDigits = new Set();
+    for(let t=0;t<3;t++){
+      const candidates = [];
+      for(let d=0; d<10; d++){ if(!usedDigits.has(d)) candidates.push(d); }
+      const picked = weightedPickFromCandidates(candidates, posScores[pos]);
+      usedDigits.add(picked);
+      tickets[t].push(picked);
+    }
   }
   return { tickets, posScores };
 }
@@ -9424,16 +9441,16 @@ function renderTickets(game, stats){
   if(infoEl){
     if(cfg.isDigit){
       infoEl.innerHTML = `<b style="color:var(--gold); display:block; margin-bottom:6px; font-size:12.5px;">Pe ce se bazează cele 3 variante</b>
-      Pentru fiecare din cele 7 poziții ale numărului Noroc, cifrele 0-9 primesc un <b>scor compus din 5 indici matematici</b>, calculat din întreg istoricul (${stats.n} extrageri, ${from} – ${to}): <b>frecvență istorică</b> (28%), <b>indice de regularitate/hazard</b> (24%), <b>momentum exponențial recent</b> (20%), <b>deviație z-score</b> (16%) și <b>sinergie de perechi</b> (12%) — aceiași 5 indici detaliați mai sus, la "Metode matematice de predicție folosite". Cifrele sunt apoi clasate descrescător pe fiecare poziție: Varianta 1 primește cifra cu cel mai mare scor de pe fiecare poziție, Varianta 2 pe a doua cea mai probabilă, Varianta 3 pe a treia. Nu există niciun element aleatoriu — rezultatul e 100% determinat de analiza statistică și rămâne identic până apare o extragere nouă în arhivă.`;
+      Pentru fiecare din cele 7 poziții ale numărului Noroc, cifrele 0-9 primesc un <b>scor compus din 5 indici matematici</b>, calculat din întreg istoricul (${stats.n} extrageri, ${from} – ${to}): <b>frecvență istorică</b> (28%), <b>indice de regularitate/hazard</b> (24%), <b>momentum exponențial recent</b> (20%), <b>deviație z-score</b> (16%) și <b>sinergie de perechi</b> (12%) — aceiași 5 indici detaliați mai sus, la "Metode matematice de predicție folosite". Cifrele sunt apoi alese aleatoriu, dar <b>ponderat de scorul compus</b> pe fiecare poziție — o cifră cu scor mare are șanse mult mai mari să fie aleasă, dar nu e garantat. De-asta apeși "Recalculează variantele" și poți primi combinații diferite de fiecare dată, nu aceleași 3 cifre "câștigătoare" fixe.`;
     } else {
       infoEl.innerHTML = `<b style="color:var(--gold); display:block; margin-bottom:6px; font-size:12.5px;">Pe ce se bazează cele 3 variante</b>
-      Fiecare număr din intervalul 1-${cfg.range} primește un <b>scor compus din 5 indici matematici</b>, calculat din întreg istoricul (${stats.n} extrageri, ${from} – ${to}): <b>frecvență istorică</b> (28%), <b>indice de regularitate/hazard</b> (24%), <b>momentum exponențial recent</b> (20%), <b>deviație z-score</b> (16%) și <b>sinergie de perechi</b> (12%) — aceiași 5 indici detaliați mai sus, la "Metode matematice de predicție folosite". Intervalul e împărțit apoi în ${cfg.pick} benzi egale (acoperind tot intervalul, de la cele mai mici la cele mai mari numere), iar din fiecare bandă e ales numărul cu cel mai mare scor — garantând că fiecare variantă acoperă toate zonele intervalului, nu doar un grup de numere apropiate.${cfg.hasJoker ? ' Jokerul (1-20) primește propriul scor compus, calculat separat din propriul lui istoric.' : ''} Cele 3 variante nu se suprapun niciodată: sunt, practic, cele mai bine punctate ${cfg.pick*3} numere din toată arhiva, distribuite câte ${cfg.pick} pe variantă. Nu există niciun element aleatoriu — rezultatul e 100% determinat de analiza statistică și rămâne identic până apare o extragere nouă în arhivă.`;
+      Fiecare număr din intervalul 1-${cfg.range} primește un <b>scor compus din 5 indici matematici</b>, calculat din întreg istoricul (${stats.n} extrageri, ${from} – ${to}): <b>frecvență istorică</b> (28%), <b>indice de regularitate/hazard</b> (24%), <b>momentum exponențial recent</b> (20%), <b>deviație z-score</b> (16%) și <b>sinergie de perechi</b> (12%) — aceiași 5 indici detaliați mai sus, la "Metode matematice de predicție folosite". Intervalul e împărțit apoi în ${cfg.pick} benzi egale (acoperind tot intervalul, de la cele mai mici la cele mai mari numere), iar din fiecare bandă e ales aleatoriu un număr, dar <b>ponderat de scorul compus</b> — un număr cu scor mare are șanse mult mai mari să fie ales din banda lui, nu e ales însă mereu automat același.${cfg.hasJoker ? ' Jokerul (1-20) primește propriul scor compus, calculat separat din propriul lui istoric, și e ales la fel, ponderat aleatoriu.' : ''} Cele 3 variante nu se suprapun niciodată între ele. De-asta apeși "Recalculează variantele" și poți primi combinații diferite de fiecare dată — nu mai e un rezultat fix, dar rămâne strict ghidat de analiza statistică pe 5 indici, nu de-a dreptul aleatoriu.`;
     }
   }
 
   const noteEl = document.getElementById('ticketsGenNote');
   if(noteEl){
-    noteEl.textContent = `Cele 3 variante de mai sus sunt calculate, nu generate aleatoriu — apasă "Recalculează variantele" oricând vrei să reconfirmi rezultatul (rămâne identic atât timp cât arhiva nu se schimbă). Fiecare extragere reală e totuși un eveniment independent — nicio metodă statistică nu poate garanta câștigul, indiferent cât de riguroasă e analiza.`;
+    noteEl.textContent = `Cele 3 variante de mai sus sunt alese aleatoriu, dar ponderat de scorul compus pe 5 indici — apasă "Recalculează variantele" oricând vrei alte 3 combinații (numerele cu scor mai mare tot au șanse mult mai mari să apară, dar rezultatul nu mai e fix). Fiecare extragere reală e totuși un eveniment independent — nicio metodă statistică nu poate garanta câștigul, indiferent cât de riguroasă e analiza.`;
   }
 }
 
