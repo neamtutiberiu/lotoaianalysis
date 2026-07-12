@@ -151,6 +151,12 @@ h1,h2,h3{ font-family:'Space Grotesk',sans-serif; margin:0; }
 .btn2:hover{ border-color:var(--gold-dim); }
 .btn2-outline{ background:transparent; }
 .export-btn-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:4px; }
+.je-ticket-row{ background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:8px; position:relative; }
+.je-row-remove{
+  background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px;
+  width:28px; height:28px; cursor:pointer; font-size:16px; line-height:1; align-self:flex-end;
+}
+.je-row-remove:hover{ color:var(--red); border-color:var(--red); }
 .status-msg{ font-size:12px; margin-top:8px; }
 .status-msg.ok{ color:var(--green); }
 .status-msg.err{ color:var(--red); }
@@ -410,9 +416,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     </div>
     <div class="tabs" id="gameTabs"></div>
     <div class="version-block">
-      <span class="version-num">Ver 2.2</span>
-      <span class="version-date">Actualizat: 11.07.2026</span>
-      <span class="version-note">Secțiune nouă: "Variante recomandate pentru extragerea curentă" — 3 variante deterministe (nu aleatorii), legate de data extragerii curente, recalculate automat doar când arhiva se actualizează</span>
+      <span class="version-num">Ver 2.3</span>
+      <span class="version-date">Actualizat: 12.07.2026</span>
+      <span class="version-note">Jurnal: poți adăuga mai multe variante deodată (buton "+"), redenumit "Premiul", și fiecare variantă din jurnal arată acum verificarea de repetări în arhivă + scor de aliniere, ca la Generator de variante</span>
     </div>
   </div>
 
@@ -632,38 +638,30 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
   <div class="panel" id="journalPanel">
     <h2>Jurnal variante <span class="sub">— tot ce ai jucat (sau ai vrut să joci), cu rezultatul comparat automat cu extragerea reală</span></h2>
     <div class="journal-form">
-      <div class="field">
-        <label>Joc</label>
-        <select id="jeGame"></select>
+      <div class="form-row">
+        <div class="field">
+          <label>Joc</label>
+          <select id="jeGame"></select>
+        </div>
+        <div class="field">
+          <label>Data extragerii</label>
+          <input type="text" id="jeDate" placeholder="2026-07-12">
+        </div>
+        <div class="field">
+          <label>Cost bilet (lei, per variantă)</label>
+          <input type="text" id="jeCost" placeholder="8.5" style="width:110px;">
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select id="jeStatus">
+            <option value="real">Jucat real</option>
+            <option value="hypothetical">Doar mi-ar fi plăcut să joc</option>
+          </select>
+        </div>
+        <button class="btn2 btn2-outline" id="jeAddRowBtn" type="button">+ Adaugă variantă</button>
       </div>
-      <div class="field">
-        <label>Data extragerii</label>
-        <input type="text" id="jeDate" placeholder="2026-07-12">
-      </div>
-      <div class="field">
-        <label id="jeNumsLabel">Numere jucate</label>
-        <input type="text" class="nums" id="jeNums" placeholder="ex: 4,12,19,23,31,45">
-      </div>
-      <div class="field">
-        <label>Cost bilet (lei)</label>
-        <input type="text" id="jeCost" placeholder="8.5" style="width:90px;">
-      </div>
-      <div class="field">
-        <label>Premiu câștigat (lei, opțional)</label>
-        <input type="text" id="jePrize" placeholder="0" style="width:110px;">
-      </div>
-      <div class="field">
-        <label>Status</label>
-        <select id="jeStatus">
-          <option value="real">Jucat real</option>
-          <option value="hypothetical">Doar mi-ar fi plăcut să joc</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Notițe (opțional)</label>
-        <textarea id="jeNotes" placeholder="ex: variantă din wheeling"></textarea>
-      </div>
-      <button class="btn2" id="jeAddBtn">Adaugă în jurnal</button>
+      <div id="jeTicketRows"></div>
+      <button class="btn2" id="jeAddBtn">Salvează toate variantele în jurnal</button>
       <div class="export-btn-row">
         <button class="btn2 btn2-outline" id="journalExportCsvBtn">Exportă jurnal (CSV)</button>
         <button class="btn2 btn2-outline" id="journalExportPdfBtn">Exportă jurnal (PDF)</button>
@@ -11058,6 +11056,11 @@ function renderJournal(){
     renderBudgetPanel();
     return;
   }
+  const statsCache = {};
+  const getCachedStats = (game)=>{
+    if(!statsCache[game]) statsCache[game] = GAMES[game].isDigit ? computeNorocStats() : computeBallStats(game);
+    return statsCache[game];
+  };
   const sorted = journalEntries.slice().sort((a,b)=> a.date < b.date ? 1 : (a.date > b.date ? -1 : 0));
   sorted.forEach(entry=>{
     const cfg = GAMES[entry.game];
@@ -11112,81 +11115,153 @@ function renderJournal(){
     div.appendChild(top);
     div.appendChild(numsWrap);
     div.appendChild(detail);
+
+    // Full analysis vs the WHOLE archive (independent of whether entry.date's draw has happened
+    // yet): repeat-check across levels (e.g. 6/6, 5/6, 4/6) + the same 1-10 alignment/quality
+    // score used in "Generator de variante" and "Variante recomandate".
+    const stats = getCachedStats(entry.game);
+    const analysisWrap = document.createElement('div');
+    analysisWrap.style.cssText = 'margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);';
+    if(cfg.isDigit){
+      const target = { digits: entry.digits, date: null };
+      const compositeArr = [];
+      for(let pos=0; pos<7; pos++){
+        const freqObj={}, overdueObj={}, recentObj={}, hazObj={}, momObj={};
+        for(let d=0; d<10; d++){
+          freqObj[d]=stats.posFreq[pos][d]; overdueObj[d]=stats.posOverdue[pos][d];
+          recentObj[d]=stats.posRecentFreq[pos][d]; hazObj[d]=stats.posGapProfile[pos].hazard[d]; momObj[d]=stats.posMomentum[pos][d];
+        }
+        compositeArr.push(buildComposite(stats, 0, 9, { freq:freqObj, overdue:overdueObj, recentFreq:recentObj, hazard:hazObj, momentum:momObj, zScore:{}, pairSynergy:{} }));
+      }
+      const qualityInfo = scoreNorocTicketQuality(entry.digits, compositeArr);
+      analysisWrap.appendChild(ticketInfoEl(target, stats.draws, cfg.digits, true, qualityInfo));
+    } else {
+      const target = { nums: entry.nums, date: null };
+      const compositeScores = buildComposite(stats, 1, cfg.range);
+      const qualityInfo = scoreTicketQuality(entry.nums, cfg, stats, compositeScores);
+      analysisWrap.appendChild(ticketInfoEl(target, stats.draws, cfg.pick, false, qualityInfo));
+    }
+    div.appendChild(analysisWrap);
+
     wrap.appendChild(div);
   });
   renderBudgetPanel();
 }
 
+function jeNumsPlaceholder(cfg){
+  if(cfg.isDigit) return 'ex: 0234508';
+  if(cfg.hasJoker) return 'ex: 4,12,19,23,31 + 7';
+  return 'ex: 4,12,19,23,31,45';
+}
+function jeNumsLabelText(cfg){
+  if(cfg.isDigit) return 'Numere jucate — 7 cifre (Noroc)';
+  if(cfg.hasJoker) return 'Numere jucate — 5 numere + Joker';
+  return `Numere jucate — ${cfg.pick} numere`;
+}
+let jeRowCounter = 0;
+function addJeTicketRow(){
+  const cfg = GAMES[document.getElementById('jeGame').value || GAME_ORDER[0]];
+  const container = document.getElementById('jeTicketRows');
+  const row = document.createElement('div');
+  row.className = 'form-row je-ticket-row';
+  row.dataset.rowId = 'r'+(jeRowCounter++);
+  row.innerHTML = `
+    <div class="field">
+      <label class="jeRowNumsLabel">${jeNumsLabelText(cfg)}</label>
+      <input type="text" class="nums jeRowNums" placeholder="${jeNumsPlaceholder(cfg)}">
+    </div>
+    <div class="field">
+      <label>Premiul câștigat (lei, opțional)</label>
+      <input type="text" class="jeRowPrize" placeholder="0" style="width:110px;">
+    </div>
+    <div class="field">
+      <label>Notițe (opțional)</label>
+      <input type="text" class="jeRowNotes" placeholder="ex: variantă din wheeling">
+    </div>
+    <button type="button" class="je-row-remove" title="Șterge rândul">×</button>
+  `;
+  row.querySelector('.je-row-remove').addEventListener('click', ()=>{
+    if(document.querySelectorAll('.je-ticket-row').length > 1) row.remove();
+  });
+  container.appendChild(row);
+}
+function refreshJeRowLabels(){
+  const cfg = GAMES[document.getElementById('jeGame').value || GAME_ORDER[0]];
+  document.querySelectorAll('.je-ticket-row').forEach(row=>{
+    row.querySelector('.jeRowNumsLabel').textContent = jeNumsLabelText(cfg);
+    row.querySelector('.jeRowNums').placeholder = jeNumsPlaceholder(cfg);
+  });
+}
 function populateJeGameSelect(){
   const sel = document.getElementById('jeGame');
   sel.innerHTML = GAME_ORDER.map(g=> `<option value="${g}">${GAMES[g].label}</option>`).join('');
-  updateJeNumsLabel();
+  document.getElementById('jeTicketRows').innerHTML = '';
+  addJeTicketRow();
 }
-function updateJeNumsLabel(){
-  const gameVal = document.getElementById('jeGame').value || GAME_ORDER[0];
-  const cfg = GAMES[gameVal];
-  const label = document.getElementById('jeNumsLabel');
-  const input = document.getElementById('jeNums');
-  if(cfg.isDigit){
-    label.textContent = 'Numere jucate — 7 cifre (Noroc)';
-    input.placeholder = 'ex: 0234508';
-  } else if(cfg.hasJoker){
-    label.textContent = 'Numere jucate — 5 numere + Joker';
-    input.placeholder = 'ex: 4,12,19,23,31 + 7';
-  } else {
-    label.textContent = `Numere jucate — ${cfg.pick} numere`;
-    input.placeholder = `ex: 4,12,19,23,31,45`;
-  }
-}
-document.getElementById('jeGame').addEventListener('change', updateJeNumsLabel);
+document.getElementById('jeGame').addEventListener('change', refreshJeRowLabels);
+document.getElementById('jeAddRowBtn').addEventListener('click', addJeTicketRow);
 
 document.getElementById('jeAddBtn').addEventListener('click', async ()=>{
   const game = document.getElementById('jeGame').value || GAME_ORDER[0];
   const cfg = GAMES[game];
   const dateVal = document.getElementById('jeDate').value.trim();
-  const numsVal = document.getElementById('jeNums').value.trim();
   const costVal = document.getElementById('jeCost').value.trim();
-  const prizeVal = document.getElementById('jePrize').value.trim();
   const statusVal = document.getElementById('jeStatus').value;
-  const notesVal = document.getElementById('jeNotes').value.trim();
   const msgEl = document.getElementById('jeStatusMsg');
 
   if(!/^\d{4}-\d{2}-\d{2}$/.test(dateVal)){
     msgEl.className='status-msg err'; msgEl.textContent='Format dată invalid. Folosește AAAA-LL-ZZ.'; return;
   }
   const cost = parseFloat(costVal.replace(',','.')) || 0;
-  const prizeWon = parseFloat(prizeVal.replace(',','.')) || 0;
-  const entry = { id: Date.now()+'-'+Math.random().toString(36).slice(2,8), game, date: dateVal, cost, prizeWon, status: statusVal, notes: notesVal };
+  const rows = Array.from(document.querySelectorAll('.je-ticket-row'));
+  const entries = [];
 
-  try{
+  for(const row of rows){
+    const numsVal = row.querySelector('.jeRowNums').value.trim();
+    const prizeVal = row.querySelector('.jeRowPrize').value.trim();
+    const notesVal = row.querySelector('.jeRowNotes').value.trim();
+    if(!numsVal) continue; // skip empty rows silently
+    const prizeWon = parseFloat(prizeVal.replace(',','.')) || 0;
+    const entry = { id: Date.now()+'-'+Math.random().toString(36).slice(2,8)+'-'+entries.length, game, date: dateVal, cost, prizeWon, status: statusVal, notes: notesVal };
     if(cfg.isDigit){
       const digitsVal = numsVal.replace(/\D/g,'');
-      if(digitsVal.length!==7){ msgEl.className='status-msg err'; msgEl.textContent='Introdu exact 7 cifre (ex: 0234508).'; return; }
+      if(digitsVal.length!==7){ msgEl.className='status-msg err'; msgEl.textContent=`Un rând are cifre invalide — introdu exact 7 cifre (ex: 0234508).`; return; }
       entry.raw = digitsVal; entry.digits = digitsVal.split('').map(Number);
     } else {
       let nums, joker=null;
       if(cfg.hasJoker){
         const parts = numsVal.split('+');
-        if(parts.length!==2){ msgEl.className='status-msg err'; msgEl.textContent='Format: 5 numere + Joker, ex: 4,12,19,23,31 + 7'; return; }
+        if(parts.length!==2){ msgEl.className='status-msg err'; msgEl.textContent='Un rând are format invalid — folosește: 5 numere + Joker, ex: 4,12,19,23,31 + 7'; return; }
         nums = parts[0].split(',').map(s=>Number(s.trim()));
         joker = Number(parts[1].trim());
       } else {
         nums = numsVal.split(',').map(s=>Number(s.trim()));
       }
       if(nums.some(isNaN) || nums.length!==cfg.pick || new Set(nums).size!==nums.length){
-        msgEl.className='status-msg err'; msgEl.textContent=`Introdu exact ${cfg.pick} numere valide și distincte.`; return;
+        msgEl.className='status-msg err'; msgEl.textContent=`Un rând nu are exact ${cfg.pick} numere valide și distincte.`; return;
       }
       entry.nums = nums; entry.joker = joker;
     }
-    await addJournalEntry(entry);
-    msgEl.className='status-msg ok'; msgEl.textContent='Adăugat în jurnal ✓';
-    document.getElementById('jeDate').value=''; document.getElementById('jeNums').value='';
-    document.getElementById('jeCost').value=''; document.getElementById('jePrize').value=''; document.getElementById('jeNotes').value='';
+    entries.push(entry);
+  }
+
+  if(entries.length===0){
+    msgEl.className='status-msg err'; msgEl.textContent='Completează numerele la cel puțin o variantă.'; return;
+  }
+
+  try{
+    for(const entry of entries){ await addJournalEntry(entry); }
+    msgEl.className='status-msg ok'; msgEl.textContent = `${entries.length} variant${entries.length===1?'ă adăugată':'e adăugate'} în jurnal ✓`;
+    document.getElementById('jeDate').value='';
+    document.getElementById('jeCost').value='';
+    document.getElementById('jeTicketRows').innerHTML = '';
+    addJeTicketRow();
     renderJournal();
   }catch(e){
     msgEl.className='status-msg err'; msgEl.textContent='Eroare la salvare: '+e.message;
   }
 });
+
 
 
 // ---------- MAIN RENDER ----------
