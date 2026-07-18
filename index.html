@@ -309,6 +309,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
 .chart-card .chart-note{ font-size:13px; color:var(--muted); margin-bottom:8px; line-height:1.55; }
 .chart-card svg{ width:100%; height:auto; display:block; }
 .legend{ display:flex; gap:16px; margin-top:6px; flex-wrap:wrap; }
+.top-movers-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+.tm-title{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px; }
+.tm-list{ font-size:13px; line-height:1.8; color:var(--text); }
 .legend span{ font-size:11px; color:var(--muted); display:flex; align-items:center; gap:5px; }
 .legend .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
 
@@ -410,9 +413,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     </div>
     <div class="tabs" id="gameTabs"></div>
     <div class="version-block">
-      <span class="version-num">Ver 2.6</span>
+      <span class="version-num">Ver 2.7</span>
       <span class="version-date">Actualizat: 14.07.2026</span>
-      <span class="version-note">Fundal negru pur (#000000) peste tot — marginea paginii și conturul panourilor sunt acum identice, negru total</span>
+      <span class="version-note">"Variante recomandate" și "Generator de variante" mutate imediat după "Ultima extragere". Graficul de Trenduri afișează acum fiecare număr (nu din 5 în 5), cu scală de referință, contur auriu pentru top 3 mișcări, și listă concretă cu numerele cele mai crescătoare/descrescătoare</span>
     </div>
   </div>
 
@@ -431,6 +434,30 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <div id="categoryResultsDisplay"></div>
       <button class="btn2 btn2-outline" id="categoryResultsUpdateBtn" style="margin-top:8px;">Actualizează de pe site-ul Loteriei Române</button>
       <div id="categoryResultsForm"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="recommendedPanel">
+    <h2 id="recommendedTitle">Variante recomandate pentru extragerea curentă</h2>
+    <p class="small-note" style="margin-bottom:14px;">
+      Diferit de generatorul de mai jos (care alege aleatoriu, ponderat, o combinație nouă la fiecare click), secțiunea asta e <b>stabilă și deterministă</b>: e cea mai bine cotată alegere posibilă, conform metodei pe 5 indici, aplicată pe toată arhiva disponibilă acum. Rămâne identică până când extragerea de mai sus chiar are loc și e adăugată în arhivă (manual sau prin "Introdu automat extragerile care lipsesc") — abia atunci se recalculează, ținând cont și de acea extragere nouă. Metodologie: frecvență istorică, indice de regularitate/hazard, momentum exponențial recent, deviație z-score, sinergie de perechi — combinate în același scor compus verificat prin backtesting mai jos — plus verificare de repetări în arhivă și scor de aliniere per variantă. Nu e o predicție reală (nicio metodă nu poate fi, pentru un joc corect) — e cea mai riguroasă recomandare posibilă din datele disponibile.
+    </p>
+    <div class="tickets" id="recommendedTicketsWrap"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Generator de variante <span class="sub">— 3 combinații generate din analiza complexă a arhivei complete</span></h2>
+    <div class="small-note" id="ticketsMethodInfo" style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px;"></div>
+    <button class="gen-btn" id="genBtn">Recalculează variantele</button>
+    <button class="btn2 btn2-outline" id="autoFillMissingBtn" style="margin-top:10px;">Introdu automat extragerile care lipsesc</button>
+    <div id="autoFillStatus" class="status-msg"></div>
+    <div id="autoFillForm"></div>
+    <div style="height:14px;"></div>
+    <div class="tickets" id="ticketsWrap"></div>
+    <p class="small-note" id="ticketsGenNote"></p>
+    <div class="export-btn-row" style="margin-top:10px;">
+      <button class="btn2 btn2-outline" id="ticketsExportCsvBtn">Exportă variantele (CSV)</button>
+      <button class="btn2 btn2-outline" id="ticketsExportPdfBtn">Exportă variantele (PDF)</button>
     </div>
   </div>
 
@@ -505,30 +532,6 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
   <div class="panel">
     <h2>Ultimele 10 extrageri <span class="sub" id="lastDrawsSub">— pentru jocul selectat</span></h2>
     <div class="last-draws-grid" id="lastDrawsGrid"></div>
-  </div>
-
-  <div class="panel">
-    <h2>Generator de variante <span class="sub">— 3 combinații generate din analiza complexă a arhivei complete</span></h2>
-    <div class="small-note" id="ticketsMethodInfo" style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px;"></div>
-    <button class="gen-btn" id="genBtn">Recalculează variantele</button>
-    <button class="btn2 btn2-outline" id="autoFillMissingBtn" style="margin-top:10px;">Introdu automat extragerile care lipsesc</button>
-    <div id="autoFillStatus" class="status-msg"></div>
-    <div id="autoFillForm"></div>
-    <div style="height:14px;"></div>
-    <div class="tickets" id="ticketsWrap"></div>
-    <p class="small-note" id="ticketsGenNote"></p>
-    <div class="export-btn-row" style="margin-top:10px;">
-      <button class="btn2 btn2-outline" id="ticketsExportCsvBtn">Exportă variantele (CSV)</button>
-      <button class="btn2 btn2-outline" id="ticketsExportPdfBtn">Exportă variantele (PDF)</button>
-    </div>
-  </div>
-
-  <div class="panel" id="recommendedPanel">
-    <h2 id="recommendedTitle">Variante recomandate pentru extragerea curentă</h2>
-    <p class="small-note" style="margin-bottom:14px;">
-      Diferit de generatorul de mai sus (care alege aleatoriu, ponderat, o combinație nouă la fiecare click), secțiunea asta e <b>stabilă și deterministă</b>: e cea mai bine cotată alegere posibilă, conform metodei pe 5 indici, aplicată pe toată arhiva disponibilă acum. Rămâne identică până când extragerea de mai sus chiar are loc și e adăugată în arhivă (manual sau prin "Introdu automat extragerile care lipsesc") — abia atunci se recalculează, ținând cont și de acea extragere nouă. Metodologie: frecvență istorică, indice de regularitate/hazard, momentum exponențial recent, deviație z-score, sinergie de perechi — combinate în același scor compus verificat prin backtesting mai jos — plus verificare de repetări în arhivă și scor de aliniere per variantă. Nu e o predicție reală (nicio metodă nu poate fi, pentru un joc corect) — e cea mai riguroasă recomandare posibilă din datele disponibile.
-    </p>
-    <div class="tickets" id="recommendedTicketsWrap"></div>
   </div>
 
   <div class="panel" id="backtestPanel">
@@ -9114,30 +9117,64 @@ function svgLineChart(values, labels, opts){
 
 function svgTrendBars(items, opts){
   opts = opts || {};
-  const w = opts.width||900, h = opts.height||180;
-  const pad = {l:8,r:8,t:8,b:16};
+  const w = opts.width||900, h = opts.height||220;
+  const pad = {l:8,r:8,t:10,b:20};
   const innerW = w-pad.l-pad.r, innerH = h-pad.t-pad.b;
   const midY = pad.t+innerH/2;
   const maxAbs = Math.max(...items.map(it=>Math.abs(it.delta)), 0.0001);
   const barW = innerW/items.length;
-  const labelAll = items.length<=15;
+  // Highlight the top 3 risers and top 3 fallers with a gold outline, so the chart itself
+  // visually points out the numbers worth a second look — not a prediction, just the numbers
+  // whose recent share has moved the most versus their own historical average.
+  const sorted = items.slice().sort((a,b)=> b.delta-a.delta);
+  const topRisers = new Set(sorted.slice(0,3).filter(it=>it.delta>0).map(it=>it.n));
+  const topFallers = new Set(sorted.slice(-3).filter(it=>it.delta<0).map(it=>it.n));
   let svg = `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">`;
-  svg += `<line x1="${pad.l}" y1="${midY.toFixed(1)}" x2="${w-pad.r}" y2="${midY.toFixed(1)}" stroke="#2a2f38" stroke-width="1"/>`;
+  // Reference scale: light gridlines at +max/2, 0, -max/2, with the % value labeled, so the
+  // bar heights aren't just relative shapes but have an actual readable scale, like a real chart.
+  const scaleVals = [maxAbs, maxAbs/2, 0, -maxAbs/2, -maxAbs];
+  scaleVals.forEach(sv=>{
+    const y = midY - (sv/maxAbs)*(innerH/2-8);
+    svg += `<line x1="${pad.l}" y1="${y.toFixed(1)}" x2="${w-pad.r}" y2="${y.toFixed(1)}" stroke="#2a2f38" stroke-width="${sv===0?1:0.5}"/>`;
+    if(sv!==0){
+      svg += `<text x="${pad.l+2}" y="${(y-2).toFixed(1)}" font-size="7.5" fill="#8b8f98">${(sv*100>=0?'+':'')}${(sv*100).toFixed(1)}%</text>`;
+    }
+  });
   items.forEach((it,i)=>{
     const x = pad.l + i*barW + barW*0.15;
     const bw = Math.max(barW*0.7, 1);
     const magnitude = (Math.abs(it.delta)/maxAbs) * (innerH/2 - 8);
+    const isTop = topRisers.has(it.n) || topFallers.has(it.n);
     const color = it.delta>=0 ? '#3ecf6e' : '#e0574a';
     const y = it.delta>=0 ? midY-magnitude : midY;
     const bh = Math.max(magnitude,0.6);
     const pctTxt = (it.delta*100>=0?'+':'')+(it.delta*100).toFixed(2)+'%';
-    svg += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="${color}" rx="1"><title>${it.n}: ${pctTxt} vs. media istorică</title></rect>`;
-    if(labelAll || it.n%5===0){
-      svg += `<text x="${(x+bw/2).toFixed(1)}" y="${h-4}" font-size="8" fill="#8b8f98" text-anchor="middle">${it.n}</text>`;
-    }
+    svg += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="${color}" rx="1" ${isTop?'stroke="#d4af37" stroke-width="1.2"':''}><title>${it.n}: ${pctTxt} vs. media istorică</title></rect>`;
+    svg += `<text x="${(x+bw/2).toFixed(1)}" y="${h-4}" font-size="7.5" fill="${isTop?'#d4af37':'#8b8f98'}" font-weight="${isTop?'700':'400'}" text-anchor="middle">${it.n}</text>`;
   });
   svg += `</svg>`;
   return svg;
+}
+// Concrete, readable follow-up to the chart above: spells out exactly which numbers moved the
+// most, in plain text with real percentages — historical description of what already happened
+// in the archive, not a forecast. Framed honestly, same as everywhere else in the app.
+function renderTopMovers(items, isDigit){
+  const sorted = items.slice().sort((a,b)=> b.delta-a.delta);
+  const risers = sorted.filter(it=>it.delta>0).slice(0,5);
+  const fallers = sorted.filter(it=>it.delta<0).slice(-5).reverse();
+  const fmt = (it)=> `<b>${it.n}</b> <span class="mono">(${(it.delta*100>=0?'+':'')}${(it.delta*100).toFixed(2)}%)</span>`;
+  const label = isDigit ? 'cifre' : 'numere';
+  return `<div class="top-movers-grid">
+    <div class="top-movers-col">
+      <div class="tm-title" style="color:#3ecf6e;">▲ Cele mai puternice ${label} crescătoare</div>
+      <div class="tm-list">${risers.length? risers.map(fmt).join(' · ') : 'nicio creștere notabilă în fereastra analizată'}</div>
+    </div>
+    <div class="top-movers-col">
+      <div class="tm-title" style="color:#e0574a;">▼ Cele mai puternice ${label} descrescătoare</div>
+      <div class="tm-list">${fallers.length? fallers.map(fmt).join(' · ') : 'nicio scădere notabilă în fereastra analizată'}</div>
+    </div>
+  </div>
+  <p class="small-note" style="margin-top:8px;">Procentul arată cât de mult s-a schimbat ponderea acelui ${isDigit?'cifre':'număr'} în fereastra recentă față de media lui pe tot istoricul — o descriere a ce s-a întâmplat deja în arhivă, nu o previziune pentru extragerea viitoare.</p>`;
 }
 
 function renderTrends(stats, game){
@@ -9184,11 +9221,14 @@ function renderTrends(stats, game){
   const noteb = document.createElement('p'); noteb.className='chart-note';
   noteb.textContent = `Compară ponderea din ultimele ${recentN} extrageri cu media pe întreg istoricul. Treci cu mouse-ul pe o bară pentru procentul exact.`;
   card2.appendChild(h3b); card2.appendChild(noteb);
-  const chart2 = document.createElement('div'); chart2.innerHTML = svgTrendBars(items, {height:170});
+  const chart2 = document.createElement('div'); chart2.innerHTML = svgTrendBars(items, {height:220});
   card2.appendChild(chart2);
   const legend = document.createElement('div'); legend.className='legend';
-  legend.innerHTML = `<span><i class="dot" style="background:#3ecf6e"></i>tendință crescătoare</span><span><i class="dot" style="background:#e0574a"></i>tendință descrescătoare</span>`;
+  legend.innerHTML = `<span><i class="dot" style="background:#3ecf6e"></i>tendință crescătoare</span><span><i class="dot" style="background:#e0574a"></i>tendință descrescătoare</span><span><i class="dot" style="background:#d4af37"></i>top 3 mișcări (contur auriu)</span>`;
   card2.appendChild(legend);
+  const moversBox = document.createElement('div'); moversBox.style.marginTop='14px';
+  moversBox.innerHTML = renderTopMovers(items, cfg.isDigit);
+  card2.appendChild(moversBox);
   wrap.appendChild(card2);
 }
 
