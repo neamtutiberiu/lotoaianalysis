@@ -413,9 +413,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     </div>
     <div class="tabs" id="gameTabs"></div>
     <div class="version-block">
-      <span class="version-num">Ver 2.7</span>
+      <span class="version-num">Ver 2.9</span>
       <span class="version-date">Actualizat: 14.07.2026</span>
-      <span class="version-note">"Variante recomandate" și "Generator de variante" mutate imediat după "Ultima extragere". Graficul de Trenduri afișează acum fiecare număr (nu din 5 în 5), cu scală de referință, contur auriu pentru top 3 mișcări, și listă concretă cu numerele cele mai crescătoare/descrescătoare</span>
+      <span class="version-note">Panou nou "Acoperirea intervalelor în extrageri": scanează toată arhiva (1993→prezent) și arată, în procente, cât de des apare fiecare zonă (1-10, 11-20...), câte zone acoperă o extragere tipică și cele mai frecvente combinații de zone — pentru 6/49, 5/40 și Joker. "Repetări istorice între extrageri" mutat sub "Variante recomandate"</span>
     </div>
   </div>
 
@@ -440,9 +440,32 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
   <div class="panel" id="recommendedPanel">
     <h2 id="recommendedTitle">Variante recomandate pentru extragerea curentă</h2>
     <p class="small-note" style="margin-bottom:14px;">
-      Diferit de generatorul de mai jos (care alege aleatoriu, ponderat, o combinație nouă la fiecare click), secțiunea asta e <b>stabilă și deterministă</b>: e cea mai bine cotată alegere posibilă, conform metodei pe 5 indici, aplicată pe toată arhiva disponibilă acum. Rămâne identică până când extragerea de mai sus chiar are loc și e adăugată în arhivă (manual sau prin "Introdu automat extragerile care lipsesc") — abia atunci se recalculează, ținând cont și de acea extragere nouă. Metodologie: frecvență istorică, indice de regularitate/hazard, momentum exponențial recent, deviație z-score, sinergie de perechi — combinate în același scor compus verificat prin backtesting mai jos — plus verificare de repetări în arhivă și scor de aliniere per variantă. Nu e o predicție reală (nicio metodă nu poate fi, pentru un joc corect) — e cea mai riguroasă recomandare posibilă din datele disponibile.
+      Diferit de generatorul de mai jos (care alege aleatoriu, ponderat, o combinație nouă la fiecare click), secțiunea asta e <b>stabilă și deterministă</b>: recalculează, de fiecare dată, din <b>toată arhiva disponibilă</b> — inclusiv extragerile pe care le adaugi tu, manual sau automat — și găsește exact combinația de 6 numere cu cel mai bun scor posibil. Metodologie: scorul fiecărui număr vine din 5 indici (frecvență istorică, regularitate/hazard, momentum recent, deviație z-score, sinergie de perechi — aceiași verificați prin backtesting mai jos); din cele mai bine cotate ~24 de numere, aplicația caută <b>exhaustiv</b> (verifică efectiv fiecare combinație posibilă din acel grup restrâns) exact cei 6 care dau cel mai bun scor combinat — ținând cont și de sumă, raport par/impar și distribuție jos/sus față de tiparul istoric real. Nu forțează acoperirea artificială a intervalului în benzi egale — dacă cele mai bine punctate numere se grupează într-o zonă, combinația poate reflecta asta. Rămâne identică până când extragerea de mai sus chiar are loc și arhiva se actualizează.
+      <br><br>
+      <b>De ce nu ține cont de variantele tale din Jurnal:</b> numerele pe care le-ai jucat tu în trecut nu au nicio legătură cu ce va ieși la o extragere viitoare — o extragere reală e complet independentă de orice combinație aleasă anterior, de tine sau de oricine. Dacă le-aș băga în calcul ca "semnal", ar fi o iluzie de precizie, nu una reală — de-aia jurnalul rămâne folosit corect, doar pentru comparație cu ce a ieșit efectiv (vezi secțiunea Jurnal), nu ca intrare în acest calcul.
+      <br><br>
+      Nu e o predicție reală (nicio metodă nu poate fi, pentru un joc corect) — e cea mai riguroasă recomandare posibilă din datele disponibile.
     </p>
     <div class="tickets" id="recommendedTicketsWrap"></div>
+    <div style="margin-top:16px; padding-top:14px; border-top:1px dashed var(--surface3);">
+      <button class="btn2 btn2-outline" id="recBacktestBtn">Testează onest exact această metodă pe istoricul real</button>
+      <div id="recBacktestStatus" class="status-msg"></div>
+      <div id="recBacktestResults" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="repeatScanPanel">
+    <h2>Repetări istorice între extrageri <span class="sub" id="repeatScanSub">— arhiva completă, comparată cu ea însăși</span></h2>
+    <p class="small-note" style="margin-bottom:14px;">Scanează TOATE perechile posibile de extrageri reale din arhivă, de la prima (1993) până în prezent, și arată de câte ori s-a întâmplat ca două extrageri diferite să coincidă în <span id="repeatScanLevelsTxt">—</span> — și exact care sunt acele extrageri, cu dată.</p>
+    <button class="gen-btn" id="repeatScanBtn">Scanează arhiva</button>
+    <div id="repeatScanStatus" class="status-msg" style="margin-top:10px;"></div>
+    <div id="repeatScanResults" style="margin-top:16px;"></div>
+  </div>
+
+  <div class="panel" id="intervalPanel">
+    <h2>Acoperirea intervalelor în extrageri <span class="sub" id="intervalSub">— toată arhiva, scanată extragere cu extragere</span></h2>
+    <p class="small-note" style="margin-bottom:14px;">Împarte intervalul jocului în zone de câte 10 (<span id="intervalZonesTxt">1-10, 11-20, 21-30, 31-40, 41-49</span>) și scanează absolut toate extragerile din arhivă: în ce procent din extrageri apare fiecare zonă, cât de des sunt acoperite toate zonele simultan, și care combinații de zone apar cel mai des. Descriere statistică a trecutului — la fel de onest ca peste tot: nu prezice viitorul, dar îți arată exact cum au arătat extragerile reale.</p>
+    <div id="intervalResults"></div>
   </div>
 
   <div class="panel">
@@ -556,14 +579,6 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     <p class="small-note" style="margin-bottom:14px;">Fiecare linie leagă două numere care au ieșit împreună, în aceeași extragere, de multe ori în arhivă — cu cât linia e mai groasă și mai aurie, cu atât au apărut împreună mai des. Sunt afișate doar cele mai puternice 30 de perechi, ca să rămână lizibil. Pentru extragerile exacte în care au apărut potriviri mari între extrageri reale (<span id="pairNetworkLevelsTxt">—</span>), vezi secțiunea "Repetări istorice între extrageri" de mai jos.</p>
     <div id="pairNetworkWrap" style="display:flex; justify-content:center;"></div>
     <div id="pairNetworkTopList" style="margin-top:14px;"></div>
-  </div>
-
-  <div class="panel" id="repeatScanPanel">
-    <h2>Repetări istorice între extrageri <span class="sub" id="repeatScanSub">— arhiva completă, comparată cu ea însăși</span></h2>
-    <p class="small-note" style="margin-bottom:14px;">Scanează TOATE perechile posibile de extrageri reale din arhivă (nu doar față de ultima extragere) și arată câte ori s-a întâmplat ca două extrageri diferite să coincidă în <span id="repeatScanLevelsTxt">—</span> — și exact care sunt acele extrageri, cu dată.</p>
-    <button class="gen-btn" id="repeatScanBtn">Scanează arhiva</button>
-    <div id="repeatScanStatus" class="status-msg" style="margin-top:10px;"></div>
-    <div id="repeatScanResults" style="margin-top:16px;"></div>
   </div>
 
   <div class="panel" id="wheelPanel">
@@ -9330,9 +9345,9 @@ function renderLastDrawsTable(game){
 // time it's pressed, while still strongly favoring the numbers the 5-index method rates highest.
 // Deterministic rank-based pick, without replacement: within each band, sorts remaining
 // candidates by score descending and takes the number at position `rank` (0 = best, 1 = second
-// best, ...). Unlike weightedPickFromCandidates, this is 100% deterministic — same archive always
-// gives the same result — which is exactly what "Variante recomandate pentru extragerea curentă"
-// needs: a stable pick tied to a specific draw, not a fresh roll on every click.
+// best, ...). Currently unused (Variante recomandate now uses a pool + combinatorial search
+// instead, see bestComboFromPool, so it isn't forced to spread across fixed range bands) — kept
+// here since it's a valid, reusable building block if a band-constrained picker is ever needed.
 function pickBandRank(scores, pick, range, usedSet, rank){
   const bandSize = range / pick;
   const chosen = [];
@@ -9460,15 +9475,10 @@ function generate3RecommendedBallTickets(stats, cfg){
     freq: stats.jokerFreq, overdue: stats.jokerOverdue, recentFreq: stats.jokerRecentFreq,
     hazard: stats.jokerHazard, momentum: stats.jokerMomentum, zScore: {}, pairSynergy: {}
   }) : null;
-  const usedMain = new Set();
-  const usedJoker = new Set();
-  const tickets = [];
-  for(let t=0; t<3; t++){
-    const combo = pickBandRank(baseScores, cfg.pick, cfg.range, usedMain, t);
-    let jok = null;
-    if(jokerScores) jok = pickBandRank(jokerScores, 1, cfg.jokerRange, usedJoker, t)[0];
-    tickets.push({ combo, joker: jok });
-  }
+  // Delegates to the same shared selection core the dedicated backtest runs — see
+  // pickTop3FromScores. `stats` carries avgSum/stdSum/oddRatio/lowRatio, which is all the
+  // shape information the search needs.
+  const tickets = pickTop3FromScores(baseScores, jokerScores, cfg, stats);
   return { tickets, baseScores };
 }
 function generate3RecommendedNorocTickets(stats){
@@ -9577,9 +9587,66 @@ function repeatInfoBlock(target, draws, pick, isDigit, compact){
 // shape (sum, odd/even split, low/high split) matches the archive's own typical shape for real
 // draws. A ticket that only chased top scores but landed on a statistically atypical shape (e.g.
 // all-low or all-odd) is flagged down slightly, since real draws rarely look like that.
-function scoreTicketQuality(combo, cfg, stats, compositeScores){
+// Precompute once per composite-score set (avoids re-scanning the whole array on every
+// combination evaluated during the search below — that search can run for 100k+ candidate
+// combos, so this precomputation matters for performance).
+function compositeMinMax(compositeScores){
   const vals = Object.values(compositeScores);
-  const mn = Math.min(...vals), mx = Math.max(...vals);
+  return { mn: Math.min(...vals), mx: Math.max(...vals) };
+}
+// Lean version of the exact same formula used for the displayed 1-10 quality score (below),
+// but returning the raw 0..1 value with no string/notes allocation — safe to call inside a
+// tight combinatorial search loop. Single source of truth: scoreTicketQuality() calls this too,
+// so the number shown under each ticket and the number used internally to CHOOSE the ticket are
+// always exactly the same metric.
+function comboRawScoreFast(combo, cfg, stats, compositeScores, mn, mx){
+  const range = (mx-mn)||1;
+  let sumPercentile=0, sum=0, oddCount=0, lowCount=0;
+  const mid = cfg.range/2;
+  for(let i=0;i<combo.length;i++){
+    const num = combo[i];
+    sumPercentile += ((compositeScores[num]||0)-mn)/range;
+    sum += num;
+    if(num%2!==0) oddCount++;
+    if(num<=mid) lowCount++;
+  }
+  const avgPercentile = sumPercentile/combo.length;
+  const zSum = stats.stdSum ? Math.abs(sum-stats.avgSum)/stats.stdSum : 0;
+  const sumFit = Math.max(0, 1-zSum/2.5);
+  const oddFit = 1 - Math.min(1, Math.abs(oddCount/combo.length - stats.oddRatio)/0.5);
+  const lowFit = 1 - Math.min(1, Math.abs(lowCount/combo.length - stats.lowRatio)/0.5);
+  return 0.55*avgPercentile + 0.20*sumFit + 0.125*oddFit + 0.125*lowFit;
+}
+// Exhaustive search over all `pick`-sized combinations drawn from `poolNumbers` (a short list —
+// typically 4x the pick size — of the highest-composite-scored numbers), returning whichever
+// exact combination scores best on the SAME formula shown to the person as "scor de performanță"
+// under each ticket. This replaces a fixed bands-of-the-range pattern: nothing here forces any
+// particular spread across the number range — a combo of six tightly-clustered numbers is chosen
+// exactly when it genuinely scores best, and a well-spread one is chosen when THAT scores best.
+// Pool sizes stay small enough (≤24 numbers) that full enumeration finishes in well under a
+// second even for 6/49, so no shortcuts or heuristics are needed — this is the true best answer
+// for the stated objective, not an approximation.
+function bestComboFromPool(poolNumbers, pick, cfg, stats, compositeScores, mn, mx){
+  let bestCombo=null, bestScore=-Infinity;
+  const n = poolNumbers.length;
+  const combo = new Array(pick);
+  (function recurse(start, depth){
+    if(depth===pick){
+      const score = comboRawScoreFast(combo, cfg, stats, compositeScores, mn, mx);
+      if(score>bestScore){ bestScore=score; bestCombo=combo.slice(); }
+      return;
+    }
+    for(let i=start; i<=n-(pick-depth); i++){
+      combo[depth]=poolNumbers[i];
+      recurse(i+1, depth+1);
+    }
+  })(0,0);
+  bestCombo.sort((a,b)=>a-b);
+  return { combo:bestCombo, score:bestScore };
+}
+
+function scoreTicketQuality(combo, cfg, stats, compositeScores){
+  const { mn, mx } = compositeMinMax(compositeScores);
   const range = (mx-mn)||1;
   const percentiles = combo.map(n=> ((compositeScores[n]||0)-mn)/range );
   const avgPercentile = mean(percentiles); // 0..1, component A
@@ -9755,7 +9822,7 @@ function renderRecommendedPanel(game, stats){
   titleEl.innerHTML = `Variante recomandate pentru extragerea curentă <span class="sub">— ${cfg.label}, ${dateStr}</span>`;
   wrap.innerHTML = '';
 
-  const rankLabels = ['Varianta 1 — cel mai bine cotat număr din fiecare interval', 'Varianta 2 — a doua cea mai bună alegere din fiecare interval', 'Varianta 3 — a treia cea mai bună alegere din fiecare interval'];
+  const rankLabels = ['Varianta 1 — cea mai bine punctată combinație posibilă din numerele de top', 'Varianta 2 — a doua cea mai bine punctată combinație, din restul numerelor de top', 'Varianta 3 — a treia cea mai bine punctată combinație, din restul numerelor de top'];
 
   if(cfg.isDigit){
     const { tickets, posScores } = generate3RecommendedNorocTickets(stats);
@@ -10122,6 +10189,119 @@ function runNorocBacktest(testWindow){
 function randomBaselineMatches(cfg){
   if(cfg.isDigit) return 7 * 0.1; // 7 positions, 1/10 chance each
   return cfg.pick * cfg.pick / cfg.range;
+}
+
+// ---------- DEDICATED BACKTEST FOR "VARIANTE RECOMANDATE" ----------
+// The generic backtest above tests a DIFFERENT selection rule (simple top-K by score) than what
+// "Variante recomandate" actually generates (pool + exhaustive shape-optimized search). This
+// module tests the EXACT same function used to build the live recommendation, walk-forward
+// through the real archive, so the numbers shown here honestly describe THIS specific feature —
+// not a close approximation of it.
+// Shape stats (avgSum/stdSum/oddRatio/lowRatio) recomputed from ONLY the historical slice up to
+// each tested draw — never from the full modern archive — so there's no lookahead bias.
+function computeShapeStatsForHistory(history, cfg){
+  const n = history.length;
+  if(n===0) return { avgSum:0, stdSum:0, oddRatio:0.5, lowRatio:0.5 };
+  const sums = history.map(d=> d.nums.reduce((a,b)=>a+b,0));
+  const avgSum = sums.reduce((a,b)=>a+b,0)/n;
+  const stdSum = Math.sqrt(sums.reduce((a,b)=>a+(b-avgSum)*(b-avgSum),0)/n);
+  const mid = cfg.range/2;
+  let oddTotal=0, lowTotal=0, totalNums=0;
+  history.forEach(d=> d.nums.forEach(nm=>{ totalNums++; if(nm%2!==0) oddTotal++; if(nm<=mid) lowTotal++; }));
+  return { avgSum, stdSum, oddRatio: totalNums?oddTotal/totalNums:0.5, lowRatio: totalNums?lowTotal/totalNums:0.5 };
+}
+// Shared core: given already-built composite scores + shape stats, produces the same 3 tickets
+// "Variante recomandate" would show — used by both the live panel (via generate3RecommendedBallTickets,
+// which wraps this) and this backtest, so both are guaranteed to use identical selection logic.
+function pickTop3FromScores(baseScores, jokerScores, cfg, shapeStats){
+  const { mn, mx } = compositeMinMax(baseScores);
+  let poolNums = []; for(let i=1;i<=cfg.range;i++) poolNums.push(i);
+  poolNums.sort((a,b)=> baseScores[b]-baseScores[a]);
+  let pool = poolNums.slice(0, Math.min(cfg.pick*4, cfg.range));
+  let jokerRanked = null;
+  if(jokerScores){
+    jokerRanked = []; for(let i=1;i<=cfg.jokerRange;i++) jokerRanked.push(i);
+    jokerRanked.sort((a,b)=> jokerScores[b]-jokerScores[a]);
+  }
+  const tickets = [];
+  for(let t=0; t<3; t++){
+    const { combo } = bestComboFromPool(pool, cfg.pick, cfg, shapeStats, baseScores, mn, mx);
+    pool = pool.filter(x=> !combo.includes(x));
+    tickets.push({ combo, joker: jokerRanked ? jokerRanked[t] : null });
+  }
+  return tickets;
+}
+function runRecommendedBacktest(game, cfg, testWindow){
+  const draws = getAllDraws(game);
+  const n = draws.length;
+  const start = Math.max(BACKTEST_MIN_HISTORY, n - testWindow);
+  const range = []; for(let i=1;i<=cfg.range;i++) range.push(i);
+  const jrange = cfg.hasJoker ? Array.from({length:cfg.jokerRange}, (_,i)=>i+1) : null;
+  if(n - start < 5) return { testedDraws:0, insufficientData:true };
+
+  const perTicket = [0,1,2].map(()=> ({ totalMatches:0, matchHist: Array(cfg.pick+1).fill(0), jokerHits:0 }));
+  let testedDraws = 0;
+
+  for(let i=start; i<n; i++){
+    const history = draws.slice(0, i);
+    const raw = buildRawIndicesForHistory(history, d=>d.nums, range, cfg.pick, 20);
+    const compositeInput = rawToCompositeInput(raw);
+    const baseScores = buildComposite(compositeInput, 1, cfg.range);
+    let jokerScores = null;
+    if(cfg.hasJoker){
+      const jRaw = buildRawIndicesForHistory(history, d=> d.joker ? [d.joker] : [], jrange, 1, 20);
+      jokerScores = buildComposite(rawToCompositeInput(jRaw), 1, cfg.jokerRange);
+    }
+    const shapeStats = computeShapeStatsForHistory(history, cfg);
+    const tickets = pickTop3FromScores(baseScores, jokerScores, cfg, shapeStats);
+
+    const actual = draws[i];
+    const actualSet = new Set(actual.nums);
+    tickets.forEach((tk, ti)=>{
+      const matches = tk.combo.filter(x=> actualSet.has(x)).length;
+      perTicket[ti].totalMatches += matches;
+      perTicket[ti].matchHist[matches]++;
+      if(cfg.hasJoker && actual.joker === tk.joker) perTicket[ti].jokerHits++;
+    });
+    testedDraws++;
+  }
+  return { perTicket, testedDraws, insufficientData:false };
+}
+function runRecommendedBacktestNoroc(testWindow){
+  const draws = getAllDraws('noroc');
+  const n = draws.length;
+  const start = Math.max(BACKTEST_MIN_HISTORY, n - testWindow);
+  const digitRange = [0,1,2,3,4,5,6,7,8,9];
+  if(n - start < 5) return { testedDraws:0, insufficientData:true };
+
+  const perTicket = [0,1,2].map(()=> ({ totalMatches:0, matchHist: Array(8).fill(0) }));
+  let testedDraws = 0;
+
+  for(let i=start; i<n; i++){
+    const history = draws.slice(0, i);
+    const posScores = [];
+    for(let pos=0; pos<7; pos++){
+      const raw = buildRawIndicesForHistory(history, d=>[d.digits[pos]], digitRange, 1, 20);
+      posScores.push(buildComposite(rawToCompositeInput(raw), 0, 9));
+    }
+    const tickets = [[],[],[]];
+    for(let pos=0; pos<7; pos++){
+      const used = new Set();
+      for(let t=0;t<3;t++){
+        const candidates = digitRange.filter(d=>!used.has(d)).sort((a,b)=> (posScores[pos][b]||0)-(posScores[pos][a]||0));
+        const picked = candidates[Math.min(t, candidates.length-1)];
+        used.add(picked); tickets[t].push(picked);
+      }
+    }
+    const actual = draws[i];
+    tickets.forEach((digits, ti)=>{
+      let matches=0; for(let k=0;k<7;k++) if(digits[k]===actual.digits[k]) matches++;
+      perTicket[ti].totalMatches += matches;
+      perTicket[ti].matchHist[matches]++;
+    });
+    testedDraws++;
+  }
+  return { perTicket, testedDraws, insufficientData:false };
 }
 
 
@@ -11266,8 +11446,11 @@ function renderAll(){
   document.getElementById('mcPanel').style.display = cfg.isDigit ? 'none' : '';
   renderBacktestIdle(currentGame);
   renderRepeatScanIdle();
+  renderIntervalPanel(currentGame);
   renderAutoFillIdle();
   const catForm = document.getElementById('categoryResultsForm'); if(catForm) catForm.innerHTML='';
+  const recBtStatus = document.getElementById('recBacktestStatus'); if(recBtStatus){ recBtStatus.className='status-msg'; recBtStatus.textContent=''; }
+  const recBtResults = document.getElementById('recBacktestResults'); if(recBtResults) recBtResults.innerHTML='';
   tickCountdown();
 }
 
@@ -11355,6 +11538,92 @@ function scanArchiveRepeats(game, cfg){
 function levelsLabelForGame(cfg){
   return cfg.isDigit ? '7/7, 6/7 sau 5/7 poziții (Noroc)' : `${cfg.pick}/${cfg.pick}, ${cfg.pick-1}/${cfg.pick} sau ${cfg.pick-2}/${cfg.pick} numere`;
 }
+// ---------- INTERVAL COVERAGE ANALYSIS ("Acoperirea intervalelor în extrageri") ----------
+// Splits the game's range into decade zones (1-10, 11-20, ... last zone up to cfg.range) and
+// scans EVERY draw in the archive, computing: (a) how often each zone contains at least one
+// drawn number, (b) the distribution of how many distinct zones each draw covers, and (c) the
+// most frequent exact zone-combination patterns. Pure descriptive statistics over the real
+// archive — no prediction claim.
+function intervalZonesForGame(cfg){
+  const zones = [];
+  for(let lo=1; lo<=cfg.range; lo+=10){
+    zones.push({ lo, hi: Math.min(lo+9, cfg.range), label: lo+'-'+Math.min(lo+9, cfg.range) });
+  }
+  return zones;
+}
+function analyzeIntervalCoverage(game, cfg){
+  const draws = getAllDraws(game);
+  const zones = intervalZonesForGame(cfg);
+  const zPresent = zones.map(()=>0);
+  const coverageCountHist = Array(zones.length+1).fill(0); // index = how many zones covered
+  const patternCount = {};
+  draws.forEach(d=>{
+    const present = zones.map(z=> d.nums.some(nm=> nm>=z.lo && nm<=z.hi));
+    let covered = 0;
+    present.forEach((p,zi)=>{ if(p){ zPresent[zi]++; covered++; } });
+    coverageCountHist[covered]++;
+    const patternKey = zones.filter((_,zi)=>present[zi]).map(z=>z.label).join(' + ') || '(niciuna)';
+    patternCount[patternKey] = (patternCount[patternKey]||0)+1;
+  });
+  const topPatterns = Object.entries(patternCount).sort((a,b)=> b[1]-a[1]).slice(0,8);
+  return { n: draws.length, zones, zPresent, coverageCountHist, topPatterns,
+    firstDate: draws.length? draws[0].date : null, lastDate: draws.length? draws[draws.length-1].date : null };
+}
+function renderIntervalPanel(game){
+  const cfg = GAMES[game];
+  const panel = document.getElementById('intervalPanel');
+  const box = document.getElementById('intervalResults');
+  if(!panel || !box) return;
+  if(cfg.isDigit){ panel.style.display='none'; return; }
+  panel.style.display='';
+
+  const zonesTxtEl = document.getElementById('intervalZonesTxt');
+  const zones = intervalZonesForGame(cfg);
+  if(zonesTxtEl) zonesTxtEl.textContent = zones.map(z=>z.label).join(', ');
+  const subEl = document.getElementById('intervalSub');
+  if(subEl) subEl.textContent = `— toată arhiva ${cfg.label}, scanată extragere cu extragere`;
+
+  const a = analyzeIntervalCoverage(game, cfg);
+  if(!a.n){ box.innerHTML = '<p class="small-note">Arhivă goală.</p>'; return; }
+
+  const zoneRows = a.zones.map((z,zi)=>{
+    const pct = 100*a.zPresent[zi]/a.n;
+    return `<tr><td class="mono">${z.label}</td><td class="mono">${a.zPresent[zi].toLocaleString('ro-RO')}</td><td class="mono" style="color:var(--gold);">${pct.toFixed(1)}%</td>
+      <td><div class="pop-score-bar" style="max-width:220px;"><div class="pop-score-fill pop-low" style="width:${pct.toFixed(1)}%"></div></div></td></tr>`;
+  }).join('');
+
+  const covRows = a.coverageCountHist.map((count,k)=>{
+    if(count===0) return '';
+    const pct = 100*count/a.n;
+    const isFull = k===a.zones.length;
+    return `<tr style="${isFull?'background:rgba(212,175,55,.08);':''}"><td>${isFull?'<b>':''}${k} din ${a.zones.length} zone acoperite${isFull?' (toate) ★</b>':''}</td><td class="mono">${count.toLocaleString('ro-RO')}</td><td class="mono">${pct.toFixed(1)}%</td></tr>`;
+  }).join('');
+
+  const patRows = a.topPatterns.map(([pat,count])=>{
+    const pct = 100*count/a.n;
+    return `<tr><td style="font-size:11.5px;">${pat}</td><td class="mono">${count.toLocaleString('ro-RO')}</td><td class="mono">${pct.toFixed(1)}%</td></tr>`;
+  }).join('');
+
+  box.innerHTML = `
+    <p class="small-note" style="margin-bottom:10px;">Scanate <b class="mono">${a.n.toLocaleString('ro-RO')}</b> extrageri reale, de la ${fmtDateShort(a.firstDate)} până la ${fmtDateShort(a.lastDate)}.</p>
+    <p class="small-note" style="margin-bottom:6px;"><b style="color:var(--gold);">1. Cât de des apare fiecare zonă</b> — procentul extragerilor în care zona conține măcar un număr extras:</p>
+    <div class="table-scroll"><table class="data-table" style="width:100%; max-width:560px; margin-bottom:16px;">
+      <thead><tr><th>Zonă</th><th>Extrageri cu ≥1 număr</th><th>%</th><th></th></tr></thead>
+      <tbody>${zoneRows}</tbody>
+    </table></div>
+    <p class="small-note" style="margin-bottom:6px;"><b style="color:var(--gold);">2. Câte zone diferite acoperă o extragere</b> — distribuția pe toată arhiva:</p>
+    <div class="table-scroll"><table class="data-table" style="width:100%; max-width:480px; margin-bottom:16px;">
+      <thead><tr><th>Acoperire</th><th>Nr. extrageri</th><th>%</th></tr></thead>
+      <tbody>${covRows}</tbody>
+    </table></div>
+    <p class="small-note" style="margin-bottom:6px;"><b style="color:var(--gold);">3. Cele mai frecvente combinații exacte de zone</b>:</p>
+    <div class="table-scroll"><table class="data-table" style="width:100%; max-width:640px;">
+      <thead><tr><th>Combinație de zone</th><th>Nr. extrageri</th><th>%</th></tr></thead>
+      <tbody>${patRows}</tbody>
+    </table></div>
+    <p class="small-note" style="margin-top:12px;">Interpretare onestă: aceste procente reflectă pur combinatorica jocului (câte numere are fiecare zonă și câte se extrag), nu o preferință a aparatului — și fiecare extragere viitoare rămâne independentă. Sunt utile ca să vezi cum arată o extragere "tipică", nu ca să prezici următoarea.</p>`;
+}
+
 function renderRepeatScanIdle(){
   const box = document.getElementById('repeatScanResults');
   const statusEl = document.getElementById('repeatScanStatus');
@@ -11495,6 +11764,51 @@ document.getElementById('repeatScanBtn').addEventListener('click', ()=>{
   setTimeout(()=>{
     const out = scanArchiveRepeats(currentGame, cfg);
     renderRepeatScanResults(currentGame, out);
+  }, 30);
+});
+
+function renderRecBacktestResults(game, out){
+  const cfg = GAMES[game];
+  const box = document.getElementById('recBacktestResults');
+  const statusEl = document.getElementById('recBacktestStatus');
+  if(out.insufficientData){
+    statusEl.className='status-msg err';
+    statusEl.textContent = `Arhivă insuficientă pentru un test relevant (minim ${BACKTEST_MIN_HISTORY} extrageri istorie + câteva de test).`;
+    box.innerHTML=''; return;
+  }
+  const total = cfg.isDigit ? 7 : cfg.pick;
+  const baseline = randomBaselineMatches(cfg);
+  statusEl.className='status-msg ok';
+  statusEl.textContent = `Testat pe ultimele ${out.testedDraws} extrageri reale — exact algoritmul acestei secțiuni, recalculat înainte de fiecare extragere, fără să "vadă" viitorul.`;
+
+  const rows = out.perTicket.map((pt,i)=>{
+    const avg = pt.totalMatches/out.testedDraws;
+    const vs = ((avg-baseline)/baseline*100);
+    const jokerCol = cfg.hasJoker ? `<td class="mono">${(100*pt.jokerHits/out.testedDraws).toFixed(1)}%</td>` : '';
+    return `<tr>
+      <td>Varianta ${i+1}</td>
+      <td class="mono">${avg.toFixed(2)} / ${total}</td>
+      <td class="mono" style="color:${vs>=0?'var(--green)':'var(--red)'};">${vs>=0?'+':''}${vs.toFixed(1)}%</td>
+      ${jokerCol}
+    </tr>`;
+  }).join('');
+
+  box.innerHTML = `
+    <p class="small-note" style="margin-bottom:8px;"><b style="color:var(--gold);">Reper aleatoriu:</b> o alegere pur întâmplătoare ar nimeri, în medie, <b class="mono">${baseline.toFixed(2)}</b> din ${total} — compară mereu cu acest reper, nu privi cifrele izolat.</p>
+    <div class="table-scroll"><table class="data-table" style="width:100%; max-width:560px;">
+      <thead><tr><th>Variantă</th><th>Nimeriri medii/extragere</th><th>Față de aleatoriu</th>${cfg.hasJoker?'<th>Acuratețe Joker</th>':''}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    <p class="small-note" style="margin-top:10px;">Dacă rezultatele stau aproape de reperul aleatoriu (cum e de așteptat matematic pentru un joc corect), asta e metoda funcționând onest — nu un defect. Orice metodă care ar pretinde constant mult peste reper ar fi o iluzie statistică.</p>`;
+}
+document.getElementById('recBacktestBtn').addEventListener('click', ()=>{
+  const cfg = GAMES[currentGame];
+  const statusEl = document.getElementById('recBacktestStatus');
+  statusEl.className='status-msg'; statusEl.textContent='Se rulează — exact acest algoritm, pe fiecare fereastră istorică. Poate dura până la un minut pe arhive mari...';
+  document.getElementById('recBacktestResults').innerHTML='';
+  setTimeout(()=>{
+    const out = cfg.isDigit ? runRecommendedBacktestNoroc(150) : runRecommendedBacktest(currentGame, cfg, 150);
+    renderRecBacktestResults(currentGame, out);
   }, 30);
 });
 
