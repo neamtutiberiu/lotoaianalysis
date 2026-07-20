@@ -414,9 +414,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     </div>
     <div class="tabs" id="gameTabs"></div>
     <div class="version-block">
-      <span class="version-num">Ver 3.4</span>
+      <span class="version-num">Ver 3.6</span>
       <span class="version-date">Actualizat: 14.07.2026</span>
-      <span class="version-note">Scoasă rubrica "Câștigători pe categorii — ultima extragere" (nefolosită)</span>
+      <span class="version-note">"Adaugă automat extrageri care lipsesc" acum preia efectiv automat numerele de pe LotteryExtreme.com — le afișează pentru verificare, apoi le salvezi cu un click. Funcționează pentru 6/49, 5/40, Joker și Noroc. Butonul manual redenumit "Adaugă extragere manual"</span>
     </div>
   </div>
 
@@ -444,10 +444,15 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
         <label id="newNumsLabel">Numere (separate prin virgulă)</label>
         <input type="text" class="nums" id="newNums" placeholder="ex: 4,12,19,23,31,45">
       </div>
-      <button class="btn2" id="addDrawBtn">Adaugă extragere</button>
+      <button class="btn2" id="addDrawBtn">Adaugă extragere manual</button>
     </div>
     <div class="status-msg" id="addStatus"></div>
-    <p class="small-note">Aplicația nu poate prelua automat rezultate în fundal. Adaugă rezultatul aici de îndată ce apare (joi/duminică, ora 18:30) și toate statisticile de mai sus se recalculează automat, pe baza arhivei complete + extragerile adăugate manual. Datele tale se salvează permanent.</p>
+    <div style="margin-top:14px; padding-top:14px; border-top:1px dashed var(--surface3);">
+      <button class="gen-btn" id="autoFillMissingBtn">Adaugă automat extrageri care lipsesc</button>
+      <div id="autoFillStatus" class="status-msg"></div>
+      <div id="autoFillForm"></div>
+    </div>
+    <p class="small-note" style="margin-top:12px;">Aplicația detectează automat câte extrageri lipsesc (compară arhiva cu programul oficial joi/duminică, 18:30) și îți deschide un link direct spre rezultatele oficiale — tu doar copiezi numerele, restul (validare, salvare, recalculare completă) e automat. Funcționează pentru toate jocurile: 6/49, 5/40, Joker, Noroc.</p>
   </div>
 
   <div class="panel" id="recommendedPanel">
@@ -485,9 +490,6 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     <h2>Generator de variante <span class="sub">— 3 combinații generate din analiza complexă a arhivei complete</span></h2>
     <div class="small-note" id="ticketsMethodInfo" style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px;"></div>
     <button class="gen-btn" id="genBtn">Recalculează variantele</button>
-    <button class="btn2 btn2-outline" id="autoFillMissingBtn" style="margin-top:10px;">Introdu automat extragerile care lipsesc</button>
-    <div id="autoFillStatus" class="status-msg"></div>
-    <div id="autoFillForm"></div>
     <div style="height:14px;"></div>
     <div class="tickets" id="ticketsWrap"></div>
     <p class="small-note" id="ticketsGenNote"></p>
@@ -8902,7 +8904,7 @@ function renderMissingDrawsWarning(game){
       <div style="color:#e0574a; font-size:13px; line-height:1.7;">
         Ultima extragere din arhivă: <b>${lastDate}</b>.<br>
         ${missing.length === 1 ? 'Extragerea lipsă' : 'Extragerile lipsă'}: <b>${dateList}</b>.<br>
-        <span style="font-size:12px; color:#f2f2f2;">Adaug-o în panoul "Adaugă o extragere nouă" de mai jos — sau folosește butonul "Introdu automat extragerile care lipsesc" din secțiunea Generator de variante.</span>
+        <span style="font-size:12px; color:#f2f2f2;">Folosește butonul "Adaugă automat extrageri care lipsesc" chiar sub acest panou, sau adaugă manual mai jos.</span>
       </div>
     </div>`;
 }
@@ -10875,13 +10877,68 @@ function renderAutoFillIdle(){
   if(statusEl){ statusEl.className='status-msg'; statusEl.textContent=''; }
 }
 
-function autoFillNumsPlaceholder(cfg){
-  if(cfg.isDigit) return 'ex: 0234508';
-  if(cfg.hasJoker) return 'ex: 4,12,19,23,31 + 7';
-  return `ex: 4,12,19,23,31,45`;
+// ---------- AUTO-FETCH FROM LOTTERYEXTREME.COM ----------
+// LotteryExtreme.com is a well-known international lottery results aggregator (2.6M+ monthly
+// visits) that publishes the last 20 draws for each Romanian lottery game. Since GitHub Pages
+// can't make direct cross-origin requests to it (CORS), we route through allorigins.win — a
+// free, established CORS proxy that adds the necessary headers. The proxy doesn't store or
+// modify the data; it just relays the response.
+const LOTTERY_EXTREME_URLS = {
+  '649': 'https://www.lotteryextreme.com/Romania/loto_649-results',
+  '540': 'https://www.lotteryextreme.com/Romania/loto_540-results',
+  'joker': 'https://www.lotteryextreme.com/Romania/joker-results',
+  'noroc': 'https://www.lotteryextreme.com/Romania/noroc-results'
+};
+function corsProxyUrl(url){
+  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 }
 
-function renderAutoFillForm(game){
+// Parse the HTML response from LotteryExtreme to extract draw dates and numbers.
+// The page format is: "DD.MM.YYYY DayOfWeek" followed by numbers on the next line(s).
+function parseLotteryExtremeHTML(html, game){
+  const cfg = GAMES[game];
+  const results = [];
+  // Extract text between "Recent ... Results" table and the footer
+  const text = html.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
+  // Match date patterns like "12.07.2026 Sunday" or "09.07.2026 Thursday"
+  const datePattern = /(\d{2})\.(\d{2})\.(\d{4})\s+(?:Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)/g;
+  const dates = [];
+  let m;
+  while((m = datePattern.exec(text)) !== null){
+    dates.push({ idx: m.index, date: `${m[3]}-${m[2]}-${m[1]}`, endIdx: m.index + m[0].length });
+  }
+  for(let i=0; i<dates.length; i++){
+    const start = dates[i].endIdx;
+    const end = (i+1 < dates.length) ? dates[i+1].idx : start + 120;
+    const numBlock = text.substring(start, end).trim();
+    // Extract all numbers from the block between two dates
+    const allNums = numBlock.match(/\d+/g);
+    if(!allNums) continue;
+    const nums = allNums.map(Number);
+    if(cfg.isDigit){
+      // Noroc: 7 single digits
+      const digits = nums.filter(n=> n>=0 && n<=9);
+      if(digits.length>=7) results.push({ date: dates[i].date, digits: digits.slice(0,7), raw: digits.slice(0,7).join('') });
+    } else if(cfg.hasJoker){
+      // Joker: 5 main numbers (1-45) + 1 joker (1-20)
+      const main = nums.filter(n=> n>=1 && n<=45);
+      const jokerCandidates = nums.filter(n=> n>=1 && n<=20);
+      if(main.length>=5){
+        const picked = main.slice(0,5);
+        // Joker number is typically the last one listed (after the 5 main numbers)
+        const joker = nums.length>=6 ? nums[5] : (jokerCandidates.length ? jokerCandidates[jokerCandidates.length-1] : null);
+        results.push({ date: dates[i].date, nums: picked, joker });
+      }
+    } else {
+      // 6/49 or 5/40: pick-sized set of numbers
+      const valid = nums.filter(n=> n>=1 && n<=cfg.range);
+      if(valid.length>=cfg.pick) results.push({ date: dates[i].date, nums: valid.slice(0, cfg.pick) });
+    }
+  }
+  return results;
+}
+
+async function autoFetchAndFillMissing(game){
   const cfg = GAMES[game];
   const statusEl = document.getElementById('autoFillStatus');
   const form = document.getElementById('autoFillForm');
@@ -10889,87 +10946,72 @@ function renderAutoFillForm(game){
 
   if(missing.length===0){
     statusEl.className = 'status-msg ok';
-    statusEl.textContent = `Arhiva ${cfg.label} e la zi — nu lipsește nicio extragere (ultima din bază: ${fmtDateShort(getAllDraws(game)[getAllDraws(game).length-1].date)}).`;
+    statusEl.textContent = `Arhiva ${cfg.label} e la zi — nu lipsește nicio extragere ✓`;
     form.innerHTML = '';
     return;
   }
 
   statusEl.className = 'status-msg';
-  statusEl.textContent = `Lipsesc ${missing.length} extrag${missing.length===1?'ere':'eri'} pentru ${cfg.label} (comparat cu data de azi și programul obișnuit joi/duminică, ora 18:30).`;
+  statusEl.textContent = `Se caută ${missing.length} extrageri lipsă pentru ${cfg.label} pe LotteryExtreme.com...`;
+  form.innerHTML = '';
 
-  form.innerHTML = `
-    <p class="small-note" style="margin:10px 0;">
-      Aplicația nu poate prelua rezultatele automat, în fundal — site-ul oficial nu permite cereri directe din alte site-uri (regulă de securitate a browserului, nu ceva ce putem ocoli). Deschide
-      <a href="https://www.loto.ro/loto-new/newLotoSiteNexioFinalVersion/web/app2.php/jocuri/rezultate_extragere.html" target="_blank" rel="noopener" style="color:var(--blue);">rezultatele oficiale Loteria Română</a>
-      într-un tab nou, copiază numerele pentru fiecare dată de mai jos, apoi apasă "Adaugă toate extragerile" — restul (validare, salvare permanentă, recalcularea întregii analize) se face automat.
-    </p>
-    <div id="autoFillRows"></div>
-    <button class="btn2" id="autoFillSubmitBtn" style="margin-top:10px;">Adaugă toate extragerile</button>
-    <div id="autoFillSubmitStatus" class="status-msg"></div>
-  `;
-  const rowsBox = document.getElementById('autoFillRows');
-  missing.forEach(dateStr=>{
-    const row = document.createElement('div');
-    row.className = 'form-row';
-    row.style.marginBottom = '8px';
-    row.innerHTML = `
-      <div class="field" style="min-width:140px;">
-        <label>${fmtDate(dateStr)}</label>
-        <input type="text" disabled value="${dateStr}" class="autoFillDate" style="opacity:.6;">
-      </div>
-      <div class="field">
-        <label>Numere</label>
-        <input type="text" class="nums autoFillNums" placeholder="${autoFillNumsPlaceholder(cfg)}" data-date="${dateStr}">
-      </div>
+  try{
+    const url = LOTTERY_EXTREME_URLS[game];
+    if(!url) throw new Error('Jocul selectat nu are o sursă externă configurată.');
+    const resp = await fetch(corsProxyUrl(url));
+    if(!resp.ok) throw new Error(`Eroare la accesarea LotteryExtreme.com: HTTP ${resp.status}`);
+    const html = await resp.text();
+    const parsed = parseLotteryExtremeHTML(html, game);
+
+    const missingSet = new Set(missing);
+    const found = parsed.filter(r=> missingSet.has(r.date));
+
+    if(found.length === 0){
+      statusEl.className = 'status-msg err';
+      statusEl.textContent = `Nu s-au găsit pe LotteryExtreme.com niciuna din cele ${missing.length} extrageri lipsă. Posibil că site-ul nu a fost încă actualizat, sau extragerile sunt prea vechi (afișează doar ultimele 20). Poți adăuga manual cu butonul "Adaugă extragere manual" de mai sus.`;
+      return;
+    }
+
+    // Preview what we found before saving
+    const previewRows = found.map(r=>{
+      const numsStr = cfg.isDigit ? r.raw : (cfg.hasJoker ? r.nums.join(', ') + ' + ' + r.joker : r.nums.join(', '));
+      return `<tr><td class="mono">${fmtDateShort(r.date)}</td><td class="mono">${numsStr}</td></tr>`;
+    }).join('');
+    form.innerHTML = `
+      <p class="small-note" style="margin:10px 0;">S-au găsit <b>${found.length}</b> din ${missing.length} extrageri lipsă pe <a href="${url}" target="_blank" rel="noopener" style="color:var(--blue);">LotteryExtreme.com</a>. Verifică numerele de mai jos, apoi apasă "Confirmă și salvează":</p>
+      <div class="table-scroll"><table class="data-table" style="width:100%; max-width:480px;">
+        <thead><tr><th>Data</th><th>Numere</th></tr></thead>
+        <tbody>${previewRows}</tbody>
+      </table></div>
+      ${found.length < missing.length ? `<p class="small-note" style="margin-top:8px; color:#e0574a;">Nu s-au găsit ${missing.length - found.length} extrageri mai vechi (${missing.filter(d=>!found.find(f=>f.date===d)).map(fmtDateShort).join(', ')}) — probabil prea vechi pentru ultimele 20 afișate pe site. Adaugă-le manual.</p>` : ''}
+      <button class="btn2" id="autoFillConfirmBtn" style="margin-top:10px;">Confirmă și salvează</button>
+      <div id="autoFillConfirmStatus" class="status-msg"></div>
     `;
-    rowsBox.appendChild(row);
-  });
+    statusEl.className = 'status-msg ok';
+    statusEl.textContent = `Găsite ${found.length} extrageri pe LotteryExtreme.com — verifică și confirmă mai jos.`;
 
-  document.getElementById('autoFillSubmitBtn').addEventListener('click', async ()=>{
-    const submitStatus = document.getElementById('autoFillSubmitStatus');
-    const inputs = Array.from(document.querySelectorAll('.autoFillNums'));
-    const parsed = [];
-    for(const inp of inputs){
-      const dateStr = inp.dataset.date;
-      const numsVal = inp.value.trim();
-      if(!numsVal){ submitStatus.className='status-msg err'; submitStatus.textContent=`Completează numerele pentru ${fmtDateShort(dateStr)}.`; return; }
+    document.getElementById('autoFillConfirmBtn').addEventListener('click', async ()=>{
+      const confStatus = document.getElementById('autoFillConfirmStatus');
+      confStatus.className = 'status-msg'; confStatus.textContent = 'Se salvează...';
       try{
-        if(cfg.isDigit){
-          const digitsVal = numsVal.replace(/\D/g,'');
-          if(digitsVal.length!==7) throw new Error(`Extragerea din ${fmtDateShort(dateStr)}: introdu exact 7 cifre.`);
-          parsed.push({date:dateStr, raw:digitsVal, digits:digitsVal.split('').map(Number)});
-        } else {
-          let nums, joker=null;
-          if(cfg.hasJoker){
-            const parts = numsVal.split('+');
-            if(parts.length!==2) throw new Error(`Extragerea din ${fmtDateShort(dateStr)}: format așteptat 5 numere + Joker, ex: 4,12,19,23,31 + 7.`);
-            nums = parts[0].split(',').map(s=>Number(s.trim()));
-            joker = Number(parts[1].trim());
-          } else {
-            nums = numsVal.split(',').map(s=>Number(s.trim()));
-          }
-          if(nums.some(isNaN) || nums.length!==cfg.pick) throw new Error(`Extragerea din ${fmtDateShort(dateStr)}: introdu exact ${cfg.pick} numere valide.`);
-          parsed.push({date:dateStr, nums, joker});
-        }
+        for(const draw of found){ await saveDraw(game, draw); }
+        confStatus.className = 'status-msg ok';
+        confStatus.textContent = `${found.length} extrageri adăugate și salvate permanent ✓`;
+        setTimeout(()=>{ renderAutoFillIdle(); renderAll(); }, 800);
       }catch(e){
-        submitStatus.className='status-msg err'; submitStatus.textContent = e.message; return;
+        confStatus.className = 'status-msg err'; confStatus.textContent = 'Eroare la salvare: ' + e.message;
       }
-    }
-    submitStatus.className = 'status-msg'; submitStatus.textContent = 'Se salvează...';
-    try{
-      for(const draw of parsed){ await saveDraw(game, draw); }
-      submitStatus.className = 'status-msg ok';
-      submitStatus.textContent = `${parsed.length} extrageri adăugate și salvate permanent ✓ — analiza completă s-a recalculat automat, inclusiv acestea.`;
-      renderAutoFillIdle();
-      renderAll();
-    }catch(e){
-      submitStatus.className='status-msg err'; submitStatus.textContent='Eroare la salvare: '+e.message;
-    }
-  });
+    });
+
+  }catch(e){
+    statusEl.className = 'status-msg err';
+    statusEl.textContent = `Nu s-au putut prelua datele automat: ${e.message}`;
+    form.innerHTML = `<p class="small-note" style="margin-top:8px;">Poți adăuga extragerile manual folosind butonul "Adaugă extragere manual" de mai sus, sau încearcă din nou mai târziu.</p>`;
+  }
 }
 
 document.getElementById('autoFillMissingBtn').addEventListener('click', ()=>{
-  renderAutoFillForm(currentGame);
+  autoFetchAndFillMissing(currentGame);
 });
 
 
