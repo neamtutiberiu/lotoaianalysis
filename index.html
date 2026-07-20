@@ -413,9 +413,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     </div>
     <div class="tabs" id="gameTabs"></div>
     <div class="version-block">
-      <span class="version-num">Ver 2.9</span>
+      <span class="version-num">Ver 3.0</span>
       <span class="version-date">Actualizat: 14.07.2026</span>
-      <span class="version-note">Panou nou "Acoperirea intervalelor în extrageri": scanează toată arhiva (1993→prezent) și arată, în procente, cât de des apare fiecare zonă (1-10, 11-20...), câte zone acoperă o extragere tipică și cele mai frecvente combinații de zone — pentru 6/49, 5/40 și Joker. "Repetări istorice între extrageri" mutat sub "Variante recomandate"</span>
+      <span class="version-note">Scorul de calitate al variantelor ține cont acum și de acoperirea zonelor (1-10, 11-20...) — în selecție, în afișare, și în backtesting-ul dedicat, toate sincronizate pe exact aceeași formulă. "Repetări istorice" mutate sub "Variante recomandate". Notele sub fiecare variantă arată acum și care zone sunt acoperite</span>
     </div>
   </div>
 
@@ -8608,6 +8608,19 @@ function computeBallStats(game){
   const totalNums = n*cfg.pick;
   const oddRatio = totalNums ? oddTotal/totalNums : 0.5;
   const lowRatio = totalNums ? lowTotal/totalNums : 0.5;
+  // Zone-coverage distribution over the whole archive: probability that a real draw covers
+  // exactly k decade-zones (1-10, 11-20, ...). Feeds the zoneFit shape component in the
+  // "Variante recomandate" combo scoring — same descriptive-alignment role as sum/odd/low.
+  const zonesForCov = [];
+  for(let lo=1; lo<=cfg.range; lo+=10) zonesForCov.push({lo, hi: Math.min(lo+9, cfg.range)});
+  const zoneCovHist = Array(zonesForCov.length+1).fill(0);
+  draws.forEach(d=>{
+    let covered=0;
+    zonesForCov.forEach(z=>{ if(d.nums.some(nm=> nm>=z.lo && nm<=z.hi)) covered++; });
+    zoneCovHist[covered]++;
+  });
+  const zoneCoverageProbs = zoneCovHist.map(c=> n? c/n : 0);
+  const zoneMaxProb = Math.max(...zoneCoverageProbs, 0.0001);
   const avgGap = gapCount ? gapSum/gapCount : 0;
   const consecPct = n ? 100*drawsWithConsec/n : 0;
   const repeatFromPrevAvg = n>1 ? repeatFromPrevTotal/(n-1) : 0;
@@ -8651,7 +8664,7 @@ function computeBallStats(game){
   }
 
   return { draws, n, freq, overdue, pairCount, tripleCount, topPairs, topTriples,
-    avgSum, stdSum, oddRatio, lowRatio, avgGap, consecPct, repeatFromPrevAvg,
+    avgSum, stdSum, oddRatio, lowRatio, zoneCoverageProbs, zoneMaxProb, avgGap, consecPct, repeatFromPrevAvg,
     jokerFreq, jokerOverdue, sums, recentN, recentFreq, jokerRecentFreq,
     hazard: gapProfile.hazard, avgGapPerNum: gapProfile.avgGapPerNum, stdGapPerNum: gapProfile.stdGapPerNum,
     chi2: chiEnt.chi2, chiDf: chiEnt.df, entropy: chiEnt.entropy, entropyNorm: chiEnt.entropyNorm,
@@ -9615,7 +9628,22 @@ function comboRawScoreFast(combo, cfg, stats, compositeScores, mn, mx){
   const sumFit = Math.max(0, 1-zSum/2.5);
   const oddFit = 1 - Math.min(1, Math.abs(oddCount/combo.length - stats.oddRatio)/0.5);
   const lowFit = 1 - Math.min(1, Math.abs(lowCount/combo.length - stats.lowRatio)/0.5);
-  return 0.55*avgPercentile + 0.20*sumFit + 0.125*oddFit + 0.125*lowFit;
+
+  // zoneFit: how typical this combo's decade-zone coverage count is, versus the archive's own
+  // distribution (e.g. at 6/49, covering 4 of 5 zones is the most common real outcome at ~53%,
+  // so a 4-zone combo gets zoneFit≈1, while an unusual 2-zone combo gets a low value). Falls
+  // back to neutral when stats don't carry the distribution (defensive; both live stats and
+  // backtest shape stats provide it).
+  let zoneFit = 0.5;
+  if(stats.zoneCoverageProbs && stats.zoneMaxProb){
+    let covered = 0;
+    for(let lo=1; lo<=cfg.range; lo+=10){
+      const hi = Math.min(lo+9, cfg.range);
+      for(let i=0;i<combo.length;i++){ if(combo[i]>=lo && combo[i]<=hi){ covered++; break; } }
+    }
+    zoneFit = (stats.zoneCoverageProbs[covered]||0) / stats.zoneMaxProb;
+  }
+  return 0.50*avgPercentile + 0.18*sumFit + 0.11*oddFit + 0.11*lowFit + 0.10*zoneFit;
 }
 // Exhaustive search over all `pick`-sized combinations drawn from `poolNumbers` (a short list —
 // typically 4x the pick size — of the highest-composite-scored numbers), returning whichever
@@ -9648,30 +9676,30 @@ function bestComboFromPool(poolNumbers, pick, cfg, stats, compositeScores, mn, m
 function scoreTicketQuality(combo, cfg, stats, compositeScores){
   const { mn, mx } = compositeMinMax(compositeScores);
   const range = (mx-mn)||1;
-  const percentiles = combo.map(n=> ((compositeScores[n]||0)-mn)/range );
-  const avgPercentile = mean(percentiles); // 0..1, component A
+  // Single source of truth: the raw 0..1 score is computed by comboRawScoreFast — the same
+  // function used inside the combinatorial search to CHOOSE the best combo. This way the number
+  // shown under each ticket and the number that selected the ticket are always identical.
+  const raw = comboRawScoreFast(combo, cfg, stats, compositeScores, mn, mx);
+  const score10 = Math.max(1, Math.min(10, Math.round(1 + raw*9)));
 
+  // Human-readable breakdown for the notes section:
+  const percentiles = combo.map(n=> ((compositeScores[n]||0)-mn)/range );
+  const avgPercentile = mean(percentiles);
   const sum = combo.reduce((a,b)=>a+b,0);
   const zSum = stats.stdSum ? Math.abs(sum-stats.avgSum)/stats.stdSum : 0;
-  const sumFit = Math.max(0, 1 - zSum/2.5); // component B: within ~2.5 std-dev of typical sum
-
   const oddCount = combo.filter(n=>n%2!==0).length;
-  const oddFrac = oddCount/combo.length;
-  const oddFit = 1 - Math.min(1, Math.abs(oddFrac - stats.oddRatio) / 0.5); // component C
-
   const mid = cfg.range/2;
   const lowCount = combo.filter(n=>n<=mid).length;
-  const lowFrac = lowCount/combo.length;
-  const lowFit = 1 - Math.min(1, Math.abs(lowFrac - stats.lowRatio) / 0.5); // component D
-
-  const raw = 0.55*avgPercentile + 0.20*sumFit + 0.125*oddFit + 0.125*lowFit;
-  const score10 = Math.max(1, Math.min(10, Math.round(1 + raw*9)));
+  const zones = intervalZonesForGame(cfg);
+  let coveredZones = 0;
+  zones.forEach(z=>{ if(combo.some(nm=> nm>=z.lo && nm<=z.hi)) coveredZones++; });
 
   const notes = [];
   notes.push(`scor mediu de percentilă al numerelor alese: ${Math.round(avgPercentile*100)}%`);
   notes.push(`sumă ${sum} vs. media istorică ${Math.round(stats.avgSum)} (${zSum.toFixed(1)} abateri standard)`);
   notes.push(`${oddCount}/${combo.length} numere impare (istoric: ${Math.round(stats.oddRatio*100)}% impare)`);
   notes.push(`${lowCount}/${combo.length} numere din jumătatea inferioară a intervalului (istoric: ${Math.round(stats.lowRatio*100)}%)`);
+  notes.push(`acoperire zone: ${coveredZones} din ${zones.length} (${zones.filter(z=> combo.some(nm=> nm>=z.lo && nm<=z.hi)).map(z=>z.label).join(', ')})`);
   return { score10, notes };
 }
 // Noroc variant: mean percentile of the chosen digits, across their 7 position-scores.
@@ -10201,14 +10229,24 @@ function randomBaselineMatches(cfg){
 // each tested draw — never from the full modern archive — so there's no lookahead bias.
 function computeShapeStatsForHistory(history, cfg){
   const n = history.length;
-  if(n===0) return { avgSum:0, stdSum:0, oddRatio:0.5, lowRatio:0.5 };
+  if(n===0) return { avgSum:0, stdSum:0, oddRatio:0.5, lowRatio:0.5, zoneCoverageProbs:null, zoneMaxProb:null };
   const sums = history.map(d=> d.nums.reduce((a,b)=>a+b,0));
   const avgSum = sums.reduce((a,b)=>a+b,0)/n;
   const stdSum = Math.sqrt(sums.reduce((a,b)=>a+(b-avgSum)*(b-avgSum),0)/n);
   const mid = cfg.range/2;
   let oddTotal=0, lowTotal=0, totalNums=0;
-  history.forEach(d=> d.nums.forEach(nm=>{ totalNums++; if(nm%2!==0) oddTotal++; if(nm<=mid) lowTotal++; }));
-  return { avgSum, stdSum, oddRatio: totalNums?oddTotal/totalNums:0.5, lowRatio: totalNums?lowTotal/totalNums:0.5 };
+  // Zone coverage distribution — same decade zones as the "Acoperirea intervalelor" panel
+  const zones = intervalZonesForGame(cfg);
+  const zoneCovHist = Array(zones.length+1).fill(0);
+  history.forEach(d=>{
+    d.nums.forEach(nm=>{ totalNums++; if(nm%2!==0) oddTotal++; if(nm<=mid) lowTotal++; });
+    let covered=0;
+    zones.forEach(z=>{ if(d.nums.some(nm=> nm>=z.lo && nm<=z.hi)) covered++; });
+    zoneCovHist[covered]++;
+  });
+  const zoneCoverageProbs = zoneCovHist.map(c=> n? c/n : 0);
+  const zoneMaxProb = Math.max(...zoneCoverageProbs, 0.0001);
+  return { avgSum, stdSum, oddRatio: totalNums?oddTotal/totalNums:0.5, lowRatio: totalNums?lowTotal/totalNums:0.5, zoneCoverageProbs, zoneMaxProb };
 }
 // Shared core: given already-built composite scores + shape stats, produces the same 3 tickets
 // "Variante recomandate" would show — used by both the live panel (via generate3RecommendedBallTickets,
@@ -11515,7 +11553,7 @@ function scanArchiveRepeats(game, cfg){
         const dj = draws[j].digits;
         let m=0;
         for(let k=0;k<7;k++) if(di[k]===dj[k]) m++;
-        if(buckets[m]) buckets[m].push([draws[i].date, draws[j].date]);
+        if(buckets[m]) buckets[m].push([i, j]);
       }
     }
   } else {
@@ -11528,11 +11566,11 @@ function scanArchiveRepeats(game, cfg){
         let m=0;
         const nj = draws[j].nums;
         for(let k=0;k<nj.length;k++) if(mark[nj[k]]) m++;
-        if(buckets[m]) buckets[m].push([draws[i].date, draws[j].date]);
+        if(buckets[m]) buckets[m].push([i, j]);
       }
     }
   }
-  return { buckets, levels, n };
+  return { buckets, levels, n, draws };
 }
 
 function levelsLabelForGame(cfg){
@@ -11566,7 +11604,16 @@ function analyzeIntervalCoverage(game, cfg){
     patternCount[patternKey] = (patternCount[patternKey]||0)+1;
   });
   const topPatterns = Object.entries(patternCount).sort((a,b)=> b[1]-a[1]).slice(0,8);
-  return { n: draws.length, zones, zPresent, coverageCountHist, topPatterns,
+  // Group exact zone patterns by how many zones they cover, keeping the top few per group —
+  // so the coverage-distribution table can show WHICH zones those were, not just how many.
+  const patternsByCount = {};
+  Object.entries(patternCount).forEach(([pat,count])=>{
+    const k = pat==='(niciuna)' ? 0 : pat.split(' + ').length;
+    if(!patternsByCount[k]) patternsByCount[k]=[];
+    patternsByCount[k].push([pat,count]);
+  });
+  Object.values(patternsByCount).forEach(arr=> arr.sort((a,b)=> b[1]-a[1]));
+  return { n: draws.length, zones, zPresent, coverageCountHist, topPatterns, patternsByCount,
     firstDate: draws.length? draws[0].date : null, lastDate: draws.length? draws[draws.length-1].date : null };
 }
 function renderIntervalPanel(game){
@@ -11596,7 +11643,11 @@ function renderIntervalPanel(game){
     if(count===0) return '';
     const pct = 100*count/a.n;
     const isFull = k===a.zones.length;
-    return `<tr style="${isFull?'background:rgba(212,175,55,.08);':''}"><td>${isFull?'<b>':''}${k} din ${a.zones.length} zone acoperite${isFull?' (toate) ★</b>':''}</td><td class="mono">${count.toLocaleString('ro-RO')}</td><td class="mono">${pct.toFixed(1)}%</td></tr>`;
+    const topForK = (a.patternsByCount[k]||[]).slice(0,3)
+      .map(([pat,c])=> `${pat} <span class="mono" style="color:var(--gold);">(${(100*c/a.n).toFixed(1)}%)</span>`)
+      .join('<br>');
+    const zonesDetail = isFull ? '' : `<div style="font-size:11px; margin-top:4px; line-height:1.6;">${topForK}</div>`;
+    return `<tr style="${isFull?'background:rgba(212,175,55,.08);':''}"><td>${isFull?'<b>':''}${k} din ${a.zones.length} zone acoperite${isFull?' (toate) ★</b>':''}${zonesDetail}</td><td class="mono">${count.toLocaleString('ro-RO')}</td><td class="mono">${pct.toFixed(1)}%</td></tr>`;
   }).join('');
 
   const patRows = a.topPatterns.map(([pat,count])=>{
@@ -11642,12 +11693,18 @@ function renderRepeatScanResults(game, out){
   const statusEl = document.getElementById('repeatScanStatus');
   const levelsTxt = document.getElementById('repeatScanLevelsTxt');
   if(levelsTxt) levelsTxt.textContent = levelsLabelForGame(cfg);
-  const { buckets, levels, n } = out;
+  const { buckets, levels, n, draws } = out;
   const totalPairs = n*(n-1)/2;
   statusEl.className='status-msg ok';
-  statusEl.textContent = `Scanate ${totalPairs.toLocaleString('ro-RO')} perechi posibile din ${n} extrageri reale ale ${cfg.label}.`;
+  statusEl.textContent = `Scanate ${totalPairs.toLocaleString('ro-RO')} perechi posibile din ${n} extrageri reale ale ${cfg.label}, în ordine cronologică (de la prima extragere din arhivă).`;
 
-  const CAP = 30;
+  const drawCell = (idx)=>{
+    const d = draws[idx];
+    const numsStr = cfg.isDigit ? d.digits.join('') : d.nums.slice().sort((a,b)=>a-b).join(', ') + (cfg.hasJoker && d.joker ? ' +'+d.joker : '');
+    return `<td class="mono" style="white-space:nowrap;">#${idx+1}</td><td class="mono" style="white-space:nowrap;">${fmtDateShort(d.date)}</td><td class="mono">${numsStr}</td>`;
+  };
+
+  const CAP = 40;
   const sections = levels.map(L=>{
     const total = cfg.isDigit ? `${L}/7` : `${L}/${cfg.pick}`;
     const list = buckets[L];
@@ -11656,20 +11713,22 @@ function renderRepeatScanResults(game, out){
         <h3>${total} — nu s-a întâmplat niciodată în arhivă <span class="pop-tag pop-low" style="margin-left:8px;">0 cazuri</span></h3>
       </div>`;
     }
-    const shown = list.slice(-CAP).reverse(); // most recent first
-    const rows = shown.map(([d1,d2])=> `<tr><td class="mono">${fmtDateShort(d1)}</td><td class="mono">${fmtDateShort(d2)}</td></tr>`).join('');
-    const cappedNote = list.length > CAP ? `<p class="small-note" style="margin-top:6px;">Afișate cele mai recente ${CAP} din ${list.length.toLocaleString('ro-RO')} cazuri găsite în total.</p>` : '';
+    // Chronological: buckets are already built in ascending (i,j) order by construction of the
+    // scan loops, so the earliest pairs come first — exactly the order requested.
+    const shown = list.slice(0, CAP);
+    const rows = shown.map(([i,j])=> `<tr>${drawCell(i)}${drawCell(j)}</tr>`).join('');
+    const cappedNote = list.length > CAP ? `<p class="small-note" style="margin-top:6px;">Afișate primele ${CAP} cazuri în ordine cronologică, din ${list.length.toLocaleString('ro-RO')} găsite în total.</p>` : '';
     return `<div class="repeat-scan-section">
       <h3>${total} — s-a întâmplat de <span style="color:var(--gold);">${list.length.toLocaleString('ro-RO')}</span> ori în arhivă</h3>
       <div class="table-scroll"><table class="data-table" style="width:100%;">
-        <thead><tr><th>Extragerea A</th><th>Extragerea B</th></tr></thead>
+        <thead><tr><th>Extr. A</th><th>Data A</th><th>Numerele A</th><th>Extr. B</th><th>Data B</th><th>Numerele B</th></tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
       ${cappedNote}
     </div>`;
   }).join('');
 
-  box.innerHTML = sections + `<p class="small-note" style="margin-top:14px;">Numărul de cazuri e exact ce ar prezice teoria probabilităților pentru extrageri complet independente — nu e un semn de "tipar" sau regularitate ascunsă. Arată doar cât de des se întâmplă coincidențe de acest fel pe termen lung, pur din hazard.</p>`;
+  box.innerHTML = sections + `<p class="small-note" style="margin-top:14px;">"#" = numărul extragerii în arhivă (extragerea #1 = prima din 1993/istoricul jocului). Numărul de cazuri e exact ce ar prezice teoria probabilităților pentru extrageri complet independente — nu e un semn de "tipar" sau regularitate ascunsă.</p>`;
 }
 
 
