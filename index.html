@@ -222,6 +222,7 @@ input[type=range]::-moz-range-thumb{
 .data-table td{ padding:7px 8px; border-bottom:1px solid var(--border); }
 .repeat-scan-section{ margin-bottom:20px; }
 .repeat-scan-section h3{ font-size:13px; color:var(--text); margin-bottom:8px; display:flex; align-items:center; flex-wrap:wrap; gap:4px; }
+.repeat-detail-row{ padding:2px 0; border-bottom:1px solid var(--surface3); }
 .ev-table input{
   background:var(--surface3); border:1px solid var(--border); border-radius:6px;
   padding:6px 8px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12.5px; width:100px;
@@ -413,9 +414,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     </div>
     <div class="tabs" id="gameTabs"></div>
     <div class="version-block">
-      <span class="version-num">Ver 3.0</span>
+      <span class="version-num">Ver 3.4</span>
       <span class="version-date">Actualizat: 14.07.2026</span>
-      <span class="version-note">Scorul de calitate al variantelor ține cont acum și de acoperirea zonelor (1-10, 11-20...) — în selecție, în afișare, și în backtesting-ul dedicat, toate sincronizate pe exact aceeași formulă. "Repetări istorice" mutate sub "Variante recomandate". Notele sub fiecare variantă arată acum și care zone sunt acoperite</span>
+      <span class="version-note">Scoasă rubrica "Câștigători pe categorii — ultima extragere" (nefolosită)</span>
     </div>
   </div>
 
@@ -429,12 +430,24 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <span class="ci-clock mono" id="panelCountdown">—</span>
     </div>
     <div id="salesCutoffBanner" class="sales-cutoff-banner"></div>
-    <div class="category-results-block">
-      <h3 style="font-size:13px; color:var(--gold); margin:16px 0 8px;">Câștigători pe categorii — ultima extragere</h3>
-      <div id="categoryResultsDisplay"></div>
-      <button class="btn2 btn2-outline" id="categoryResultsUpdateBtn" style="margin-top:8px;">Actualizează de pe site-ul Loteriei Române</button>
-      <div id="categoryResultsForm"></div>
+    <div id="missingDrawsWarning"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Adaugă o extragere nouă <span class="sub">manual, imediat după ce apare rezultatul oficial</span></h2>
+    <div class="form-row">
+      <div class="field">
+        <label>Data (ZZ-LL-AAAA)</label>
+        <input type="text" id="newDate" placeholder="12-07-2026">
+      </div>
+      <div class="field">
+        <label id="newNumsLabel">Numere (separate prin virgulă)</label>
+        <input type="text" class="nums" id="newNums" placeholder="ex: 4,12,19,23,31,45">
+      </div>
+      <button class="btn2" id="addDrawBtn">Adaugă extragere</button>
     </div>
+    <div class="status-msg" id="addStatus"></div>
+    <p class="small-note">Aplicația nu poate prelua automat rezultate în fundal. Adaugă rezultatul aici de îndată ce apare (joi/duminică, ora 18:30) și toate statisticile de mai sus se recalculează automat, pe baza arhivei complete + extragerile adăugate manual. Datele tale se salvează permanent.</p>
   </div>
 
   <div class="panel" id="recommendedPanel">
@@ -516,23 +529,6 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
   <div class="panel">
     <h2><span id="pairsTitleText">Perechi și tripletă frecvente</span> <span class="sub" id="pairsSub">— combinații care au apărut cel mai des împreună în aceeași extragere</span></h2>
     <div class="ballgrid" id="pairsDisplay"></div>
-  </div>
-
-  <div class="panel">
-    <h2>Adaugă o extragere nouă <span class="sub">manual, imediat după ce apare rezultatul oficial</span></h2>
-    <div class="form-row">
-      <div class="field">
-        <label>Data (AAAA-LL-ZZ)</label>
-        <input type="text" id="newDate" placeholder="2026-07-12">
-      </div>
-      <div class="field">
-        <label id="newNumsLabel">Numere (separate prin virgulă)</label>
-        <input type="text" class="nums" id="newNums" placeholder="ex: 4,12,19,23,31,45">
-      </div>
-      <button class="btn2" id="addDrawBtn">Adaugă extragere</button>
-    </div>
-    <div class="status-msg" id="addStatus"></div>
-    <p class="small-note">Aplicația nu poate prelua automat rezultate în fundal. Adaugă rezultatul aici de îndată ce apare (joi/duminică, ora 18:30) și toate statisticile de mai sus se recalculează automat, pe baza arhivei complete + extragerile adăugate manual. Datele tale se salvează permanent.</p>
   </div>
 
   <div class="panel">
@@ -655,8 +651,8 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
         <select id="jeGame"></select>
       </div>
       <div class="field">
-        <label>Data extragerii</label>
-        <input type="text" id="jeDate" placeholder="2026-07-12">
+        <label>Data extragerii (ZZ-LL-AAAA)</label>
+        <input type="text" id="jeDate" placeholder="12-07-2026">
       </div>
       <div class="field">
         <label id="jeNumsLabel">Numere jucate</label>
@@ -8867,11 +8863,11 @@ function renderLastDraw(game){
   const draws = getAllDraws(game);
   const last = draws[draws.length-1];
   const repeatBox = document.getElementById('lastDrawRepeatInfo');
-  if(!last){ if(repeatBox) repeatBox.innerHTML=''; return; }
+  if(!last){ if(repeatBox) repeatBox.innerHTML=''; renderMissingDrawsWarning(game); return; }
   if(cfg.isDigit){
     last.digits.forEach(dg=> wrap.appendChild(digitEl(dg)));
     if(repeatBox){ repeatBox.innerHTML=''; repeatBox.appendChild(repeatInfoBlock(last, draws, cfg.digits, true, false)); }
-    renderCategoryResultsDisplay(game);
+    renderMissingDrawsWarning(game);
     return;
   }
   last.nums.slice().sort((a,b)=>a-b).forEach(nm=> wrap.appendChild(ballEl(nm,'hit')));
@@ -8883,7 +8879,32 @@ function renderLastDraw(game){
     wrap.appendChild(ballEl(last.joker,'hit joker-ball'));
   }
   if(repeatBox){ repeatBox.innerHTML=''; repeatBox.appendChild(repeatInfoBlock(last, draws, cfg.pick, false, false)); }
-  renderCategoryResultsDisplay(game);
+  renderMissingDrawsWarning(game);
+}
+
+function renderMissingDrawsWarning(game){
+  const box = document.getElementById('missingDrawsWarning');
+  if(!box) return;
+  const missing = computeMissingDrawDates(game);
+  if(missing.length === 0){
+    box.innerHTML = '';
+    return;
+  }
+  const cfg = GAMES[game];
+  const draws = getAllDraws(game);
+  const lastDate = draws.length ? fmtDateShort(draws[draws.length-1].date) : '—';
+  const dateList = missing.map(d=> fmtDate(d)).join(', ');
+  box.innerHTML = `
+    <div style="margin-top:14px; padding:12px 16px; border-radius:10px; background:rgba(224,87,74,.12); border:1px solid rgba(224,87,74,.4);">
+      <div style="color:#e0574a; font-weight:700; font-size:14px; margin-bottom:6px;">
+        ⚠ ${missing.length === 1 ? 'Lipsește 1 extragere' : `Lipsesc ${missing.length} extrageri`} pentru ${cfg.label}!
+      </div>
+      <div style="color:#e0574a; font-size:13px; line-height:1.7;">
+        Ultima extragere din arhivă: <b>${lastDate}</b>.<br>
+        ${missing.length === 1 ? 'Extragerea lipsă' : 'Extragerile lipsă'}: <b>${dateList}</b>.<br>
+        <span style="font-size:12px; color:#f2f2f2;">Adaug-o în panoul "Adaugă o extragere nouă" de mai jos — sau folosește butonul "Introdu automat extragerile care lipsesc" din secțiunea Generator de variante.</span>
+      </div>
+    </div>`;
 }
 
 function renderHeatmap(stats, game){
@@ -9547,42 +9568,39 @@ function buildRecommendationNarrative(qualityInfo, rankLabel){
 // compares digit-by-digit position (since it's a fixed 7-digit sequence, order matters).
 function computeRepeatLevels(target, draws, pick, isDigit){
   const levels = [pick, pick-1, pick-2].filter(l=>l>=1);
-  const out = levels.map(L=> ({ level:L, count:0, mostRecentDate:null, firstDate:null }));
+  const out = levels.map(L=> ({ level:L, count:0, mostRecentDate:null, firstDate:null, matches:[] }));
   const targetVals = isDigit ? target.digits : target.nums;
-  draws.forEach(d=>{
-    if(d === target || d.date === target.date) return; // skip the draw itself
-    let m;
+  draws.forEach((d,idx)=>{
+    if(d === target || d.date === target.date) return;
+    let m, matched=[];
     if(isDigit){
       m = 0;
       for(let i=0;i<7;i++) if(d.digits[i] === targetVals[i]) m++;
     } else {
-      const dSet = d.nums;
-      m = targetVals.filter(n=> dSet.includes(n)).length;
+      matched = targetVals.filter(n=> d.nums.includes(n));
+      m = matched.length;
     }
     out.forEach(r=>{
       if(m === r.level){
         r.count++;
         if(!r.firstDate) r.firstDate = d.date;
-        r.mostRecentDate = d.date; // draws are stored chronologically ascending
+        r.mostRecentDate = d.date;
+        r.matches.push({ idx, date:d.date, nums: isDigit ? d.digits.join('') : d.nums.slice().sort((a,b)=>a-b), matched: isDigit ? null : matched.slice().sort((a,b)=>a-b) });
       }
     });
   });
   return out;
 }
-// Short human-readable line for one overlap level, e.g. "6/6: nu s-a mai repetat niciodată" or
-// "5/6: da — de 340× în arhivă, cel mai recent la 03.01.2026".
 function formatRepeatLine(r, total){
   const label = `${r.level}/${total}`;
   if(r.count === 0) return `${label}: nu s-a mai repetat niciodată în arhivă`;
   return `${label}: da — de ${r.count}× în arhivă, cel mai recent la ${fmtDateShort(r.mostRecentDate)}`;
 }
-// Builds the badge block shown under "Ultima extragere". Exact match (top level) is styled as
-// an attention-grabbing badge when found (it's astronomically unlikely); the partial-overlap
-// levels are styled more neutrally, since finding those is common and not itself notable.
 function repeatInfoBlock(target, draws, pick, isDigit, compact){
   const levels = computeRepeatLevels(target, draws, pick, isDigit);
   const wrap = document.createElement('div');
   wrap.className = compact ? 'repeat-info repeat-info-compact' : 'repeat-info';
+  const CAP = 20; // max detailed entries shown per level, to keep the UI readable
   levels.forEach((r, idx)=>{
     const tag = document.createElement('div');
     const found = r.count > 0;
@@ -9590,6 +9608,22 @@ function repeatInfoBlock(target, draws, pick, isDigit, compact){
     tag.className = 'pop-tag ' + cls;
     tag.textContent = formatRepeatLine(r, pick);
     wrap.appendChild(tag);
+    // Show details only for the higher match levels (pick/pick and pick-1/pick, i.e. 6/6+5/6
+    // for 6/49, 5/5+4/5 for Joker, etc.) — 4/6 level can have thousands of hits, so we show
+    // details for that too but capped, since the user explicitly asked for it.
+    if(found && r.matches.length > 0){
+      const detailDiv = document.createElement('div');
+      detailDiv.style.cssText = 'margin:6px 0 10px; font-size:12px; line-height:1.7;';
+      const shown = r.matches.slice(0, CAP);
+      const rows = shown.map(m=>{
+        const matchedStr = m.matched ? ` — numere comune: <b style="color:var(--gold);">${m.matched.join(', ')}</b>` : '';
+        const numsStr = Array.isArray(m.nums) ? m.nums.join(', ') : m.nums;
+        return `<div class="repeat-detail-row"><span class="mono" style="color:var(--muted);">#${m.idx+1}</span> <span class="mono">${fmtDateShort(m.date)}</span> → <span class="mono">${numsStr}</span>${matchedStr}</div>`;
+      }).join('');
+      const cappedNote = r.matches.length > CAP ? `<div class="small-note" style="margin-top:4px;">...și alte ${r.matches.length-CAP} cazuri (${r.matches.length} total).</div>` : '';
+      detailDiv.innerHTML = rows + cappedNote;
+      wrap.appendChild(detailDiv);
+    }
   });
   return wrap;
 }
@@ -10795,107 +10829,6 @@ async function loadStoredDraws(){
 // static page (CORS). This lets the person paste in, per category, whether it was won at the
 // most recent draw and the official prize/winner count from loto.ro — then remembers it
 // permanently and displays it automatically every time that draw is the "current" one.
-let categoryResultsByGame = {}; // { game: { date: [{matches, won, prize, winners}, ...] } }
-async function persistCategoryResults(){
-  await userDocRef.set({ categoryResults: categoryResultsByGame }, {merge:true});
-}
-function categoryListForGame(cfg){
-  if(cfg.isDigit) return [{matches:7, label:'Categoria I (7/7 cifre)'}];
-  return getEvCategories(cfg).map(c=> ({matches:c.matches, label:c.label}));
-}
-function renderCategoryResultsDisplay(game){
-  const box = document.getElementById('categoryResultsDisplay');
-  if(!box) return;
-  const cfg = GAMES[game];
-  const draws = getAllDraws(game);
-  const last = draws[draws.length-1];
-  if(!last){ box.innerHTML = ''; return; }
-  const saved = (categoryResultsByGame[game] || {})[last.date];
-  if(!saved){
-    box.innerHTML = `<p class="small-note">Nu ai completat încă rezultatele pe categorii pentru extragerea din ${fmtDateShort(last.date)}. Apasă butonul de mai jos.</p>`;
-    return;
-  }
-  box.innerHTML = `<div class="repeat-info">${saved.map(c=>{
-    if(c.won){
-      return `<div class="pop-tag pop-high">${c.label}: CÂȘTIGATĂ — ${c.winners||0} câștigător(i), ${Number(c.prize||0).toLocaleString('ro-RO')} lei${c.prize? '/câștigător' : ''}</div>`;
-    }
-    return `<div class="pop-tag pop-low">${c.label}: neacordată — se reportează</div>`;
-  }).join('')}</div>
-  <p class="small-note" style="margin-top:8px;">Completat pentru extragerea din ${fmtDateShort(last.date)}.</p>`;
-}
-function renderCategoryResultsForm(game){
-  const cfg = GAMES[game];
-  const draws = getAllDraws(game);
-  const last = draws[draws.length-1];
-  const form = document.getElementById('categoryResultsForm');
-  if(!last || !form) return;
-  const cats = categoryListForGame(cfg);
-  const saved = (categoryResultsByGame[game] || {})[last.date] || [];
-  const savedByMatches = {}; saved.forEach(s=> savedByMatches[s.matches]=s);
-
-  form.innerHTML = `
-    <p class="small-note" style="margin:10px 0;">
-      Deschide <a href="https://www.loto.ro/loto-new/newLotoSiteNexioFinalVersion/web/app2.php/jocuri/rezultate_extragere.html" target="_blank" rel="noopener" style="color:var(--blue);">rezultatele oficiale Loteria Română</a> pentru extragerea din ${fmtDate(last.date)}, apoi completează mai jos pentru fiecare categorie dacă a fost câștigată și, dacă da, premiul și numărul de câștigători (opțional).
-    </p>
-    <div id="categoryResultsRows"></div>
-    <button class="btn2" id="categoryResultsSaveBtn" style="margin-top:10px;">Salvează rezultatele</button>
-    <div id="categoryResultsSaveStatus" class="status-msg"></div>
-  `;
-  const rowsBox = document.getElementById('categoryResultsRows');
-  cats.forEach(c=>{
-    const prev = savedByMatches[c.matches];
-    const row = document.createElement('div');
-    row.className = 'form-row';
-    row.style.marginBottom = '8px';
-    row.innerHTML = `
-      <div class="field" style="min-width:160px;">
-        <label>${c.label}</label>
-        <select class="catResWon" data-matches="${c.matches}">
-          <option value="no" ${!prev||!prev.won?'selected':''}>Neacordată</option>
-          <option value="yes" ${prev&&prev.won?'selected':''}>Câștigată</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Premiu per câștigător (lei)</label>
-        <input type="text" class="catResPrize" data-matches="${c.matches}" value="${prev&&prev.prize? prev.prize : ''}" style="width:140px;">
-      </div>
-      <div class="field">
-        <label>Nr. câștigători</label>
-        <input type="text" class="catResWinners" data-matches="${c.matches}" value="${prev&&prev.winners? prev.winners : ''}" style="width:100px;">
-      </div>
-    `;
-    rowsBox.appendChild(row);
-  });
-
-  document.getElementById('categoryResultsSaveBtn').addEventListener('click', async ()=>{
-    const statusEl = document.getElementById('categoryResultsSaveStatus');
-    const result = cats.map(c=>{
-      const wonSel = document.querySelector(`.catResWon[data-matches="${c.matches}"]`);
-      const prizeInp = document.querySelector(`.catResPrize[data-matches="${c.matches}"]`);
-      const winnersInp = document.querySelector(`.catResWinners[data-matches="${c.matches}"]`);
-      return {
-        matches: c.matches, label: c.label,
-        won: wonSel.value==='yes',
-        prize: parseFloat(prizeInp.value.replace(',','.'))||0,
-        winners: parseInt(winnersInp.value)||0
-      };
-    });
-    statusEl.className='status-msg'; statusEl.textContent='Se salvează...';
-    try{
-      if(!categoryResultsByGame[game]) categoryResultsByGame[game] = {};
-      categoryResultsByGame[game][last.date] = result;
-      await persistCategoryResults();
-      statusEl.className='status-msg ok'; statusEl.textContent='Salvat ✓';
-      form.innerHTML = '';
-      renderCategoryResultsDisplay(game);
-    }catch(e){
-      statusEl.className='status-msg err'; statusEl.textContent='Eroare la salvare: '+e.message;
-    }
-  });
-}
-document.getElementById('categoryResultsUpdateBtn').addEventListener('click', ()=>{
-  renderCategoryResultsForm(currentGame);
-});
 
 
 async function saveDraw(game, draw){
@@ -11049,7 +10982,6 @@ async function loadJournal(){
   const data = snap.exists ? snap.data() : {};
   journalEntries = data.journal || [];
   evPrizesByGame = data.evPrizes || {};
-  categoryResultsByGame = data.categoryResults || {};
 }
 async function persistJournal(){
   await userDocRef.set({ journal: journalEntries }, {merge:true});
@@ -11401,7 +11333,7 @@ document.getElementById('jeGame').addEventListener('change', updateJeNumsLabel);
 document.getElementById('jeAddBtn').addEventListener('click', async ()=>{
   const game = document.getElementById('jeGame').value || GAME_ORDER[0];
   const cfg = GAMES[game];
-  const dateVal = document.getElementById('jeDate').value.trim();
+  const rawDateVal = document.getElementById('jeDate').value.trim();
   const numsVal = document.getElementById('jeNums').value.trim();
   const costVal = document.getElementById('jeCost').value.trim();
   const prizeVal = document.getElementById('jePrize').value.trim();
@@ -11409,8 +11341,14 @@ document.getElementById('jeAddBtn').addEventListener('click', async ()=>{
   const notesVal = document.getElementById('jeNotes').value.trim();
   const msgEl = document.getElementById('jeStatusMsg');
 
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(dateVal)){
-    msgEl.className='status-msg err'; msgEl.textContent='Format dată invalid. Folosește AAAA-LL-ZZ.'; return;
+  let dateVal;
+  if(/^\d{2}-\d{2}-\d{4}$/.test(rawDateVal)){
+    const [dd,mm,yyyy] = rawDateVal.split('-');
+    dateVal = `${yyyy}-${mm}-${dd}`;
+  } else if(/^\d{4}-\d{2}-\d{2}$/.test(rawDateVal)){
+    dateVal = rawDateVal;
+  } else {
+    msgEl.className='status-msg err'; msgEl.textContent='Format dată invalid. Folosește ZZ-LL-AAAA (ex: 12-07-2026).'; return;
   }
   const cost = parseFloat(costVal.replace(',','.')) || 0;
   const prizeWon = parseFloat(prizeVal.replace(',','.')) || 0;
@@ -11486,7 +11424,6 @@ function renderAll(){
   renderRepeatScanIdle();
   renderIntervalPanel(currentGame);
   renderAutoFillIdle();
-  const catForm = document.getElementById('categoryResultsForm'); if(catForm) catForm.innerHTML='';
   const recBtStatus = document.getElementById('recBacktestStatus'); if(recBtStatus){ recBtStatus.className='status-msg'; recBtStatus.textContent=''; }
   const recBtResults = document.getElementById('recBacktestResults'); if(recBtResults) recBtResults.innerHTML='';
   tickCountdown();
@@ -11499,12 +11436,19 @@ document.getElementById('genBtn').addEventListener('click', ()=>{
 });
 
 document.getElementById('addDrawBtn').addEventListener('click', async ()=>{
-  const dateVal = document.getElementById('newDate').value.trim();
+  const rawDateVal = document.getElementById('newDate').value.trim();
   const numsVal = document.getElementById('newNums').value.trim();
   const statusEl = document.getElementById('addStatus');
   const cfg = GAMES[currentGame];
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(dateVal)){
-    statusEl.className='status-msg err'; statusEl.textContent='Format data invalid. Foloseste AAAA-LL-ZZ.'; return;
+  // Accept DD-MM-YYYY (primary, shown in UI) or YYYY-MM-DD (legacy/internal)
+  let dateVal;
+  if(/^\d{2}-\d{2}-\d{4}$/.test(rawDateVal)){
+    const [dd,mm,yyyy] = rawDateVal.split('-');
+    dateVal = `${yyyy}-${mm}-${dd}`;
+  } else if(/^\d{4}-\d{2}-\d{2}$/.test(rawDateVal)){
+    dateVal = rawDateVal;
+  } else {
+    statusEl.className='status-msg err'; statusEl.textContent='Format dată invalid. Folosește ZZ-LL-AAAA (ex: 12-07-2026).'; return;
   }
   try{
     if(cfg.isDigit){
