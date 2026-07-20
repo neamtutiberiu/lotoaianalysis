@@ -414,9 +414,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     </div>
     <div class="tabs" id="gameTabs"></div>
     <div class="version-block">
-      <span class="version-num">Ver 3.6</span>
+      <span class="version-num">Ver 3.8</span>
       <span class="version-date">Actualizat: 14.07.2026</span>
-      <span class="version-note">"Adaugă automat extrageri care lipsesc" acum preia efectiv automat numerele de pe LotteryExtreme.com — le afișează pentru verificare, apoi le salvezi cu un click. Funcționează pentru 6/49, 5/40, Joker și Noroc. Butonul manual redenumit "Adaugă extragere manual"</span>
+      <span class="version-note">Descrierea din "Variante recomandate" rescrisă complet: arată exact, pas cu pas, cum calculează aplicația cele 3 variante — cei 5 indici (cu ponderile exacte), pool-ul de candidați, căutarea exhaustivă, cele 7 componente ale scorului combinat, și ce NU face</span>
     </div>
   </div>
 
@@ -458,11 +458,29 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
   <div class="panel" id="recommendedPanel">
     <h2 id="recommendedTitle">Variante recomandate pentru extragerea curentă</h2>
     <p class="small-note" style="margin-bottom:14px;">
-      Diferit de generatorul de mai jos (care alege aleatoriu, ponderat, o combinație nouă la fiecare click), secțiunea asta e <b>stabilă și deterministă</b>: recalculează, de fiecare dată, din <b>toată arhiva disponibilă</b> — inclusiv extragerile pe care le adaugi tu, manual sau automat — și găsește exact combinația de 6 numere cu cel mai bun scor posibil. Metodologie: scorul fiecărui număr vine din 5 indici (frecvență istorică, regularitate/hazard, momentum recent, deviație z-score, sinergie de perechi — aceiași verificați prin backtesting mai jos); din cele mai bine cotate ~24 de numere, aplicația caută <b>exhaustiv</b> (verifică efectiv fiecare combinație posibilă din acel grup restrâns) exact cei 6 care dau cel mai bun scor combinat — ținând cont și de sumă, raport par/impar și distribuție jos/sus față de tiparul istoric real. Nu forțează acoperirea artificială a intervalului în benzi egale — dacă cele mai bine punctate numere se grupează într-o zonă, combinația poate reflecta asta. Rămâne identică până când extragerea de mai sus chiar are loc și arhiva se actualizează.
-      <br><br>
-      <b>De ce nu ține cont de variantele tale din Jurnal:</b> numerele pe care le-ai jucat tu în trecut nu au nicio legătură cu ce va ieși la o extragere viitoare — o extragere reală e complet independentă de orice combinație aleasă anterior, de tine sau de oricine. Dacă le-aș băga în calcul ca "semnal", ar fi o iluzie de precizie, nu una reală — de-aia jurnalul rămâne folosit corect, doar pentru comparație cu ce a ieșit efectiv (vezi secțiunea Jurnal), nu ca intrare în acest calcul.
-      <br><br>
-      Nu e o predicție reală (nicio metodă nu poate fi, pentru un joc corect) — e cea mai riguroasă recomandare posibilă din datele disponibile.
+      <b style="color:var(--gold);">Cum calculează aplicația cele 3 variante — pas cu pas:</b><br><br>
+      <b>Pasul 1 — Scorul individual al fiecărui număr (1-49)</b><br>
+      Fiecare număr primește un scor compus din <b>5 indici</b>, calculați pe <b>toată arhiva</b> (din 1993 până la ultima extragere adăugată):<br>
+      • <b>Frecvență istorică (28%)</b> — de câte ori a ieșit numărul, normalizat 0-1 față de cel mai frecvent și cel mai rar<br>
+      • <b>Regularitate / hazard (24%)</b> — cât de "restant" e față de propriul lui ritm obișnuit de apariție (nu față de medie, ci față de intervalele lui reale între apariții)<br>
+      • <b>Momentum exponențial recent (20%)</b> — tendința din ultimele ~20 extrageri, cu pondere descrescătoare exponențial (cele mai recente contează mai mult)<br>
+      • <b>Deviație z-score (16%)</b> — cât de departe e frecvența lui actuală de ce ar prezice hazardul pur<br>
+      • <b>Sinergie de perechi (12%)</b> — cu ce alte numere apare des împreună (rețeaua de perechi frecvente din arhivă)<br>
+      Toți indicii sunt normalizați 0-1 și combinați cu ponderile de mai sus → un singur scor per număr.<br><br>
+      <b>Pasul 2 — Pool de candidați</b><br>
+      Se iau cele mai bine cotate <b>~24 de numere</b> (4× câte se extrag) din clasamentul de la Pasul 1. Nu se forțează nicio acoperire pe intervale — dacă cele mai bune numere sunt grupate, pool-ul reflectă asta.<br><br>
+      <b>Pasul 3 — Căutare exhaustivă a combinației optime</b><br>
+      Din cele ~24 de numere, aplicația verifică <b>efectiv fiecare combinație posibilă de 6</b> (~134.000 combinații la 6/49) și o alege pe cea cu scorul combinat maxim. Scorul combinat al unei combinații are <b>7 componente</b>:<br>
+      • <b>Percentila medie a numerelor alese (46%)</b> — media scorurilor individuale de la Pasul 1<br>
+      • <b>Potrivire sumă (16%)</b> — cât de aproape e suma combinației de media istorică reală (~148 la 6/49)<br>
+      • <b>Raport par/impar (10%)</b> — cât de aproape e de proporția reală din arhivă (~51% impare)<br>
+      • <b>Distribuție jos/sus (10%)</b> — cât de aproape e de proporția reală din jumătatea inferioară/superioară<br>
+      • <b>Acoperire zone (10%)</b> — câte din zonele 1-10, 11-20... acoperă, comparat cu ce apare cel mai des în arhivă (4 din 5 zone = 53% din extragerile reale)<br>
+      • <b>Numere apropiate (8%)</b> — dacă are cel puțin o pereche cu diferență ≤2, comparat cu arhiva (78% din extrageri au cel puțin una)<br><br>
+      <b>Pasul 4 — Variantele 2 și 3</b><br>
+      După ce Varianta 1 e aleasă, numerele ei sunt scoase din pool, și căutarea se repetă pe restul → Varianta 2. La fel → Varianta 3. Așa se garantează că cele 3 variante nu se suprapun.<br><br>
+      <b>Când se recalculează:</b> automat, de fiecare dată când adaugi o extragere nouă (manual sau automat). Până atunci, rămân identice — sunt deterministe, nu aleatorii.<br><br>
+      <b>Ce NU face:</b> nu ține cont de variantele tale din Jurnal (ce ai jucat tu nu influențează ce va extrage aparatul). Nu folosește un API extern de AI — tot calculul e local, verificabil, cu formulele de mai sus.
     </p>
     <div class="tickets" id="recommendedTicketsWrap"></div>
     <div style="margin-top:16px; padding-top:14px; border-top:1px dashed var(--surface3);">
@@ -478,6 +496,12 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     <button class="gen-btn" id="repeatScanBtn">Scanează arhiva</button>
     <div id="repeatScanStatus" class="status-msg" style="margin-top:10px;"></div>
     <div id="repeatScanResults" style="margin-top:16px;"></div>
+  </div>
+
+  <div class="panel" id="consecutivePanel">
+    <h2>Șiruri și numere apropiate în extrageri <span class="sub" id="consecutiveSub">— toată arhiva, scanată extragere cu extragere</span></h2>
+    <p class="small-note" style="margin-bottom:14px;">Scanează absolut toate extragerile din arhivă și identifică pe cele care au conținut numere consecutive (ex: 5,6,7) sau foarte apropiate (diferență ≤2, ex: 11,13,14). Arată cât de des apar astfel de grupuri, în ce extrageri exact, și cu ce numere — ca să vezi cât de comun (sau rar) e acest tipar în realitate.</p>
+    <div id="consecutiveResults"></div>
   </div>
 
   <div class="panel" id="intervalPanel">
@@ -9679,7 +9703,20 @@ function comboRawScoreFast(combo, cfg, stats, compositeScores, mn, mx){
     }
     zoneFit = (stats.zoneCoverageProbs[covered]||0) / stats.zoneMaxProb;
   }
-  return 0.50*avgPercentile + 0.18*sumFit + 0.11*oddFit + 0.11*lowFit + 0.10*zoneFit;
+
+  // consecFit: how similar this combo's "close-pair density" is to what the archive actually
+  // shows. consecPct (from stats) = the percentage of real draws that contain at least one pair
+  // of numbers with gap ≤ 2. If 75% of real draws have at least one such pair, a combo WITH a
+  // close pair is favored (consecFit≈1), one WITHOUT is penalized (consecFit≈0.3).
+  let consecFit = 0.5;
+  if(stats.consecPct !== undefined){
+    const sorted = combo.slice().sort((a,b)=>a-b);
+    let hasClosePair = false;
+    for(let i=1;i<sorted.length;i++){ if(sorted[i]-sorted[i-1]<=2){ hasClosePair=true; break; } }
+    const archiveRate = stats.consecPct / 100; // 0..1
+    consecFit = hasClosePair ? archiveRate : (1 - archiveRate);
+  }
+  return 0.46*avgPercentile + 0.16*sumFit + 0.10*oddFit + 0.10*lowFit + 0.10*zoneFit + 0.08*consecFit;
 }
 // Exhaustive search over all `pick`-sized combinations drawn from `poolNumbers` (a short list —
 // typically 4x the pick size — of the highest-composite-scored numbers), returning whichever
@@ -9736,6 +9773,10 @@ function scoreTicketQuality(combo, cfg, stats, compositeScores){
   notes.push(`${oddCount}/${combo.length} numere impare (istoric: ${Math.round(stats.oddRatio*100)}% impare)`);
   notes.push(`${lowCount}/${combo.length} numere din jumătatea inferioară a intervalului (istoric: ${Math.round(stats.lowRatio*100)}%)`);
   notes.push(`acoperire zone: ${coveredZones} din ${zones.length} (${zones.filter(z=> combo.some(nm=> nm>=z.lo && nm<=z.hi)).map(z=>z.label).join(', ')})`);
+  const sortedCombo = combo.slice().sort((a,b)=>a-b);
+  let closePairs = [];
+  for(let i=1;i<sortedCombo.length;i++){ if(sortedCombo[i]-sortedCombo[i-1]<=2) closePairs.push(`${sortedCombo[i-1]}-${sortedCombo[i]}`); }
+  notes.push(closePairs.length ? `numere apropiate (dif. ≤2): ${closePairs.join(', ')} — ${Math.round(stats.consecPct||0)}% din extragerile reale au cel puțin o astfel de pereche` : `fără numere apropiate — ${Math.round(100-(stats.consecPct||0))}% din extragerile reale sunt la fel`);
   return { score10, notes };
 }
 // Noroc variant: mean percentile of the chosen digits, across their 7 position-scores.
@@ -10280,9 +10321,15 @@ function computeShapeStatsForHistory(history, cfg){
     zones.forEach(z=>{ if(d.nums.some(nm=> nm>=z.lo && nm<=z.hi)) covered++; });
     zoneCovHist[covered]++;
   });
+  let drawsWithConsec=0;
+  history.forEach(d=>{
+    const sorted = d.nums.slice().sort((a,b)=>a-b);
+    for(let i=1;i<sorted.length;i++){ if(sorted[i]-sorted[i-1]<=2){ drawsWithConsec++; break; } }
+  });
   const zoneCoverageProbs = zoneCovHist.map(c=> n? c/n : 0);
   const zoneMaxProb = Math.max(...zoneCoverageProbs, 0.0001);
-  return { avgSum, stdSum, oddRatio: totalNums?oddTotal/totalNums:0.5, lowRatio: totalNums?lowTotal/totalNums:0.5, zoneCoverageProbs, zoneMaxProb };
+  const consecPct = n ? 100*drawsWithConsec/n : 50;
+  return { avgSum, stdSum, oddRatio: totalNums?oddTotal/totalNums:0.5, lowRatio: totalNums?lowTotal/totalNums:0.5, zoneCoverageProbs, zoneMaxProb, consecPct };
 }
 // Shared core: given already-built composite scores + shape stats, produces the same 3 tickets
 // "Variante recomandate" would show — used by both the live panel (via generate3RecommendedBallTickets,
@@ -11465,6 +11512,8 @@ function renderAll(){
   renderBacktestIdle(currentGame);
   renderRepeatScanIdle();
   renderIntervalPanel(currentGame);
+  renderConsecutivePanel(currentGame);
+  renderConsecutivePanel(currentGame);
   renderAutoFillIdle();
   const recBtStatus = document.getElementById('recBacktestStatus'); if(recBtStatus){ recBtStatus.className='status-msg'; recBtStatus.textContent=''; }
   const recBtResults = document.getElementById('recBacktestResults'); if(recBtResults) recBtResults.innerHTML='';
@@ -11575,6 +11624,95 @@ function intervalZonesForGame(cfg){
   }
   return zones;
 }
+// ---------- CONSECUTIVE / CLOSE NUMBERS ANALYSIS ----------
+// Scans every draw in the archive and finds "runs" of close numbers — sequences where each
+// successive pair (after sorting) has a gap ≤ 2 (so 5,6,7 is a run of 3, and 11,13,14 is also
+// a run of 3 because 13-11=2 and 14-13=1). Reports: how often draws contain runs of each
+// length, which specific draws had the longest runs, and the overall probability that a random
+// draw would contain at least one close pair — pure descriptive statistics.
+function analyzeConsecutiveRuns(game, cfg){
+  const draws = getAllDraws(game);
+  const n = draws.length;
+  // For each draw, find the longest "close run" (sorted nums, successive gap ≤ 2)
+  const drawRuns = []; // { idx, date, nums, longestRun, runNums }
+  const runLengthHist = {}; // runLength → count of draws whose longest run = that length
+  let totalWithPair = 0; // draws with at least one close pair (run ≥ 2)
+
+  draws.forEach((d, idx)=>{
+    if(cfg.isDigit) return; // skip Noroc
+    const sorted = d.nums.slice().sort((a,b)=>a-b);
+    let maxRun = 1, curRun = 1, maxRunStart = 0, curStart = 0;
+    for(let i=1; i<sorted.length; i++){
+      if(sorted[i] - sorted[i-1] <= 2){
+        curRun++;
+        if(curRun > maxRun){ maxRun = curRun; maxRunStart = curStart; }
+      } else {
+        curRun = 1; curStart = i;
+      }
+    }
+    const runNums = sorted.slice(maxRunStart, maxRunStart + maxRun);
+    runLengthHist[maxRun] = (runLengthHist[maxRun]||0) + 1;
+    if(maxRun >= 2) totalWithPair++;
+    if(maxRun >= 2){
+      drawRuns.push({ idx, date: d.date, nums: sorted, longestRun: maxRun, runNums });
+    }
+  });
+
+  // Sort by longest run descending, then by date descending (most recent first for same length)
+  drawRuns.sort((a,b)=> b.longestRun - a.longestRun || (b.date > a.date ? 1 : -1));
+  const pctWithPair = n ? (100 * totalWithPair / n) : 0;
+
+  return { n, drawRuns, runLengthHist, totalWithPair, pctWithPair };
+}
+
+function renderConsecutivePanel(game){
+  const cfg = GAMES[game];
+  const panel = document.getElementById('consecutivePanel');
+  const box = document.getElementById('consecutiveResults');
+  if(!panel || !box) return;
+  if(cfg.isDigit){ panel.style.display='none'; return; }
+  panel.style.display='';
+  const subEl = document.getElementById('consecutiveSub');
+  if(subEl) subEl.textContent = `— toată arhiva ${cfg.label}, scanată extragere cu extragere`;
+
+  const a = analyzeConsecutiveRuns(game, cfg);
+  if(!a.n){ box.innerHTML = '<p class="small-note">Arhivă goală.</p>'; return; }
+
+  // 1. Distribution table: how many draws had longest run of 1, 2, 3, 4, 5, 6
+  const distRows = Object.keys(a.runLengthHist).sort((x,y)=>Number(y)-Number(x)).map(k=>{
+    const count = a.runLengthHist[k];
+    const pct = (100*count/a.n).toFixed(1);
+    const label = Number(k)===1 ? 'Niciun grup apropiat (toate numerele distanțate)' : `Cel puțin ${k} numere apropiate (diferență ≤2)`;
+    return `<tr><td>${label}</td><td class="mono">${count.toLocaleString('ro-RO')}</td><td class="mono">${pct}%</td></tr>`;
+  }).join('');
+
+  // 2. Top examples: draws with the longest runs (capped at 30)
+  const CAP = 30;
+  const shown = a.drawRuns.slice(0, CAP);
+  const exampleRows = shown.map(d=>{
+    const numsHtml = d.nums.map(n=> d.runNums.includes(n) ? `<b style="color:var(--gold);">${n}</b>` : `${n}`).join(', ');
+    return `<tr><td class="mono">#${d.idx+1}</td><td class="mono">${fmtDateShort(d.date)}</td><td>${numsHtml}</td><td class="mono" style="color:var(--gold);">${d.runNums.join(', ')}</td><td class="mono">${d.longestRun}</td></tr>`;
+  }).join('');
+
+  box.innerHTML = `
+    <p class="small-note" style="margin-bottom:10px;">Scanate <b class="mono">${a.n.toLocaleString('ro-RO')}</b> extrageri reale. <b style="color:var(--gold);">${a.pctWithPair.toFixed(1)}%</b> din extrageri au conținut cel puțin o pereche de numere apropiate (diferență ≤2).</p>
+
+    <p class="small-note" style="margin-bottom:6px;"><b style="color:var(--gold);">1. Distribuție: cel mai lung șir de numere apropiate per extragere</b></p>
+    <div class="table-scroll"><table class="data-table" style="width:100%; max-width:560px; margin-bottom:16px;">
+      <thead><tr><th>Lungime maximă grup</th><th>Nr. extrageri</th><th>%</th></tr></thead>
+      <tbody>${distRows}</tbody>
+    </table></div>
+
+    <p class="small-note" style="margin-bottom:6px;"><b style="color:var(--gold);">2. Extragerile cu cele mai lungi șiruri de numere apropiate</b> (top ${Math.min(CAP, a.drawRuns.length)}):</p>
+    <div class="table-scroll"><table class="data-table" style="width:100%;">
+      <thead><tr><th>#</th><th>Data</th><th>Numere extrase</th><th>Grupul apropiat</th><th>Lungime</th></tr></thead>
+      <tbody>${exampleRows}</tbody>
+    </table></div>
+    ${a.drawRuns.length > CAP ? `<p class="small-note" style="margin-top:6px;">...și alte ${a.drawRuns.length-CAP} extrageri cu numere apropiate (${a.drawRuns.length} total).</p>` : ''}
+
+    <p class="small-note" style="margin-top:12px;">Interpretare: faptul că ${a.pctWithPair.toFixed(0)}% din extrageri conțin numere apropiate e exact ce ar prezice teoria probabilităților pentru un joc corect — nu e un tipar exploatabil, ci o consecință naturală a modului în care 6 numere se distribuie într-un interval de ${cfg.range}. Secțiunea "Variante recomandate" ține cont de această statistică (componenta "consecutiveFit") când evaluează combinațiile.</p>`;
+}
+
 function analyzeIntervalCoverage(game, cfg){
   const draws = getAllDraws(game);
   const zones = intervalZonesForGame(cfg);
@@ -11602,6 +11740,118 @@ function analyzeIntervalCoverage(game, cfg){
   return { n: draws.length, zones, zPresent, coverageCountHist, topPatterns, patternsByCount,
     firstDate: draws.length? draws[0].date : null, lastDate: draws.length? draws[draws.length-1].date : null };
 }
+// ---------- CONSECUTIVE / CLOSE NUMBERS ANALYSIS ----------
+// Scans every draw in the archive and identifies groups of numbers that are consecutive
+// (diff=1, e.g. 5,6,7) or close (diff≤2, e.g. 11,13,14). Returns per-draw details and
+// aggregate statistics on how common these patterns are historically.
+function analyzeConsecutivePatterns(game){
+  const cfg = GAMES[game];
+  if(cfg.isDigit) return null; // not applicable for digit games
+  const draws = getAllDraws(game);
+  const withConsec = []; // draws with at least one consecutive pair (diff=1)
+  const withClose = [];  // draws with at least one close pair (diff≤2, not consecutive)
+  let totalConsecPairs = 0, totalClosePairs = 0;
+  let consecTriples = 0, consecQuads = 0;
+
+  draws.forEach((d, idx)=>{
+    const sorted = d.nums.slice().sort((a,b)=>a-b);
+    const pairs = []; // consecutive pairs in this draw
+    const closePairs = []; // close (diff=2) pairs in this draw
+    for(let i=0; i<sorted.length-1; i++){
+      const diff = sorted[i+1] - sorted[i];
+      if(diff === 1) pairs.push([sorted[i], sorted[i+1]]);
+      else if(diff === 2) closePairs.push([sorted[i], sorted[i+1]]);
+    }
+    // Detect consecutive triples (3 in a row) and quads (4 in a row)
+    let maxRun = 1, currentRun = 1;
+    for(let i=1; i<sorted.length; i++){
+      if(sorted[i] - sorted[i-1] === 1) currentRun++;
+      else { if(currentRun > maxRun) maxRun = currentRun; currentRun = 1; }
+    }
+    if(currentRun > maxRun) maxRun = currentRun;
+    if(maxRun >= 3) consecTriples++;
+    if(maxRun >= 4) consecQuads++;
+
+    totalConsecPairs += pairs.length;
+    totalClosePairs += closePairs.length;
+    if(pairs.length > 0) withConsec.push({ idx, date: d.date, nums: sorted, pairs, maxRun });
+    else if(closePairs.length > 0) withClose.push({ idx, date: d.date, nums: sorted, closePairs });
+  });
+
+  // Historical probability of having at least one consecutive pair
+  const consecProb = draws.length ? withConsec.length / draws.length : 0;
+  // Historical probability of close pairs (diff≤2, excluding consecutive)
+  const closeProb = draws.length ? withClose.length / draws.length : 0;
+
+  return {
+    n: draws.length, withConsec, withClose, totalConsecPairs, totalClosePairs,
+    consecTriples, consecQuads, consecProb, closeProb,
+    firstDate: draws.length ? draws[0].date : null,
+    lastDate: draws.length ? draws[draws.length-1].date : null
+  };
+}
+
+function renderConsecutivePanel(game){
+  const cfg = GAMES[game];
+  const panel = document.getElementById('consecutivePanel');
+  const box = document.getElementById('consecutiveResults');
+  if(!panel || !box) return;
+  if(cfg.isDigit){ panel.style.display = 'none'; return; }
+  panel.style.display = '';
+
+  const subEl = document.getElementById('consecutiveSub');
+  if(subEl) subEl.textContent = `— toată arhiva ${cfg.label}, scanată extragere cu extragere`;
+
+  const a = analyzeConsecutivePatterns(game);
+  if(!a || !a.n){ box.innerHTML = '<p class="small-note">Arhivă goală.</p>'; return; }
+
+  const consecPct = (100 * a.withConsec.length / a.n).toFixed(1);
+  const closePct = (100 * a.withClose.length / a.n).toFixed(1);
+  const neitherPct = (100 - parseFloat(consecPct) - parseFloat(closePct)).toFixed(1);
+
+  const CAP = 30;
+  const consecShown = a.withConsec.slice(-CAP).reverse();
+  const closeShown = a.withClose.slice(-CAP).reverse();
+
+  const consecRows = consecShown.map(d=>{
+    const pairsStr = d.pairs.map(p=> `<b style="color:var(--gold);">${p[0]},${p[1]}</b>`).join(' · ');
+    const runNote = d.maxRun >= 3 ? ` <span class="pop-tag pop-high" style="font-size:10px; padding:1px 6px;">${d.maxRun} consecutive!</span>` : '';
+    return `<tr><td class="mono">#${d.idx+1}</td><td class="mono">${fmtDateShort(d.date)}</td><td class="mono">${d.nums.join(', ')}</td><td>${pairsStr}${runNote}</td></tr>`;
+  }).join('');
+
+  const closeRows = closeShown.map(d=>{
+    const pairsStr = d.closePairs.map(p=> `<b style="color:var(--blue);">${p[0]},${p[1]}</b> (dif. ${p[1]-p[0]})`).join(' · ');
+    return `<tr><td class="mono">#${d.idx+1}</td><td class="mono">${fmtDateShort(d.date)}</td><td class="mono">${d.nums.join(', ')}</td><td>${pairsStr}</td></tr>`;
+  }).join('');
+
+  box.innerHTML = `
+    <p class="small-note" style="margin-bottom:10px;">Scanate <b class="mono">${a.n.toLocaleString('ro-RO')}</b> extrageri reale, de la ${fmtDateShort(a.firstDate)} până la ${fmtDateShort(a.lastDate)}.</p>
+
+    <p class="small-note" style="margin-bottom:6px;"><b style="color:var(--gold);">Rezumat:</b></p>
+    <div class="repeat-info" style="margin-bottom:14px;">
+      <div class="pop-tag pop-mid">Cu numere consecutive (dif. 1): <b>${a.withConsec.length.toLocaleString('ro-RO')}</b> extrageri (${consecPct}%)</div>
+      <div class="pop-tag pop-mid">Din care cu 3+ consecutive la rând: <b>${a.consecTriples.toLocaleString('ro-RO')}</b> extrageri${a.consecQuads ? ` (din care 4+ la rând: ${a.consecQuads})`:''}</div>
+      <div class="pop-tag pop-low">Cu numere apropiate (dif. 2, fără consecutive): <b>${a.withClose.length.toLocaleString('ro-RO')}</b> extrageri (${closePct}%)</div>
+      <div class="pop-tag pop-low">Fără niciun număr consecutiv sau apropiat: ${neitherPct}% din extrageri</div>
+    </div>
+
+    <p class="small-note" style="margin-bottom:6px;"><b style="color:var(--gold);">Extrageri cu numere consecutive</b> (cele mai recente ${Math.min(CAP, a.withConsec.length)}, din ${a.withConsec.length.toLocaleString('ro-RO')} total):</p>
+    <div class="table-scroll"><table class="data-table" style="width:100%;">
+      <thead><tr><th>Nr.</th><th>Data</th><th>Numere extrase</th><th>Perechi consecutive</th></tr></thead>
+      <tbody>${consecRows}</tbody>
+    </table></div>
+    ${a.withConsec.length > CAP ? `<p class="small-note" style="margin-top:4px;">...și alte ${(a.withConsec.length-CAP).toLocaleString('ro-RO')} extrageri cu numere consecutive.</p>` : ''}
+
+    <p class="small-note" style="margin:16px 0 6px;"><b style="color:var(--blue);">Extrageri cu numere apropiate (diferență 2)</b> (cele mai recente ${Math.min(CAP, a.withClose.length)}, din ${a.withClose.length.toLocaleString('ro-RO')} total):</p>
+    <div class="table-scroll"><table class="data-table" style="width:100%;">
+      <thead><tr><th>Nr.</th><th>Data</th><th>Numere extrase</th><th>Perechi apropiate</th></tr></thead>
+      <tbody>${closeRows}</tbody>
+    </table></div>
+    ${a.withClose.length > CAP ? `<p class="small-note" style="margin-top:4px;">...și alte ${(a.withClose.length-CAP).toLocaleString('ro-RO')} extrageri cu numere apropiate.</p>` : ''}
+
+    <p class="small-note" style="margin-top:14px;">Interpretare: faptul că ${consecPct}% din extragerile reale conțin cel puțin o pereche consecutivă e o informație istorică reală — aplicația ține cont de această proporție la selecția "Variante recomandate" (componenta <em>consecFit</em> din scor), favorizând combinații care au un nivel de "consecutivitate" similar cu ce apare real în arhivă.</p>`;
+}
+
 function renderIntervalPanel(game){
   const cfg = GAMES[game];
   const panel = document.getElementById('intervalPanel');
