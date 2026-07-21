@@ -414,9 +414,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     </div>
     <div class="tabs" id="gameTabs"></div>
     <div class="version-block">
-      <span class="version-num">Ver 3.8</span>
+      <span class="version-num">Ver 4.0</span>
       <span class="version-date">Actualizat: 14.07.2026</span>
-      <span class="version-note">Descrierea din "Variante recomandate" rescrisă complet: arată exact, pas cu pas, cum calculează aplicația cele 3 variante — cei 5 indici (cu ponderile exacte), pool-ul de candidați, căutarea exhaustivă, cele 7 componente ale scorului combinat, și ce NU face</span>
+      <span class="version-note">Pool de candidați extins de la 24 la 35 numere (~1.6M combinații verificate exhaustiv vs. 134K). Momentum echilibrat la 25%. Doi factori noi în scorul combinat: suprapunere cu ultima extragere (6%) și uniformitate distanțe (6%) — total 9 componente. Descrierea tehnică actualizată complet</span>
     </div>
   </div>
 
@@ -459,24 +459,26 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     <h2 id="recommendedTitle">Variante recomandate pentru extragerea curentă</h2>
     <p class="small-note" style="margin-bottom:14px;">
       <b style="color:var(--gold);">Cum calculează aplicația cele 3 variante — pas cu pas:</b><br><br>
-      <b>Pasul 1 — Scorul individual al fiecărui număr (1-49)</b><br>
+<b>Pasul 1 — Scorul individual al fiecărui număr (1-49)</b><br>
       Fiecare număr primește un scor compus din <b>5 indici</b>, calculați pe <b>toată arhiva</b> (din 1993 până la ultima extragere adăugată):<br>
-      • <b>Frecvență istorică (28%)</b> — de câte ori a ieșit numărul, normalizat 0-1 față de cel mai frecvent și cel mai rar<br>
-      • <b>Regularitate / hazard (24%)</b> — cât de "restant" e față de propriul lui ritm obișnuit de apariție (nu față de medie, ci față de intervalele lui reale între apariții)<br>
-      • <b>Momentum exponențial recent (20%)</b> — tendința din ultimele ~20 extrageri, cu pondere descrescătoare exponențial (cele mai recente contează mai mult)<br>
-      • <b>Deviație z-score (16%)</b> — cât de departe e frecvența lui actuală de ce ar prezice hazardul pur<br>
-      • <b>Sinergie de perechi (12%)</b> — cu ce alte numere apare des împreună (rețeaua de perechi frecvente din arhivă)<br>
+      • <b>Frecvență istorică (25%)</b> — de câte ori a ieșit numărul, normalizat 0-1<br>
+      • <b>Regularitate / hazard (22%)</b> — cât de "restant" e față de propriul ritm obișnuit<br>
+      • <b>Momentum exponențial recent (25%)</b> — tendința din ultimele ~20 extrageri, cu pondere descrescătoare (cele mai recente contează cel mai mult)<br>
+      • <b>Deviație z-score (16%)</b> — cât de departe e frecvența lui de ce ar prezice hazardul pur<br>
+      • <b>Sinergie de perechi (12%)</b> — cu ce alte numere apare des împreună<br>
       Toți indicii sunt normalizați 0-1 și combinați cu ponderile de mai sus → un singur scor per număr.<br><br>
       <b>Pasul 2 — Pool de candidați</b><br>
-      Se iau cele mai bine cotate <b>~24 de numere</b> (4× câte se extrag) din clasamentul de la Pasul 1. Nu se forțează nicio acoperire pe intervale — dacă cele mai bune numere sunt grupate, pool-ul reflectă asta.<br><br>
+      Se iau cele mai bine cotate <b>~35 de numere</b> din clasamentul de la Pasul 1 (eliminând doar cele ~14 cu adevărat cele mai slab cotate). Nu se forțează nicio acoperire pe intervale.<br><br>
       <b>Pasul 3 — Căutare exhaustivă a combinației optime</b><br>
-      Din cele ~24 de numere, aplicația verifică <b>efectiv fiecare combinație posibilă de 6</b> (~134.000 combinații la 6/49) și o alege pe cea cu scorul combinat maxim. Scorul combinat al unei combinații are <b>7 componente</b>:<br>
-      • <b>Percentila medie a numerelor alese (46%)</b> — media scorurilor individuale de la Pasul 1<br>
-      • <b>Potrivire sumă (16%)</b> — cât de aproape e suma combinației de media istorică reală (~148 la 6/49)<br>
-      • <b>Raport par/impar (10%)</b> — cât de aproape e de proporția reală din arhivă (~51% impare)<br>
-      • <b>Distribuție jos/sus (10%)</b> — cât de aproape e de proporția reală din jumătatea inferioară/superioară<br>
-      • <b>Acoperire zone (10%)</b> — câte din zonele 1-10, 11-20... acoperă, comparat cu ce apare cel mai des în arhivă (4 din 5 zone = 53% din extragerile reale)<br>
-      • <b>Numere apropiate (8%)</b> — dacă are cel puțin o pereche cu diferență ≤2, comparat cu arhiva (78% din extrageri au cel puțin una)<br><br>
+      Din cele ~35 de numere, aplicația verifică <b>efectiv fiecare combinație posibilă de 6</b> (~1.600.000 combinații la 6/49, durează ~3-5 secunde) și o alege pe cea cu scorul combinat maxim. Scorul combinat al unei combinații are <b>9 componente</b>:<br>
+      • <b>Percentila medie a numerelor alese (42%)</b> — media scorurilor individuale de la Pasul 1<br>
+      • <b>Potrivire sumă (14%)</b> — cât de aproape e suma combinației de media istorică reală (~148 la 6/49)<br>
+      • <b>Raport par/impar (8%)</b> — cât de aproape e de proporția reală din arhivă (~51% impare)<br>
+      • <b>Distribuție jos/sus (8%)</b> — cât de aproape e de proporția reală din jumătatea inferioară/superioară<br>
+      • <b>Acoperire zone (9%)</b> — câte din zonele 1-10, 11-20... acoperă, comparat cu ce apare cel mai des în arhivă<br>
+      • <b>Numere apropiate (7%)</b> — dacă are cel puțin o pereche cu diferență ≤2, comparat cu arhiva (78% din extrageri au cel puțin una)<br>
+      • <b>Suprapunere cu ultima extragere (6%)</b> — câte numere din combinație apar și în ultima extragere reală, comparat cu distribuția reală din arhivă (cel mai des: 0 sau 1 numere comune)<br>
+      • <b>Uniformitate distanțe (6%)</b> — cât de uniform sunt distanțate cele 6 numere pe interval, comparat cu media reală din arhivă<br><br>
       <b>Pasul 4 — Variantele 2 și 3</b><br>
       După ce Varianta 1 e aleasă, numerele ei sunt scoase din pool, și căutarea se repetă pe restul → Varianta 2. La fel → Varianta 3. Așa se garantează că cele 3 variante nu se suprapun.<br><br>
       <b>Când se recalculează:</b> automat, de fiecare dată când adaugi o extragere nouă (manual sau automat). Până atunci, rămân identice — sunt deterministe, nu aleatorii.<br><br>
@@ -8646,6 +8648,28 @@ function computeBallStats(game){
   const avgGap = gapCount ? gapSum/gapCount : 0;
   const consecPct = n ? 100*drawsWithConsec/n : 0;
   const repeatFromPrevAvg = n>1 ? repeatFromPrevTotal/(n-1) : 0;
+  // Distribution of prev-overlap counts: how many draws had 0, 1, 2, 3... numbers in common
+  // with the immediately preceding draw. Feeds the overlapFit component.
+  const prevOverlapHist = Array(cfg.pick+1).fill(0);
+  for(let idx=1; idx<n; idx++){
+    const prevSet = new Set(draws[idx-1].nums);
+    const overlap = draws[idx].nums.filter(nm=>prevSet.has(nm)).length;
+    prevOverlapHist[overlap]++;
+  }
+  const prevOverlapProbs = prevOverlapHist.map(c=> n>1 ? c/(n-1) : 0);
+  const prevOverlapMaxProb = Math.max(...prevOverlapProbs, 0.0001);
+  // Gap uniformity: standard deviation of gaps between sorted numbers, averaged over the archive.
+  // A lower gapStd means more uniform spacing. Feeds the gapFit component.
+  let gapStdSum = 0;
+  draws.forEach(d=>{
+    const sorted = d.nums.slice().sort((a,b)=>a-b);
+    const gaps = [];
+    for(let i=1;i<sorted.length;i++) gaps.push(sorted[i]-sorted[i-1]);
+    const gapMean = gaps.reduce((a,b)=>a+b,0)/gaps.length;
+    const gapVar = gaps.reduce((a,b)=>a+(b-gapMean)*(b-gapMean),0)/gaps.length;
+    gapStdSum += Math.sqrt(gapVar);
+  });
+  const avgGapStd = n ? gapStdSum/n : 0;
 
   const topPairs = Object.entries(pairCount).sort((a,b)=>b[1]-a[1]).slice(0,8);
   const topTriples = Object.entries(tripleCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -8687,6 +8711,7 @@ function computeBallStats(game){
 
   return { draws, n, freq, overdue, pairCount, tripleCount, topPairs, topTriples,
     avgSum, stdSum, oddRatio, lowRatio, zoneCoverageProbs, zoneMaxProb, avgGap, consecPct, repeatFromPrevAvg,
+    prevOverlapProbs, prevOverlapMaxProb, avgGapStd,
     jokerFreq, jokerOverdue, sums, recentN, recentFreq, jokerRecentFreq,
     hazard: gapProfile.hazard, avgGapPerNum: gapProfile.avgGapPerNum, stdGapPerNum: gapProfile.stdGapPerNum,
     chi2: chiEnt.chi2, chiDf: chiEnt.df, entropy: chiEnt.entropy, entropyNorm: chiEnt.entropyNorm,
@@ -8795,7 +8820,10 @@ function buildComposite(stats, startIdx, endIdx, opts){
   const momentum = opts.momentum || stats.momentum || {};
   const zScore = opts.zScore || stats.zScore || {};
   const pairSynergy = opts.pairSynergy || stats.pairSynergy || {};
-  const w = opts.weights || [0.28, 0.24, 0.20, 0.16, 0.12];
+  // Weights: [freq, hazard, momentum, zScore, pairSynergy]
+  // Momentum at 25% — balanced between stability (full archive) and recent reactivity.
+  // freq 25%, hazard 22%, momentum 25%, zScore 16%, pairSynergy 12%
+  const w = opts.weights || [0.25, 0.22, 0.25, 0.16, 0.12];
 
   const idxs = [];
   for(let i=startIdx;i<=endIdx;i++) idxs.push(i);
@@ -9716,7 +9744,35 @@ function comboRawScoreFast(combo, cfg, stats, compositeScores, mn, mx){
     const archiveRate = stats.consecPct / 100; // 0..1
     consecFit = hasClosePair ? archiveRate : (1 - archiveRate);
   }
-  return 0.46*avgPercentile + 0.16*sumFit + 0.10*oddFit + 0.10*lowFit + 0.10*zoneFit + 0.08*consecFit;
+  // overlapFit: how typical the combo's overlap with the last real draw is, versus the archive's
+  // own distribution of prev-draw overlaps. E.g. if 0 overlap happens 43% of the time and 1
+  // overlap 38%, a combo with 0 or 1 overlap with the last draw scores highest.
+  let overlapFit = 0.5;
+  if(stats.prevOverlapProbs && stats.prevOverlapMaxProb && stats.draws && stats.draws.length > 0){
+    const lastNums = new Set(stats.draws[stats.draws.length-1].nums || []);
+    let overlap = 0;
+    for(let i=0;i<combo.length;i++){ if(lastNums.has(combo[i])) overlap++; }
+    overlapFit = (stats.prevOverlapProbs[overlap]||0) / stats.prevOverlapMaxProb;
+  }
+
+  // gapFit: how uniform the spacing between sorted numbers is, compared to the archive average.
+  // A combo whose gap-std is close to the archive's avgGapStd scores highest — neither too
+  // clustered nor too perfectly spaced (both are atypical).
+  let gapFit = 0.5;
+  if(stats.avgGapStd > 0){
+    const sorted = combo.slice().sort((a,b)=>a-b);
+    const gaps = [];
+    for(let i=1;i<sorted.length;i++) gaps.push(sorted[i]-sorted[i-1]);
+    const gapMean = gaps.reduce((a,b)=>a+b,0)/gaps.length;
+    const gapVar = gaps.reduce((a,b)=>a+(b-gapMean)*(b-gapMean),0)/gaps.length;
+    const gapStd = Math.sqrt(gapVar);
+    const deviation = Math.abs(gapStd - stats.avgGapStd) / (stats.avgGapStd || 1);
+    gapFit = Math.max(0, 1 - deviation);
+  }
+
+  // 9 components total:
+  // percentile 42% + sum 14% + odd 8% + low 8% + zone 9% + consec 7% + overlap 6% + gap 6%
+  return 0.42*avgPercentile + 0.14*sumFit + 0.08*oddFit + 0.08*lowFit + 0.09*zoneFit + 0.07*consecFit + 0.06*overlapFit + 0.06*gapFit;
 }
 // Exhaustive search over all `pick`-sized combinations drawn from `poolNumbers` (a short list —
 // typically 4x the pick size — of the highest-composite-scored numbers), returning whichever
@@ -9777,6 +9833,16 @@ function scoreTicketQuality(combo, cfg, stats, compositeScores){
   let closePairs = [];
   for(let i=1;i<sortedCombo.length;i++){ if(sortedCombo[i]-sortedCombo[i-1]<=2) closePairs.push(`${sortedCombo[i-1]}-${sortedCombo[i]}`); }
   notes.push(closePairs.length ? `numere apropiate (dif. ≤2): ${closePairs.join(', ')} — ${Math.round(stats.consecPct||0)}% din extragerile reale au cel puțin o astfel de pereche` : `fără numere apropiate — ${Math.round(100-(stats.consecPct||0))}% din extragerile reale sunt la fel`);
+  if(stats.draws && stats.draws.length){
+    const lastNums = new Set(stats.draws[stats.draws.length-1].nums||[]);
+    const overlap = combo.filter(n=>lastNums.has(n));
+    notes.push(overlap.length ? `suprapunere cu ultima extragere: ${overlap.length} numere comune (${overlap.join(', ')})` : `nicio suprapunere cu ultima extragere`);
+  }
+  const gapsSorted = sortedCombo.slice();
+  const gapsArr = []; for(let i=1;i<gapsSorted.length;i++) gapsArr.push(gapsSorted[i]-gapsSorted[i-1]);
+  const gapMeanV = gapsArr.reduce((a,b)=>a+b,0)/gapsArr.length;
+  const gapStdV = Math.sqrt(gapsArr.reduce((a,b)=>a+(b-gapMeanV)*(b-gapMeanV),0)/gapsArr.length);
+  notes.push(`uniformitate distanțe: σ=${gapStdV.toFixed(1)} (media arhivei: ${(stats.avgGapStd||0).toFixed(1)}) — ${gapStdV<=(stats.avgGapStd||999)*1.2?'distribuție tipică':'distribuție atipică'}`);
   return { score10, notes };
 }
 // Noroc variant: mean percentile of the chosen digits, across their 7 position-scores.
@@ -10322,14 +10388,28 @@ function computeShapeStatsForHistory(history, cfg){
     zoneCovHist[covered]++;
   });
   let drawsWithConsec=0;
-  history.forEach(d=>{
+  const prevOverlapHistBt = Array(cfg.pick+1).fill(0);
+  let gapStdSumBt = 0;
+  history.forEach((d,idx)=>{
     const sorted = d.nums.slice().sort((a,b)=>a-b);
     for(let i=1;i<sorted.length;i++){ if(sorted[i]-sorted[i-1]<=2){ drawsWithConsec++; break; } }
+    if(idx>0){
+      const prevSet = new Set(history[idx-1].nums);
+      const overlap = d.nums.filter(nm=>prevSet.has(nm)).length;
+      prevOverlapHistBt[overlap]++;
+    }
+    const gaps = [];
+    for(let i=1;i<sorted.length;i++) gaps.push(sorted[i]-sorted[i-1]);
+    const gapMean = gaps.reduce((a,b)=>a+b,0)/gaps.length;
+    gapStdSumBt += Math.sqrt(gaps.reduce((a,b)=>a+(b-gapMean)*(b-gapMean),0)/gaps.length);
   });
   const zoneCoverageProbs = zoneCovHist.map(c=> n? c/n : 0);
   const zoneMaxProb = Math.max(...zoneCoverageProbs, 0.0001);
   const consecPct = n ? 100*drawsWithConsec/n : 50;
-  return { avgSum, stdSum, oddRatio: totalNums?oddTotal/totalNums:0.5, lowRatio: totalNums?lowTotal/totalNums:0.5, zoneCoverageProbs, zoneMaxProb, consecPct };
+  const prevOverlapProbs = prevOverlapHistBt.map(c=> n>1 ? c/(n-1) : 0);
+  const prevOverlapMaxProb = Math.max(...prevOverlapProbs, 0.0001);
+  const avgGapStd = n ? gapStdSumBt/n : 0;
+  return { avgSum, stdSum, oddRatio: totalNums?oddTotal/totalNums:0.5, lowRatio: totalNums?lowTotal/totalNums:0.5, zoneCoverageProbs, zoneMaxProb, consecPct, prevOverlapProbs, prevOverlapMaxProb, avgGapStd, draws: history };
 }
 // Shared core: given already-built composite scores + shape stats, produces the same 3 tickets
 // "Variante recomandate" would show — used by both the live panel (via generate3RecommendedBallTickets,
@@ -10338,7 +10418,9 @@ function pickTop3FromScores(baseScores, jokerScores, cfg, shapeStats){
   const { mn, mx } = compositeMinMax(baseScores);
   let poolNums = []; for(let i=1;i<=cfg.range;i++) poolNums.push(i);
   poolNums.sort((a,b)=> baseScores[b]-baseScores[a]);
-  let pool = poolNums.slice(0, Math.min(cfg.pick*4, cfg.range));
+  // Pool size: 35 numbers — verifies ~1.6 million combinations in ~2-3 seconds.
+  // Covers 71% of the 6/49 range (excludes only the 14 lowest-scored numbers).
+  let pool = poolNums.slice(0, Math.min(35, cfg.range));
   let jokerRanked = null;
   if(jokerScores){
     jokerRanked = []; for(let i=1;i<=cfg.jokerRange;i++) jokerRanked.push(i);
