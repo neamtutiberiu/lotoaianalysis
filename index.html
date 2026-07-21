@@ -414,9 +414,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     </div>
     <div class="tabs" id="gameTabs"></div>
     <div class="version-block">
-      <span class="version-num">Ver 4.1</span>
+      <span class="version-num">Ver 4.2</span>
       <span class="version-date">Actualizat: 14.07.2026</span>
-      <span class="version-note">Formula extinsă la 10 componente: +calibrare χ² (6%) din Testul de aleatorism. Descriere rescrisă complet — arată exact care secțiune din aplicație alimentează care componentă a formulei. Pool 35 numere, momentum 25%, căutare exhaustivă ~1.6M combinații</span>
+      <span class="version-note">Formula reechilibrată: acoperire zone crescută la 10% + constrângere obligatorie (minim 4 din 5 zone), numere apropiate redus la 3% (apăreau prea multe clustere), chiConfidence eliminat (efect neglijabil). Variantele arată acum echilibrat pe tot intervalul</span>
     </div>
   </div>
 
@@ -459,37 +459,34 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     <h2 id="recommendedTitle">Variante recomandate pentru extragerea curentă</h2>
     <p class="small-note" style="margin-bottom:14px;">
       <b style="color:var(--gold);">Metodologia completă — pe ce se bazează cele 3 variante recomandate:</b><br><br>
-      Această secțiune e <b>rezultatul final</b> al întregii aplicații. Cele 3 variante sunt alese printr-o analiză exhaustivă care integrează <b>toate secțiunile de analiză</b> din aplicație, simultan, într-o singură formulă de selecție. Concret:<br><br>
+      Această secțiune e <b>rezultatul final</b> al întregii aplicații. Cele 3 variante sunt alese printr-o analiză exhaustivă care integrează <b>toate secțiunile de analiză</b> din aplicație, simultan, într-o singură formulă de selecție optimizată. Concret:<br><br>
 
       <b style="color:var(--gold);">PASUL 1 — Scorul individual al fiecărui număr</b><br>
-      Fiecare număr (1-49 la 6/49, 1-40 la 5/40, 1-45 la Joker) primește un scor unic, calculat din <b>toată arhiva</b> (din 1993 până la ultima extragere adăugată), prin 5 indici:<br>
-      • <b>Frecvență istorică (25%)</b> — alimentat de secțiunea <em>"Frecvența numerelor"</em> + <em>"Analiza completă — șanse estimate"</em><br>
-      • <b>Regularitate / hazard (22%)</b> — alimentat de secțiunea <em>"Indicatori generali"</em> (cicluri de restanță per număr)<br>
-      • <b>Momentum exponențial recent (25%)</b> — alimentat de secțiunea <em>"Trenduri"</em> (tendința din ultimele ~20 extrageri)<br>
-      • <b>Deviație z-score (16%)</b> — alimentat de secțiunea <em>"Indicatori generali"</em> (deviația de la frecvența așteptată)<br>
-      • <b>Sinergie de perechi (12%)</b> — alimentat de secțiunea <em>"Rețea de sinergie a perechilor"</em> (care numere apar des împreună)<br><br>
+      Fiecare număr primește un scor unic, calculat din <b>toată arhiva</b> (din 1993 până la ultima extragere adăugată), prin 5 indici:<br>
+      • <b>Frecvență istorică (25%)</b> — din <em>"Frecvența numerelor"</em> + <em>"Analiza completă"</em><br>
+      • <b>Regularitate / hazard (22%)</b> — din <em>"Indicatori generali"</em><br>
+      • <b>Momentum recent (25%)</b> — din <em>"Trenduri"</em> (ultimele ~20 extrageri)<br>
+      • <b>Z-score (16%)</b> — din <em>"Indicatori generali"</em><br>
+      • <b>Sinergie perechi (12%)</b> — din <em>"Rețea de sinergie a perechilor"</em><br><br>
 
-      <b style="color:var(--gold);">PASUL 2 — Pool de candidați: ~35 numere</b><br>
-      Din clasamentul de la Pasul 1, se iau cele mai bine cotate ~35 de numere. Nu se forțează nicio acoperire pe intervale.<br><br>
+      <b style="color:var(--gold);">PASUL 2 — Pool de ~35 candidați + căutare exhaustivă (~1.600.000 combinații)</b><br>
+      Combinația optimă e aleasă pe baza unui <b>scor combinat cu 9 componente</b>:<br>
+      <b>1. Percentila medie (45%)</b> — media scorurilor de la Pasul 1<br>
+      <b>2. Potrivire sumă (14%)</b> — din <em>"Indicatori generali"</em><br>
+      <b>3. Raport par/impar (8%)</b> — din <em>"Indicatori generali"</em><br>
+      <b>4. Distribuție jos/sus (8%)</b> — din <em>"Indicatori generali"</em><br>
+      <b>5. Acoperire zone (10%)</b> — din <em>"Acoperirea intervalelor"</em><br>
+      <b>6. Numere apropiate (3%)</b> — din <em>"Șiruri și numere apropiate"</em><br>
+      <b>7. Suprapunere cu ultima extragere (6%)</b> — din <em>"Repetări istorice"</em><br>
+      <b>8. Uniformitate distanțe (6%)</b> — din <em>"Indicatori generali"</em><br><br>
 
-      <b style="color:var(--gold);">PASUL 3 — Căutare exhaustivă: ~1.600.000 combinații verificate</b><br>
-      Din cele ~35 de numere, aplicația verifică <b>efectiv fiecare combinație posibilă de 6</b> și o alege pe cea cu scorul combinat maxim. Scorul combinat integrează <b>10 componente</b>, fiecare alimentată de o secțiune specifică:<br><br>
+      <b style="color:var(--gold);">CONSTRÂNGERE OBLIGATORIE</b><br>
+      Fiecare variantă trebuie să acopere <b>cel puțin 4 din 5 zone</b> (1-10, 11-20, 21-30, 31-40, 41-49) — reflectând tiparul real din arhivă (53% din extrageri acoperă 4/5 zone). Combinațiile cu acoperire mai slabă sunt penalizate sever (×0.3).<br><br>
 
-      <b>1. Percentila medie (38%)</b> — <em>Frecvența numerelor + Analiza completă + Rețea sinergie</em><br>
-      <b>2. Potrivire sumă (13%)</b> — <em>Indicatori generali</em> (suma vs. media istorică)<br>
-      <b>3. Raport par/impar (8%)</b> — <em>Indicatori generali</em> (proporția reală din arhivă)<br>
-      <b>4. Distribuție jos/sus (8%)</b> — <em>Indicatori generali</em> (jumătatea inferioară vs. superioară)<br>
-      <b>5. Acoperire zone (8%)</b> — <em>Acoperirea intervalelor în extrageri</em><br>
-      <b>6. Numere apropiate (7%)</b> — <em>Șiruri și numere apropiate în extrageri</em><br>
-      <b>7. Suprapunere cu ultima extragere (6%)</b> — <em>Repetări istorice</em><br>
-      <b>8. Uniformitate distanțe (6%)</b> — <em>Indicatori generali</em> (gap-urile reale din arhivă)<br>
-      <b>9. Calibrare χ² (6%)</b> — <em>Test de aleatorism (chi-pătrat)</em> — calibrează cât de mult contează scorurile individuale vs. forma combinației<br><br>
+      <b style="color:var(--gold);">VALIDARE</b><br>
+      Rezultatul e confirmat de <em>"Test de aleatorism (chi-pătrat)"</em> — care validează că arhiva e un joc corect, deci analiza statistică are sens.<br><br>
 
-      <b style="color:var(--gold);">PASUL 4 — Variantele 2 și 3</b><br>
-      Numerele Variantei 1 sunt scoase din pool → căutarea se repetă → Varianta 2. La fel → Varianta 3. Cele 3 nu se suprapun niciodată.<br><br>
-
-      <b style="color:var(--gold);">RECALCULARE:</b> automat, la fiecare extragere nouă adăugată. Între extrageri, rămân identice — <b>deterministe</b>, nu aleatorii.<br>
-      <b>Ce NU face:</b> nu ține cont de variantele din Jurnal. Tot calculul e local și verificabil.
+      <b>Recalculare:</b> automat, la fiecare extragere nouă. <b>Ce NU face:</b> nu ține cont de variantele din Jurnal. Tot calculul e local și verificabil.
     </p>
     <div class="tickets" id="recommendedTicketsWrap"></div>
     <div style="margin-top:16px; padding-top:14px; border-top:1px dashed var(--surface3);">
@@ -9730,12 +9727,12 @@ function comboRawScoreFast(combo, cfg, stats, compositeScores, mn, mx){
   // back to neutral when stats don't carry the distribution (defensive; both live stats and
   // backtest shape stats provide it).
   let zoneFit = 0.5;
+  let covered = 0;
+  for(let lo=1; lo<=cfg.range; lo+=10){
+    const hi = Math.min(lo+9, cfg.range);
+    for(let i=0;i<combo.length;i++){ if(combo[i]>=lo && combo[i]<=hi){ covered++; break; } }
+  }
   if(stats.zoneCoverageProbs && stats.zoneMaxProb){
-    let covered = 0;
-    for(let lo=1; lo<=cfg.range; lo+=10){
-      const hi = Math.min(lo+9, cfg.range);
-      for(let i=0;i<combo.length;i++){ if(combo[i]>=lo && combo[i]<=hi){ covered++; break; } }
-    }
     zoneFit = (stats.zoneCoverageProbs[covered]||0) / stats.zoneMaxProb;
   }
 
@@ -9777,30 +9774,23 @@ function comboRawScoreFast(combo, cfg, stats, compositeScores, mn, mx){
     gapFit = Math.max(0, 1 - deviation);
   }
 
-  // 10 components total — every analytical section in the app feeds into this formula:
-  // • avgPercentile ← Frecvență + Hazard + Momentum + Z-score + Sinergie perechi (Pasul 1)
-  // • sumFit ← Indicatori generali (suma medie istorică)
-  // • oddFit ← Indicatori generali (raport par/impar istoric)
-  // • lowFit ← Indicatori generali (distribuție jos/sus istorică)
-  // • zoneFit ← Acoperirea intervalelor în extrageri
-  // • consecFit ← Șiruri și numere apropiate în extrageri
-  // • overlapFit ← Repetări istorice / suprapunere cu ultima extragere
-  // • gapFit ← uniformitate distanțe (Indicatori generali: avgGap)
-  // • chiConfidence ← Test de aleatorism (chi-pătrat / entropie normalizată)
+  // 9 components total — rebalanced for better interval coverage and less artificial clustering.
+  // consecFit reduced: close pairs occur naturally in ~78% of draws; actively rewarding them
+  // was pushing the algorithm toward clusters and consecutive numbers, producing "weird" combos.
+  // zoneFit boosted: ensures combinations cover at least 4 out of 5 decade-zones, matching the
+  // most common real-draw pattern (53% of real draws cover 4/5 zones).
+  // chiConfidence removed: it was making all scores "flatter" (entropy ~99.8% = nearly uniform,
+  // so chiConfidence ≈ 0.002 ≈ negligible — added noise without value).
   //
-  // chiConfidence: if the chi-squared test shows the game IS truly uniform (entropyNorm ≈ 1),
-  // the individual number scores matter LESS (all numbers are essentially equal, so shape
-  // components like sum/odd/zone matter more). If there IS some deviation from uniform, the
-  // individual scores matter MORE. This calibrates the balance between "which numbers" and
-  // "which shape" dynamically, based on the archive's own randomness profile.
-  let chiConfidence = 0.5;
-  if(stats.entropyNorm !== undefined){
-    // entropyNorm close to 1.0 = very uniform = individual scores less meaningful
-    // entropyNorm significantly below 1.0 = some numbers ARE drawn more = scores more meaningful
-    chiConfidence = 1 - stats.entropyNorm; // inverted: lower entropy = higher confidence in scores
-  }
+  // Hard constraint: combos covering fewer than 4 zones get a severe penalty (×0.3), effectively
+  // filtering them out. This is the single most impactful improvement — the old band-based
+  // system guaranteed this automatically; the pool-based system needed it as an explicit rule.
+  const totalZones = Math.ceil(cfg.range / 10); // 5 zones for 6/49, 4 for 5/40, 5 for Joker
+  const minZones = Math.max(totalZones - 1, 3); // 4 out of 5 for 6/49, 3 out of 4 for 5/40
+  const zonePenalty = covered < minZones ? 0.3 : 1.0;
 
-  return 0.38*avgPercentile + 0.13*sumFit + 0.08*oddFit + 0.08*lowFit + 0.08*zoneFit + 0.07*consecFit + 0.06*overlapFit + 0.06*gapFit + 0.06*chiConfidence;
+  const raw = 0.45*avgPercentile + 0.14*sumFit + 0.08*oddFit + 0.08*lowFit + 0.10*zoneFit + 0.03*consecFit + 0.06*overlapFit + 0.06*gapFit;
+  return raw * zonePenalty;
 }
 // Exhaustive search over all `pick`-sized combinations drawn from `poolNumbers` (a short list —
 // typically 4x the pick size — of the highest-composite-scored numbers), returning whichever
