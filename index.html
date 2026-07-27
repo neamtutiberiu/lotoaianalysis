@@ -414,9 +414,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     </div>
     <div class="tabs" id="gameTabs"></div>
     <div class="version-block">
-      <span class="version-num">Ver 4.2</span>
-      <span class="version-date">Actualizat: 14.07.2026</span>
-      <span class="version-note">Formula reechilibrată: acoperire zone crescută la 10% + constrângere obligatorie (minim 4 din 5 zone), numere apropiate redus la 3% (apăreau prea multe clustere), chiConfidence eliminat (efect neglijabil). Variantele arată acum echilibrat pe tot intervalul</span>
+      <span class="version-num">Ver 4.3</span>
+      <span class="version-date">Actualizat: 28.07.2026</span>
+      <span class="version-note">Scorul compus urcat la 70% în alegerea variantelor (de la 45% — combinațiile urmăresc acum mult mai fidel numerele cu scor statistic mare, nu doar "forma tipică"), constrângerea de zone relaxată (×0.7 în loc de ×0.3), verificare de duplicate la adăugare manuală, descriere pas-cu-pas rescrisă, plus preluare automată a extragerilor lipsă cu 4 surse de rezervă (nu mai depinde de un singur proxy)</span>
     </div>
   </div>
 
@@ -11044,17 +11044,64 @@ function renderAutoFillIdle(){
 // ---------- AUTO-FETCH FROM LOTTERYEXTREME.COM ----------
 // LotteryExtreme.com is a well-known international lottery results aggregator (2.6M+ monthly
 // visits) that publishes the last 20 draws for each Romanian lottery game. Since GitHub Pages
-// can't make direct cross-origin requests to it (CORS), we route through allorigins.win — a
-// free, established CORS proxy that adds the necessary headers. The proxy doesn't store or
-// modify the data; it just relays the response.
+// can't make direct cross-origin requests to it (CORS), we route through a public CORS proxy
+// that adds the necessary headers. The proxy doesn't store or modify the data; it just relays
+// the response.
+//
+// 2026-07-28 reliability fix: this used to hard-depend on a SINGLE proxy (api.allorigins.win).
+// Free public CORS proxies go down / rate-limit / time out fairly often and independently of
+// each other — when that one proxy was unavailable, the button failed outright with
+// "Failed to fetch" and no fallback, even though the underlying LotteryExtreme page was fine.
+// Now we try a short list of independent proxies, one after another, each with its own timeout,
+// and only give up (falling back to manual entry) once every single one has failed. This doesn't
+// make the fetch "always" work — a truly offline machine or a moment when all 4 providers are
+// simultaneously down can still fail — but it removes the single point of failure that was
+// causing routine, avoidable failures.
 const LOTTERY_EXTREME_URLS = {
   '649': 'https://www.lotteryextreme.com/Romania/loto_649-results',
   '540': 'https://www.lotteryextreme.com/Romania/loto_540-results',
   'joker': 'https://www.lotteryextreme.com/Romania/joker-results',
   'noroc': 'https://www.lotteryextreme.com/Romania/noroc-results'
 };
-function corsProxyUrl(url){
-  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+// Each entry builds a full proxy URL from the target URL. Order = try order. Kept intentionally
+// short (4) so a full failed round-trip through all of them still finishes in well under a
+// minute; `label` is shown to the person in the final error message if every proxy fails, so the
+// failure is transparent instead of a single generic "Failed to fetch".
+const CORS_PROXIES = [
+  { label: 'allorigins.win',   build: (u)=> `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` },
+  { label: 'codetabs.com',     build: (u)=> `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}` },
+  { label: 'corsproxy.io',     build: (u)=> `https://corsproxy.io/?url=${encodeURIComponent(u)}` },
+  { label: 'r.jina.ai',        build: (u)=> `https://r.jina.ai/${u}` }
+];
+// Fetches `url` through each proxy in turn (with a per-attempt timeout so a hung proxy can't
+// stall the whole operation), returning the first response whose text actually looks like a
+// LotteryExtreme results page. Throws an aggregated error (one line per proxy that was tried)
+// only if ALL proxies fail — that aggregated message is what the person sees, so it's always
+// clear which sources were attempted and why each one didn't work.
+async function fetchViaProxies(url, timeoutMs){
+  const attempts = [];
+  for(const proxy of CORS_PROXIES){
+    const controller = new AbortController();
+    const timer = setTimeout(()=> controller.abort(), timeoutMs || 12000);
+    try{
+      const resp = await fetch(proxy.build(url), { signal: controller.signal });
+      clearTimeout(timer);
+      if(!resp.ok){ attempts.push(`${proxy.label}: HTTP ${resp.status}`); continue; }
+      const text = await resp.text();
+      // Sanity-check the payload before trusting it: a proxy can return HTTP 200 with an error
+      // page, a captcha, or an empty shell instead of the real content. Require a minimum length
+      // and at least one recognizable date pattern (DD.MM.YYYY) from the results table.
+      if(!text || text.length < 200 || !/\d{2}\.\d{2}\.\d{4}/.test(text)){
+        attempts.push(`${proxy.label}: răspuns primit, dar fără conținut recunoscut`);
+        continue;
+      }
+      return { html: text, proxyLabel: proxy.label };
+    }catch(e){
+      clearTimeout(timer);
+      attempts.push(`${proxy.label}: ${e.name === 'AbortError' ? 'timeout' : e.message}`);
+    }
+  }
+  throw new Error(`Toate sursele automate au eșuat — ${attempts.join('; ')}`);
 }
 
 // Parse the HTML response from LotteryExtreme to extract draw dates and numbers.
@@ -11116,15 +11163,13 @@ async function autoFetchAndFillMissing(game){
   }
 
   statusEl.className = 'status-msg';
-  statusEl.textContent = `Se caută ${missing.length} extrageri lipsă pentru ${cfg.label} pe LotteryExtreme.com...`;
+  statusEl.textContent = `Se caută ${missing.length} extrageri lipsă pentru ${cfg.label} pe LotteryExtreme.com (încearcă succesiv ${CORS_PROXIES.length} surse dacă e nevoie)...`;
   form.innerHTML = '';
 
   try{
     const url = LOTTERY_EXTREME_URLS[game];
     if(!url) throw new Error('Jocul selectat nu are o sursă externă configurată.');
-    const resp = await fetch(corsProxyUrl(url));
-    if(!resp.ok) throw new Error(`Eroare la accesarea LotteryExtreme.com: HTTP ${resp.status}`);
-    const html = await resp.text();
+    const { html, proxyLabel } = await fetchViaProxies(url);
     const parsed = parseLotteryExtremeHTML(html, game);
 
     const missingSet = new Set(missing);
@@ -11142,7 +11187,7 @@ async function autoFetchAndFillMissing(game){
       return `<tr><td class="mono">${fmtDateShort(r.date)}</td><td class="mono">${numsStr}</td></tr>`;
     }).join('');
     form.innerHTML = `
-      <p class="small-note" style="margin:10px 0;">S-au găsit <b>${found.length}</b> din ${missing.length} extrageri lipsă pe <a href="${url}" target="_blank" rel="noopener" style="color:var(--blue);">LotteryExtreme.com</a>. Verifică numerele de mai jos, apoi apasă "Confirmă și salvează":</p>
+      <p class="small-note" style="margin:10px 0;">S-au găsit <b>${found.length}</b> din ${missing.length} extrageri lipsă pe <a href="${url}" target="_blank" rel="noopener" style="color:var(--blue);">LotteryExtreme.com</a> (via ${proxyLabel}). Verifică numerele de mai jos, apoi apasă "Confirmă și salvează":</p>
       <div class="table-scroll"><table class="data-table" style="width:100%; max-width:480px;">
         <thead><tr><th>Data</th><th>Numere</th></tr></thead>
         <tbody>${previewRows}</tbody>
