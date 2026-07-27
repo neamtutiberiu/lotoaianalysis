@@ -458,35 +458,40 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
   <div class="panel" id="recommendedPanel">
     <h2 id="recommendedTitle">Variante recomandate pentru extragerea curentă</h2>
     <p class="small-note" style="margin-bottom:14px;">
-      <b style="color:var(--gold);">Metodologia completă — pe ce se bazează cele 3 variante recomandate:</b><br><br>
-      Această secțiune e <b>rezultatul final</b> al întregii aplicații. Cele 3 variante sunt alese printr-o analiză exhaustivă care integrează <b>toate secțiunile de analiză</b> din aplicație, simultan, într-o singură formulă de selecție optimizată. Concret:<br><br>
+      <b style="color:var(--gold);">Cum ajunge aplicația la aceste 3 variante — pas cu pas:</b><br><br>
+      Cele 3 variante de mai jos sunt rezultatul unui proces în 4 pași, rulat integral la fiecare extragere nouă, pe baza întregii arhive. Nimic din el nu se bazează pe "noroc" sau alegere la întâmplare — dar nici nu poate depăși matematic un joc corect (vezi nota de la final).<br><br>
 
-      <b style="color:var(--gold);">PASUL 1 — Scorul individual al fiecărui număr</b><br>
-      Fiecare număr primește un scor unic, calculat din <b>toată arhiva</b> (din 1993 până la ultima extragere adăugată), prin 5 indici:<br>
-      • <b>Frecvență istorică (25%)</b> — din <em>"Frecvența numerelor"</em> + <em>"Analiza completă"</em><br>
-      • <b>Regularitate / hazard (22%)</b> — din <em>"Indicatori generali"</em><br>
-      • <b>Momentum recent (25%)</b> — din <em>"Trenduri"</em> (ultimele ~20 extrageri)<br>
-      • <b>Z-score (16%)</b> — din <em>"Indicatori generali"</em><br>
-      • <b>Sinergie perechi (12%)</b> — din <em>"Rețea de sinergie a perechilor"</em><br><br>
+      <b style="color:var(--gold);">PASUL 1 — fiecare număr primește un scor statistic</b><br>
+      Fiecare număr posibil din intervalul jocului (ex: 1–49 la 6/49, 1–40 la 5/40, 1–20 la Joker) primește un scor unic, calculat din <b>toată arhiva</b> (din 1993 până la ultima extragere adăugată — inclusiv cele introduse manual), din 5 indici independenți:<br>
+      • <b>Frecvență istorică (25%)</b> — de câte ori a ieșit numărul în total.<br>
+      • <b>Regularitate / hazard (22%)</b> — cât de "restant" e față de propriul lui ritm mediu de apariție (nu față de o restanță brută identică pentru toate numerele).<br>
+      • <b>Momentum recent (25%)</b> — trend din ultimele ~20 extrageri, cu pondere din ce în ce mai mică pe măsură ce o extragere e mai veche.<br>
+      • <b>Z-score (16%)</b> — cât de mult se abate frecvența lui de la ce ar ieși în medie într-un joc perfect corect.<br>
+      • <b>Sinergie de perechi (12%)</b> — cât de des apare alături de alte numere frecvente.<br>
+      Cele 5 scoruri sunt normalizate (0–1) și combinate cu ponderile de mai sus într-un singur scor compus per număr — acesta e "scorul de la Pasul 1" folosit peste tot mai jos.<br><br>
 
-      <b style="color:var(--gold);">PASUL 2 — Pool de ~35 candidați + căutare exhaustivă (~1.600.000 combinații)</b><br>
-      Combinația optimă e aleasă pe baza unui <b>scor combinat cu 9 componente</b>:<br>
-      <b>1. Percentila medie (45%)</b> — media scorurilor de la Pasul 1<br>
-      <b>2. Potrivire sumă (14%)</b> — din <em>"Indicatori generali"</em><br>
-      <b>3. Raport par/impar (8%)</b> — din <em>"Indicatori generali"</em><br>
-      <b>4. Distribuție jos/sus (8%)</b> — din <em>"Indicatori generali"</em><br>
-      <b>5. Acoperire zone (10%)</b> — din <em>"Acoperirea intervalelor"</em><br>
-      <b>6. Numere apropiate (3%)</b> — din <em>"Șiruri și numere apropiate"</em><br>
-      <b>7. Suprapunere cu ultima extragere (6%)</b> — din <em>"Repetări istorice"</em><br>
-      <b>8. Uniformitate distanțe (6%)</b> — din <em>"Indicatori generali"</em><br><br>
+      <b style="color:var(--gold);">PASUL 2 — se reține un grup restrâns de candidați</b><br>
+      Numerele sunt ordonate descrescător după scorul de la Pasul 1, iar cele mai slab cotate sunt eliminate din calcul: rămân doar cele mai bune ~35 (la 6/49 asta înseamnă 71% din interval — sunt excluse doar cele mai slabe 14 numere). Restul pașilor lucrează exclusiv pe acest grup restrâns.<br><br>
 
-      <b style="color:var(--gold);">CONSTRÂNGERE OBLIGATORIE</b><br>
-      Fiecare variantă trebuie să acopere <b>cel puțin 4 din 5 zone</b> (1-10, 11-20, 21-30, 31-40, 41-49) — reflectând tiparul real din arhivă (53% din extrageri acoperă 4/5 zone). Combinațiile cu acoperire mai slabă sunt penalizate sever (×0.3).<br><br>
+      <b style="color:var(--gold);">PASUL 3 — căutare exhaustivă pe TOATE combinațiile posibile din grup</b><br>
+      Din cei ~35 de candidați, aplicația generează și punctează efectiv <b>toate</b> combinațiile posibile de câte numere cere jocul (6 la 6/49, 5 la 5/40 și Joker) — la 6/49 asta înseamnă ~1,6 milioane de combinații verificate una câte una, nu o aproximare. Fiecare combinație primește un scor din 8 componente:<br>
+      <b>1. Percentila medie a scorului de la Pasul 1 (70%)</b> — componenta dominantă: cât de sus punctează, în medie, numerele alese.<br>
+      <b>2. Potrivire sumă (8%)</b> — cât de aproape e suma combinației de suma medie reală din arhivă.<br>
+      <b>3. Raport par/impar (4%)</b> — cât de aproape e de raportul par/impar tipic din arhivă.<br>
+      <b>4. Distribuție jos/sus (4%)</b> — la fel, pentru raportul numere mici/mari.<br>
+      <b>5. Acoperire zone (6%)</b> — cât de tipică e acoperirea pe zone de câte 10 numere (1-10, 11-20 ș.a.m.d.), comparativ cu distribuția reală din arhivă.<br>
+      <b>6. Numere apropiate/consecutive (2%)</b> — cât de aproape e de rata reală de perechi apropiate din arhivă.<br>
+      <b>7. Suprapunere cu ultima extragere (3%)</b> — cât de tipic e numărul de numere comune cu ultima extragere reală.<br>
+      <b>8. Uniformitate a distanțelor dintre numere (3%)</b> — cât de aproape e de tiparul real de spațiere.<br>
+      Există și o penalizare ușoară (×0.7, nu eliminare) pentru combinațiile care acoperă mai puțin de 4 din 5 zone — dar, spre deosebire de versiunea anterioară, nu mai poate anula un scor de la Pasul 1 clar superior; e doar un mic dezavantaj, nu o descalificare.<br><br>
 
-      <b style="color:var(--gold);">VALIDARE</b><br>
-      Rezultatul e confirmat de <em>"Test de aleatorism (chi-pătrat)"</em> — care validează că arhiva e un joc corect, deci analiza statistică are sens.<br><br>
+      <b style="color:var(--gold);">PASUL 4 — cele 3 variante, fără suprapuneri</b><br>
+      Varianta 1 = combinația cu scorul cel mai mare găsită la Pasul 3. Numerele ei sunt apoi scoase din grupul de candidați, iar căutarea exhaustivă se repetă pe ce a rămas, pentru Varianta 2, și din nou pentru Varianta 3 — astfel cele 3 variante nu au niciodată numere identice între ele. Dacă jocul are Joker, acesta primește un scor separat din propriul lui istoric (aceiași 5 indici de la Pasul 1), iar cele 3 variante primesc, în ordine, cel mai bine, al doilea și al treilea cel mai bine punctat Joker.<br><br>
 
-      <b>Recalculare:</b> automat, la fiecare extragere nouă. <b>Ce NU face:</b> nu ține cont de variantele din Jurnal. Tot calculul e local și verificabil.
+      <b style="color:var(--gold);">VALIDARE ȘI LIMITE REALE</b><br>
+      Rezultatul e verificat cu <em>"Test de aleatorism (chi-pătrat)"</em>, care confirmă că arhiva se comportă ca un joc corect — condiție necesară ca analiza de mai sus să aibă sens statistic. Tocmai <b>pentru că</b> jocul e corect, fiecare extragere reală rămâne un eveniment complet independent de istoricul analizat: metoda de mai sus nu poate garanta și nici nu poate crește real șansele de câștig peste nivelul aleatoriu pe termen lung — arată doar care numere se aliniază cel mai bine cu tiparele deja observate în arhivă. Poți verifica onest performanța ei istorică (față de un reper pur aleatoriu) cu butonul de mai jos.<br><br>
+
+      <b>Recalculare:</b> automat, la fiecare extragere nouă (inclusiv cele adăugate manual). <b>Ce NU face:</b> nu ține cont de variantele din Jurnal. Tot calculul e local, în browser, și verificabil în cod.
     </p>
     <div class="tickets" id="recommendedTicketsWrap"></div>
     <div style="margin-top:16px; padding-top:14px; border-top:1px dashed var(--surface3);">
@@ -9774,22 +9779,22 @@ function comboRawScoreFast(combo, cfg, stats, compositeScores, mn, mx){
     gapFit = Math.max(0, 1 - deviation);
   }
 
-  // 9 components total — rebalanced for better interval coverage and less artificial clustering.
-  // consecFit reduced: close pairs occur naturally in ~78% of draws; actively rewarding them
-  // was pushing the algorithm toward clusters and consecutive numbers, producing "weird" combos.
-  // zoneFit boosted: ensures combinations cover at least 4 out of 5 decade-zones, matching the
-  // most common real-draw pattern (53% of real draws cover 4/5 zones).
-  // chiConfidence removed: it was making all scores "flatter" (entropy ~99.8% = nearly uniform,
-  // so chiConfidence ≈ 0.002 ≈ negligible — added noise without value).
-  //
-  // Hard constraint: combos covering fewer than 4 zones get a severe penalty (×0.3), effectively
-  // filtering them out. This is the single most impactful improvement — the old band-based
-  // system guaranteed this automatically; the pool-based system needed it as an explicit rule.
+  // 9 components total. Re-rebalanced (2026-07-28): the previous split (45% avgPercentile /
+  // 55% shape-fit components) let "looks like a typical draw" outweigh "these are the numbers
+  // the 5-index model actually rates highest" — the pool-search could and did discard the true
+  // top-scored numbers in favor of a lower-scored but better-shaped combo. Since the whole point
+  // of this panel is to follow the composite statistical model as closely as possible,
+  // avgPercentile is now the dominant term (70%) and the shape terms are a secondary
+  // tie-breaker, not a co-equal criterion.
+  // zoneFit / hard zone constraint softened for the same reason: covering fewer than 4/5 zones
+  // no longer disqualifies a combo outright (×0.3), just nudges it (×0.7) — a combo of
+  // genuinely top-scored numbers that happens to cluster in fewer zones can still win when its
+  // composite score is clearly better.
   const totalZones = Math.ceil(cfg.range / 10); // 5 zones for 6/49, 4 for 5/40, 5 for Joker
   const minZones = Math.max(totalZones - 1, 3); // 4 out of 5 for 6/49, 3 out of 4 for 5/40
-  const zonePenalty = covered < minZones ? 0.3 : 1.0;
+  const zonePenalty = covered < minZones ? 0.7 : 1.0;
 
-  const raw = 0.45*avgPercentile + 0.14*sumFit + 0.08*oddFit + 0.08*lowFit + 0.10*zoneFit + 0.03*consecFit + 0.06*overlapFit + 0.06*gapFit;
+  const raw = 0.70*avgPercentile + 0.08*sumFit + 0.04*oddFit + 0.04*lowFit + 0.06*zoneFit + 0.02*consecFit + 0.03*overlapFit + 0.03*gapFit;
   return raw * zonePenalty;
 }
 // Exhaustive search over all `pick`-sized combinations drawn from `poolNumbers` (a short list —
@@ -11652,6 +11657,15 @@ document.getElementById('addDrawBtn').addEventListener('click', async ()=>{
     dateVal = rawDateVal;
   } else {
     statusEl.className='status-msg err'; statusEl.textContent='Format dată invalid. Folosește ZZ-LL-AAAA (ex: 12-07-2026).'; return;
+  }
+  // Guard against double-counting: if this date already exists (in the official archive OR in
+  // a previously-saved manual entry for this game), refuse to save a second draw on top of it —
+  // every stat/backtest treats manual entries identically to archive draws, so a duplicate date
+  // would silently double-weight that draw's numbers in every analysis.
+  if(getAllDraws(currentGame).some(d=> d.date === dateVal)){
+    statusEl.className='status-msg err';
+    statusEl.textContent = `Există deja o extragere salvată pe ${fmtDateShort(dateVal)} (în arhivă sau adăugată manual anterior) — nu am salvat-o din nou, ca să nu fie numărată de două ori în analiză.`;
+    return;
   }
   try{
     if(cfg.isDigit){
