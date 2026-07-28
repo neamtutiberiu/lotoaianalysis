@@ -414,9 +414,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     </div>
     <div class="tabs" id="gameTabs"></div>
     <div class="version-block">
-      <span class="version-num">Ver 4.4</span>
+      <span class="version-num">Ver 4.5</span>
       <span class="version-date">Actualizat: 28.07.2026</span>
-      <span class="version-note">Scorul compus urcat la 70% în alegerea variantelor (de la 45%), constrângerea de zone relaxată (×0.7), verificare de duplicate la adăugare manuală, descriere pas-cu-pas rescrisă, preluare automată cu 4 surse de rezervă, iar "Adaugă automat extrageri care lipsesc" verifică acum simultan toate cele 4 jocuri (6/49, 5/40, Joker, Noroc) dintr-o singură apăsare</span>
+      <span class="version-note">Scorul compus urcat la 70% în alegerea variantelor (de la 45%), constrângerea de zone relaxată (×0.7), verificare de duplicate la adăugare manuală, descriere pas-cu-pas rescrisă, preluare automată cu 4 surse de rezervă pentru toate cele 4 jocuri deodată, plus avertisment vizibil în "Variante recomandate" când arhiva nu e la zi (altfel variantele rămân identice de la o extragere la alta, fără să pară un bug)</span>
     </div>
   </div>
 
@@ -490,6 +490,8 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
 
       <b style="color:var(--gold);">VALIDARE ȘI LIMITE REALE</b><br>
       Rezultatul e verificat cu <em>"Test de aleatorism (chi-pătrat)"</em>, care confirmă că arhiva se comportă ca un joc corect — condiție necesară ca analiza de mai sus să aibă sens statistic. Tocmai <b>pentru că</b> jocul e corect, fiecare extragere reală rămâne un eveniment complet independent de istoricul analizat: metoda de mai sus nu poate garanta și nici nu poate crește real șansele de câștig peste nivelul aleatoriu pe termen lung — arată doar care numere se aliniază cel mai bine cu tiparele deja observate în arhivă. Poți verifica onest performanța ei istorică (față de un reper pur aleatoriu) cu butonul de mai jos.<br><br>
+
+      <b style="color:#e0574a;">De ce pot arăta variantele identice de la o extragere la alta:</b> dacă între două vizite nu ai adăugat în arhivă rezultatul real al ultimei extrageri, calculul de mai sus rulează pe exact aceleași date ca data trecută — deci scoate, normal, exact aceleași 3 variante. Nu e o eroare, e o consecință directă a faptului că "PASUL 1" se bazează pe toată arhiva: dacă arhiva nu s-a schimbat, nici rezultatul nu se schimbă. Aplicația te avertizează mai jos, deasupra variantelor, când arhiva nu e la zi.<br><br>
 
       <b>Recalculare:</b> automat, la fiecare extragere nouă (inclusiv cele adăugate manual). <b>Ce NU face:</b> nu ține cont de variantele din Jurnal. Tot calculul e local, în browser, și verificabil în cod.
     </p>
@@ -10018,6 +10020,26 @@ function renderRecommendedPanel(game, stats){
   const dateStr = `${draw.getDate().toString().padStart(2,'0')}.${(draw.getMonth()+1).toString().padStart(2,'0')}.${draw.getFullYear()}`;
   titleEl.innerHTML = `Variante recomandate pentru extragerea curentă <span class="sub">— ${cfg.label}, ${dateStr}</span>`;
   wrap.innerHTML = '';
+
+  // Staleness check: this whole panel is a deterministic function of the archive. If the
+  // person hasn't added the latest real draw(s) yet, re-generating "for the current draw" runs
+  // on EXACTLY the same input as last time and will produce EXACTLY the same 3 variants — which
+  // looks like a bug ("why are my recommendations always the same numbers?") but is actually the
+  // archive not having changed. Surface that plainly, right above the tickets, instead of letting
+  // it look broken.
+  const missingForRec = computeMissingDrawDates(game);
+  if(missingForRec.length > 0){
+    const drawsForRec = getAllDraws(game);
+    const lastDateForRec = drawsForRec.length ? fmtDateShort(drawsForRec[drawsForRec.length-1].date) : '—';
+    const staleWarn = document.createElement('div');
+    staleWarn.style.cssText = 'margin-bottom:16px; padding:12px 16px; border-radius:10px; background:rgba(224,87,74,.12); border:1px solid rgba(224,87,74,.4);';
+    staleWarn.innerHTML = `
+      <div style="color:#e0574a; font-weight:700; font-size:14px; margin-bottom:6px;">⚠ Arhiva ${cfg.label} nu e la zi — variantele de mai jos pot fi identice cu ultima dată</div>
+      <div style="color:#e0574a; font-size:13px; line-height:1.7;">
+        Ultima extragere din arhivă: <b>${lastDateForRec}</b>. Lipsesc încă ${missingForRec.length===1?'1 extragere reală':(missingForRec.length+' extrageri reale')} (${missingForRec.map(fmtDateShort).join(', ')}). Cele 3 variante se calculează din toată arhiva — dacă arhiva nu s-a schimbat de la ultima vizită, ies exact aceleași 3 variante, nu e o eroare. Adaugă extragerile lipsă (butonul "Adaugă automat extrageri care lipsesc" mai sus, sau manual) și recalculează.
+      </div>`;
+    wrap.appendChild(staleWarn);
+  }
 
   const rankLabels = ['Varianta 1 — cea mai bine punctată combinație posibilă din numerele de top', 'Varianta 2 — a doua cea mai bine punctată combinație, din restul numerelor de top', 'Varianta 3 — a treia cea mai bine punctată combinație, din restul numerelor de top'];
 
