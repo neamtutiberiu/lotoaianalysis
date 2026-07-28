@@ -414,9 +414,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     </div>
     <div class="tabs" id="gameTabs"></div>
     <div class="version-block">
-      <span class="version-num">Ver 4.5</span>
+      <span class="version-num">Ver 4.6</span>
       <span class="version-date">Actualizat: 28.07.2026</span>
-      <span class="version-note">Scorul compus urcat la 70% în alegerea variantelor (de la 45%), constrângerea de zone relaxată (×0.7), verificare de duplicate la adăugare manuală, descriere pas-cu-pas rescrisă, preluare automată cu 4 surse de rezervă pentru toate cele 4 jocuri deodată, plus avertisment vizibil în "Variante recomandate" când arhiva nu e la zi (altfel variantele rămân identice de la o extragere la alta, fără să pară un bug)</span>
+      <span class="version-note">Scorul compus urcat la 70%, constrângerea de zone relaxată, verificare de duplicate, descriere pas-cu-pas rescrisă, preluare automată cu 4 surse pentru toate jocurile, avertisment de arhivă neactualizată în Variante recomandate, și acum: printre combinațiile aproape la fel de bine punctate, se preferă cea mai puțin "previzibilă uman" (popularitate estimată), ca să nu împarți premiul cu alți jucători dacă nimerești — nu schimbă șansa de câștig, doar câștigul efectiv</span>
     </div>
   </div>
 
@@ -485,13 +485,16 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <b>8. Uniformitate a distanțelor dintre numere (3%)</b> — cât de aproape e de tiparul real de spațiere.<br>
       Există și o penalizare ușoară (×0.7, nu eliminare) pentru combinațiile care acoperă mai puțin de 4 din 5 zone — dar, spre deosebire de versiunea anterioară, nu mai poate anula un scor de la Pasul 1 clar superior; e doar un mic dezavantaj, nu o descalificare.<br><br>
 
+      <b style="color:var(--gold);">Departajare finală — evitarea combinațiilor "populare"</b><br>
+      Din căutarea exhaustivă rămân, de obicei, câteva zeci de combinații aproape la fel de bine punctate (nu doar una singură — diferențele dintre primele ~25 sunt minime). Dintre acestea, aplicația o alege pe cea cu <b>popularitatea estimată</b> cea mai mică (analiza deja folosită la "Verifică popularitatea unei combinații": penalizează numerele ≤31 în exces, perechile consecutive, progresiile aritmetice, sumele mici — tipare pe care oamenii le aleg des din date calendaristice). <b>Important:</b> asta nu schimbă și nu poate schimba șansa de câștig — e fixă, indiferent de combinație. Schimbă doar cât ai câștiga efectiv <em>dacă</em> nimerești: o combinație mai puțin "previzibilă uman" are șanse mai mici să fie jucată și de alți oameni, deci mai puține șanse să împarți premiul cu ei.<br><br>
+
       <b style="color:var(--gold);">PASUL 4 — cele 3 variante, fără suprapuneri</b><br>
-      Varianta 1 = combinația cu scorul cel mai mare găsită la Pasul 3. Numerele ei sunt apoi scoase din grupul de candidați, iar căutarea exhaustivă se repetă pe ce a rămas, pentru Varianta 2, și din nou pentru Varianta 3 — astfel cele 3 variante nu au niciodată numere identice între ele. Dacă jocul are Joker, acesta primește un scor separat din propriul lui istoric (aceiași 5 indici de la Pasul 1), iar cele 3 variante primesc, în ordine, cel mai bine, al doilea și al treilea cel mai bine punctat Joker.<br><br>
+      Varianta 1 = combinația aleasă mai sus. Numerele ei sunt apoi scoase din grupul de candidați, iar căutarea exhaustivă (Pasul 3 + departajarea de popularitate) se repetă pe ce a rămas, pentru Varianta 2, și din nou pentru Varianta 3 — astfel cele 3 variante nu au niciodată numere identice între ele. Dacă jocul are Joker, acesta primește un scor separat din propriul lui istoric (aceiași 5 indici de la Pasul 1), iar cele 3 variante primesc, în ordine, cel mai bine, al doilea și al treilea cel mai bine punctat Joker.<br><br>
 
       <b style="color:var(--gold);">VALIDARE ȘI LIMITE REALE</b><br>
-      Rezultatul e verificat cu <em>"Test de aleatorism (chi-pătrat)"</em>, care confirmă că arhiva se comportă ca un joc corect — condiție necesară ca analiza de mai sus să aibă sens statistic. Tocmai <b>pentru că</b> jocul e corect, fiecare extragere reală rămâne un eveniment complet independent de istoricul analizat: metoda de mai sus nu poate garanta și nici nu poate crește real șansele de câștig peste nivelul aleatoriu pe termen lung — arată doar care numere se aliniază cel mai bine cu tiparele deja observate în arhivă. Poți verifica onest performanța ei istorică (față de un reper pur aleatoriu) cu butonul de mai jos.<br><br>
+      Rezultatul e verificat cu <em>"Test de aleatorism (chi-pătrat)"</em>, care confirmă că arhiva se comportă ca un joc corect — condiție necesară ca analiza de mai sus să aibă sens statistic. Tocmai <b>pentru că</b> jocul e corect, fiecare extragere reală rămâne un eveniment complet independent de istoricul analizat: metoda de mai sus nu poate garanta și nici nu poate crește real șansele de câștig peste nivelul aleatoriu pe termen lung — arată doar care numere se aliniază cel mai bine cu tiparele deja observate în arhivă, și, la egalitate, care combinație e mai puțin probabil s-o joace și altcineva. Poți verifica onest performanța ei istorică (față de un reper pur aleatoriu) cu butonul de mai jos.<br><br>
 
-      <b style="color:#e0574a;">De ce pot arăta variantele identice de la o extragere la alta:</b> dacă între două vizite nu ai adăugat în arhivă rezultatul real al ultimei extrageri, calculul de mai sus rulează pe exact aceleași date ca data trecută — deci scoate, normal, exact aceleași 3 variante. Nu e o eroare, e o consecință directă a faptului că "PASUL 1" se bazează pe toată arhiva: dacă arhiva nu s-a schimbat, nici rezultatul nu se schimbă. Aplicația te avertizează mai jos, deasupra variantelor, când arhiva nu e la zi.<br><br>
+      <b style="color:#e0574a;">De ce pot arăta variantele identice de la o extragere la alta:</b> dacă între două vizite nu ai adăugat în arhivă rezultatul real al ultimei extrageri, calculul de mai sus rulează pe exact aceleași date ca data trecută — deci scoate, normal, exact aceleași 3 variante. Nu e o eroare. Aplicația te avertizează mai jos, deasupra variantelor, când arhiva nu e la zi.<br><br>
 
       <b>Recalculare:</b> automat, la fiecare extragere nouă (inclusiv cele adăugate manual). <b>Ce NU face:</b> nu ține cont de variantele din Jurnal. Tot calculul e local, în browser, și verificabil în cod.
     </p>
@@ -9809,13 +9812,26 @@ function comboRawScoreFast(combo, cfg, stats, compositeScores, mn, mx){
 // second even for 6/49, so no shortcuts or heuristics are needed — this is the true best answer
 // for the stated objective, not an approximation.
 function bestComboFromPool(poolNumbers, pick, cfg, stats, compositeScores, mn, mx){
-  let bestCombo=null, bestScore=-Infinity;
   const n = poolNumbers.length;
   const combo = new Array(pick);
+  // 2026-07-28: track the top TIE_BREAK_POOL combos by raw score, not just the single best.
+  // Out of ~1.6M combinations for 6/49, the top ~25 are separated by negligible differences in
+  // the underlying statistical fit — but they can differ a lot in how "human-picked" they look
+  // (birthdate ranges, consecutive runs, round sums). Among this near-best set, prefer the
+  // least "popular" one via estimatePopularity (same heuristic as "Verifică popularitatea unei
+  // combinații"). This never overrides a genuinely better statistical score outside that near-
+  // best set — it only breaks ties that were already statistically negligible.
+  const TIE_BREAK_POOL = 25;
+  const top = []; // kept sorted descending by score, length <= TIE_BREAK_POOL
   (function recurse(start, depth){
     if(depth===pick){
       const score = comboRawScoreFast(combo, cfg, stats, compositeScores, mn, mx);
-      if(score>bestScore){ bestScore=score; bestCombo=combo.slice(); }
+      if(top.length < TIE_BREAK_POOL || score > top[top.length-1].score){
+        let i = top.length;
+        top.push({ combo: combo.slice(), score });
+        while(i>0 && top[i-1].score < top[i].score){ const t=top[i-1]; top[i-1]=top[i]; top[i]=t; i--; }
+        if(top.length > TIE_BREAK_POOL) top.pop();
+      }
       return;
     }
     for(let i=start; i<=n-(pick-depth); i++){
@@ -9823,8 +9839,12 @@ function bestComboFromPool(poolNumbers, pick, cfg, stats, compositeScores, mn, m
       recurse(i+1, depth+1);
     }
   })(0,0);
-  bestCombo.sort((a,b)=>a-b);
-  return { combo:bestCombo, score:bestScore };
+
+  top.forEach(t=> t.pop = estimatePopularity(t.combo, cfg).score);
+  top.sort((a,b)=> a.popScore - b.popScore);
+  const chosen = top[0];
+  const sortedCombo = chosen.combo.slice().sort((a,b)=>a-b);
+  return { combo: sortedCombo, score: chosen.score };
 }
 
 function scoreTicketQuality(combo, cfg, stats, compositeScores){
@@ -10074,6 +10094,12 @@ function renderRecommendedPanel(game, stats){
       }
       div.appendChild(numsWrap);
       div.appendChild(popBadgeEl(combo, cfg));
+      const popInfoForNote = estimatePopularity(combo, cfg);
+      const popNote = document.createElement('p');
+      popNote.className = 'small-note';
+      popNote.style.cssText = 'margin-top:6px; font-size:11.5px; color:var(--muted);';
+      popNote.textContent = `${popInfoForNote.reasons.join(' ')} (Nu schimbă șansa de câștig — doar cât ai împărți premiul cu alți jucători, dacă nimerești o categorie.)`;
+      div.appendChild(popNote);
       const qualityInfo = scoreTicketQuality(combo, cfg, stats, baseScores);
       div.appendChild(ticketInfoEl({ nums: combo, date:null }, stats.draws, cfg.pick, false, qualityInfo));
       const narrative = document.createElement('p');
