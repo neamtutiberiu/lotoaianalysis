@@ -414,9 +414,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     </div>
     <div class="tabs" id="gameTabs"></div>
     <div class="version-block">
-      <span class="version-num">Ver 4.7</span>
-      <span class="version-date">Actualizat: 28.07.2026</span>
-      <span class="version-note">"Generator de variante" mutat imediat sub "Variante recomandate" și rescris să folosească EXACT aceeași analiză (scor pe 5 indici, pool de 35, căutare exhaustivă pe 8 componente, departajare de popularitate) — singura diferență: aici, la fiecare "Recalculează variantele", se alege ponderat-aleatoriu din grupul de top, nu fix cea mai bună combinație. Plus toate îmbunătățirile anterioare: scor compus 70%, constrângere de zone relaxată, verificare de duplicate, preluare automată pe toate jocurile, avertisment de arhivă neactualizată.</span>
+      <span class="version-num">Ver 4.2</span>
+      <span class="version-date">Actualizat: 14.07.2026</span>
+      <span class="version-note">Formula reechilibrată: acoperire zone crescută la 10% + constrângere obligatorie (minim 4 din 5 zone), numere apropiate redus la 3% (apăreau prea multe clustere), chiConfidence eliminat (efect neglijabil). Variantele arată acum echilibrat pe tot intervalul</span>
     </div>
   </div>
 
@@ -452,98 +452,50 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <div id="autoFillStatus" class="status-msg"></div>
       <div id="autoFillForm"></div>
     </div>
-    <p class="small-note" style="margin-top:12px;">Aplicația detectează automat câte extrageri lipsesc (compară arhiva cu programul oficial joi/duminică, 18:30). O singură apăsare pe butonul de mai jos verifică și completează simultan toate cele 4 jocuri — 6/49, 5/40, Joker și Noroc — indiferent care tab e deschis acum; nu mai trebuie repetat pentru fiecare joc în parte.</p>
+    <p class="small-note" style="margin-top:12px;">Aplicația detectează automat câte extrageri lipsesc (compară arhiva cu programul oficial joi/duminică, 18:30) și îți deschide un link direct spre rezultatele oficiale — tu doar copiezi numerele, restul (validare, salvare, recalculare completă) e automat. Funcționează pentru toate jocurile: 6/49, 5/40, Joker, Noroc.</p>
   </div>
 
   <div class="panel" id="recommendedPanel">
     <h2 id="recommendedTitle">Variante recomandate pentru extragerea curentă</h2>
-    <p class="small-note" id="recommendedMethodologyText" style="margin-bottom:14px;">
-      <b style="color:var(--gold);">Cum ajunge aplicația la aceste 3 variante — pas cu pas:</b><br><br>
-      Cele 3 variante de mai jos sunt rezultatul unui proces în 4 pași, rulat integral la fiecare extragere nouă, pe baza întregii arhive. Nimic din el nu se bazează pe "noroc" sau alegere la întâmplare — dar nici nu poate depăși matematic un joc corect (vezi nota de la final).<br><br>
+    <p class="small-note" style="margin-bottom:14px;">
+      <b style="color:var(--gold);">Metodologia completă — pe ce se bazează cele 3 variante recomandate:</b><br><br>
+      Această secțiune e <b>rezultatul final</b> al întregii aplicații. Cele 3 variante sunt alese printr-o analiză exhaustivă care integrează <b>toate secțiunile de analiză</b> din aplicație, simultan, într-o singură formulă de selecție optimizată. Concret:<br><br>
 
-      <b style="color:var(--gold);">PASUL 1 — fiecare număr primește un scor statistic</b><br>
-      Fiecare număr posibil din intervalul jocului (ex: 1–49 la 6/49, 1–40 la 5/40, 1–20 la Joker) primește un scor unic, calculat din <b>toată arhiva</b> (din 1993 până la ultima extragere adăugată — inclusiv cele introduse manual), din 5 indici independenți:<br>
-      • <b>Frecvență istorică (25%)</b> — de câte ori a ieșit numărul în total.<br>
-      • <b>Regularitate / hazard (22%)</b> — cât de "restant" e față de propriul lui ritm mediu de apariție (nu față de o restanță brută identică pentru toate numerele).<br>
-      • <b>Momentum recent (25%)</b> — trend din ultimele ~20 extrageri, cu pondere din ce în ce mai mică pe măsură ce o extragere e mai veche.<br>
-      • <b>Z-score (16%)</b> — cât de mult se abate frecvența lui de la ce ar ieși în medie într-un joc perfect corect.<br>
-      • <b>Sinergie de perechi (12%)</b> — cât de des apare alături de alte numere frecvente.<br>
-      Cele 5 scoruri sunt normalizate (0–1) și combinate cu ponderile de mai sus într-un singur scor compus per număr — acesta e "scorul de la Pasul 1" folosit peste tot mai jos.<br><br>
+      <b style="color:var(--gold);">PASUL 1 — Scorul individual al fiecărui număr</b><br>
+      Fiecare număr primește un scor unic, calculat din <b>toată arhiva</b> (din 1993 până la ultima extragere adăugată), prin 5 indici:<br>
+      • <b>Frecvență istorică (25%)</b> — din <em>"Frecvența numerelor"</em> + <em>"Analiza completă"</em><br>
+      • <b>Regularitate / hazard (22%)</b> — din <em>"Indicatori generali"</em><br>
+      • <b>Momentum recent (25%)</b> — din <em>"Trenduri"</em> (ultimele ~20 extrageri)<br>
+      • <b>Z-score (16%)</b> — din <em>"Indicatori generali"</em><br>
+      • <b>Sinergie perechi (12%)</b> — din <em>"Rețea de sinergie a perechilor"</em><br><br>
 
-      <b style="color:var(--gold);">PASUL 2 — se reține un grup restrâns de candidați</b><br>
-      Numerele sunt ordonate descrescător după scorul de la Pasul 1, iar cele mai slab cotate sunt eliminate din calcul: rămân doar cele mai bune ~35 (la 6/49 asta înseamnă 71% din interval — sunt excluse doar cele mai slabe 14 numere). Restul pașilor lucrează exclusiv pe acest grup restrâns.<br><br>
+      <b style="color:var(--gold);">PASUL 2 — Pool de ~35 candidați + căutare exhaustivă (~1.600.000 combinații)</b><br>
+      Combinația optimă e aleasă pe baza unui <b>scor combinat cu 9 componente</b>:<br>
+      <b>1. Percentila medie (45%)</b> — media scorurilor de la Pasul 1<br>
+      <b>2. Potrivire sumă (14%)</b> — din <em>"Indicatori generali"</em><br>
+      <b>3. Raport par/impar (8%)</b> — din <em>"Indicatori generali"</em><br>
+      <b>4. Distribuție jos/sus (8%)</b> — din <em>"Indicatori generali"</em><br>
+      <b>5. Acoperire zone (10%)</b> — din <em>"Acoperirea intervalelor"</em><br>
+      <b>6. Numere apropiate (3%)</b> — din <em>"Șiruri și numere apropiate"</em><br>
+      <b>7. Suprapunere cu ultima extragere (6%)</b> — din <em>"Repetări istorice"</em><br>
+      <b>8. Uniformitate distanțe (6%)</b> — din <em>"Indicatori generali"</em><br><br>
 
-      <b style="color:var(--gold);">PASUL 3 — căutare exhaustivă pe TOATE combinațiile posibile din grup</b><br>
-      Din cei ~35 de candidați, aplicația generează și punctează efectiv <b>toate</b> combinațiile posibile de câte numere cere jocul (6 la 6/49, 5 la 5/40 și Joker) — la 6/49 asta înseamnă ~1,6 milioane de combinații verificate una câte una, nu o aproximare. Fiecare combinație primește un scor din 8 componente:<br>
-      <b>1. Percentila medie a scorului de la Pasul 1 (70%)</b> — componenta dominantă: cât de sus punctează, în medie, numerele alese.<br>
-      <b>2. Potrivire sumă (8%)</b> — cât de aproape e suma combinației de suma medie reală din arhivă.<br>
-      <b>3. Raport par/impar (4%)</b> — cât de aproape e de raportul par/impar tipic din arhivă.<br>
-      <b>4. Distribuție jos/sus (4%)</b> — la fel, pentru raportul numere mici/mari.<br>
-      <b>5. Acoperire zone (6%)</b> — cât de tipică e acoperirea pe zone de câte 10 numere (1-10, 11-20 ș.a.m.d.), comparativ cu distribuția reală din arhivă.<br>
-      <b>6. Numere apropiate/consecutive (2%)</b> — cât de aproape e de rata reală de perechi apropiate din arhivă.<br>
-      <b>7. Suprapunere cu ultima extragere (3%)</b> — cât de tipic e numărul de numere comune cu ultima extragere reală.<br>
-      <b>8. Uniformitate a distanțelor dintre numere (3%)</b> — cât de aproape e de tiparul real de spațiere.<br>
-      Există și o penalizare ușoară (×0.7, nu eliminare) pentru combinațiile care acoperă mai puțin de 4 din 5 zone — dar, spre deosebire de versiunea anterioară, nu mai poate anula un scor de la Pasul 1 clar superior; e doar un mic dezavantaj, nu o descalificare.<br><br>
-      <b style="color:var(--gold);">Departajare finală — evitarea combinațiilor "populare"</b><br>
-      Din căutarea exhaustivă rămân, de obicei, câteva zeci de combinații aproape la fel de bine punctate (nu doar una singură — diferențele dintre primele ~25 sunt minime). Dintre acestea, aplicația o alege pe cea cu <b>popularitatea estimată</b> cea mai mică (analiza deja folosită la "Verifică popularitatea unei combinații": penalizează numerele ≤31 în exces, perechile consecutive, progresiile aritmetice, sumele mici — tipare pe care oamenii le aleg des din date calendaristice). <b>Important:</b> asta nu schimbă și nu poate schimba șansa de câștig — e fixă, indiferent de combinație. Schimbă doar cât ai câștiga efectiv <em>dacă</em> nimerești: o combinație mai puțin "previzibilă uman" are șanse mai mici să fie jucată și de alți oameni, deci mai puține șanse să împarți premiul cu ei.<br><br>
+      <b style="color:var(--gold);">CONSTRÂNGERE OBLIGATORIE</b><br>
+      Fiecare variantă trebuie să acopere <b>cel puțin 4 din 5 zone</b> (1-10, 11-20, 21-30, 31-40, 41-49) — reflectând tiparul real din arhivă (53% din extrageri acoperă 4/5 zone). Combinațiile cu acoperire mai slabă sunt penalizate sever (×0.3).<br><br>
 
-      <b style="color:var(--gold);">PASUL 4 — cele 3 variante, fără suprapuneri</b><br>
-      Varianta 1 = combinația aleasă mai sus. Numerele ei sunt apoi scoase din grupul de candidați, iar căutarea exhaustivă (Pasul 3 + departajarea de popularitate) se repetă pe ce a rămas, pentru Varianta 2, și din nou pentru Varianta 3 — astfel cele 3 variante nu au niciodată numere identice între ele. Dacă jocul are Joker, acesta primește un scor separat din propriul lui istoric (aceiași 5 indici de la Pasul 1), iar cele 3 variante primesc, în ordine, cel mai bine, al doilea și al treilea cel mai bine punctat Joker.<br><br>
+      <b style="color:var(--gold);">VALIDARE</b><br>
+      Rezultatul e confirmat de <em>"Test de aleatorism (chi-pătrat)"</em> — care validează că arhiva e un joc corect, deci analiza statistică are sens.<br><br>
 
-      <b style="color:var(--gold);">VALIDARE ȘI LIMITE REALE</b><br>
-      Rezultatul e verificat cu <em>"Test de aleatorism (chi-pătrat)"</em>, care confirmă că arhiva se comportă ca un joc corect — condiție necesară ca analiza de mai sus să aibă sens statistic. Tocmai <b>pentru că</b> jocul e corect, fiecare extragere reală rămâne un eveniment complet independent de istoricul analizat: metoda de mai sus nu poate garanta și nici nu poate crește real șansele de câștig peste nivelul aleatoriu pe termen lung — arată doar care numere se aliniază cel mai bine cu tiparele deja observate în arhivă, și, la egalitate, care combinație e mai puțin probabil s-o joace și altcineva. Poți verifica onest performanța ei istorică (față de un reper pur aleatoriu) cu butonul de mai jos.<br><br>
+      <b style="color:var(--gold);">DIVERSITATE FAȚĂ DE EXTRAGEREA ANTERIOARĂ</b><br>
+      Dintre combinațiile de top găsite la Pasul 2 (toate la fel de riguros analizate pe cei 14 indicatori), e aleasă cea mai bine punctată variantă care <b>nu seamănă foarte mult</b> (nu are prea multe numere în comun) cu varianta recomandată la extragerea anterioară. Așa se evită ce se întâmpla înainte — variante recomandate aproape identice de la o extragere la alta. Recomandarea rămâne <b>fixă</b> pentru extragerea curentă (nu se schimbă la fiecare reîmprospătare a paginii) și se recalculează abia când apare o extragere nouă în arhivă.<br><br>
 
-      <b style="color:#e0574a;">De ce pot arăta variantele identice de la o extragere la alta:</b> dacă între două vizite nu ai adăugat în arhivă rezultatul real al ultimei extrageri, calculul de mai sus rulează pe exact aceleași date ca data trecută — deci scoate, normal, exact aceleași 3 variante. Nu e o eroare. Aplicația te avertizează mai jos, deasupra variantelor, când arhiva nu e la zi.<br><br>
-
-      <b>Recalculare:</b> automat, la fiecare extragere nouă (inclusiv cele adăugate manual). <b>Ce NU face:</b> nu ține cont de variantele din Jurnal. Tot calculul e local, în browser, și verificabil în cod.
+      <b>Recalculare:</b> automat, la fiecare extragere nouă. <b>Ce NU face:</b> nu ține cont de variantele din Jurnal. Tot calculul e local și verificabil.
     </p>
     <div class="tickets" id="recommendedTicketsWrap"></div>
     <div style="margin-top:16px; padding-top:14px; border-top:1px dashed var(--surface3);">
       <button class="btn2 btn2-outline" id="recBacktestBtn">Testează onest exact această metodă pe istoricul real</button>
       <div id="recBacktestStatus" class="status-msg"></div>
       <div id="recBacktestResults" style="margin-top:12px;"></div>
-    </div>
-  </div>
-
-  <div class="panel" id="generatorPanel">
-    <h2>Generator de variante <span class="sub">— aceeași analiză ca mai sus, dar recalculează diferit de fiecare dată</span></h2>
-    <div class="small-note" id="ticketsMethodInfo" style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px;">
-      <b style="color:var(--gold);">Cum ajunge aplicația la aceste 3 variante — pas cu pas:</b><br><br>
-      Cele 3 variante de mai jos sunt rezultatul unui proces în 4 pași, rulat integral la fiecare extragere nouă, pe baza întregii arhive. Nimic din el nu se bazează pe "noroc" sau alegere la întâmplare — dar nici nu poate depăși matematic un joc corect (vezi nota de la final).<br><br>
-
-      <b style="color:var(--gold);">PASUL 1 — fiecare număr primește un scor statistic</b><br>
-      Fiecare număr posibil din intervalul jocului (ex: 1–49 la 6/49, 1–40 la 5/40, 1–20 la Joker) primește un scor unic, calculat din <b>toată arhiva</b> (din 1993 până la ultima extragere adăugată — inclusiv cele introduse manual), din 5 indici independenți:<br>
-      • <b>Frecvență istorică (25%)</b> — de câte ori a ieșit numărul în total.<br>
-      • <b>Regularitate / hazard (22%)</b> — cât de "restant" e față de propriul lui ritm mediu de apariție (nu față de o restanță brută identică pentru toate numerele).<br>
-      • <b>Momentum recent (25%)</b> — trend din ultimele ~20 extrageri, cu pondere din ce în ce mai mică pe măsură ce o extragere e mai veche.<br>
-      • <b>Z-score (16%)</b> — cât de mult se abate frecvența lui de la ce ar ieși în medie într-un joc perfect corect.<br>
-      • <b>Sinergie de perechi (12%)</b> — cât de des apare alături de alte numere frecvente.<br>
-      Cele 5 scoruri sunt normalizate (0–1) și combinate cu ponderile de mai sus într-un singur scor compus per număr — acesta e "scorul de la Pasul 1" folosit peste tot mai jos.<br><br>
-
-      <b style="color:var(--gold);">PASUL 2 — se reține un grup restrâns de candidați</b><br>
-      Numerele sunt ordonate descrescător după scorul de la Pasul 1, iar cele mai slab cotate sunt eliminate din calcul: rămân doar cele mai bune ~35 (la 6/49 asta înseamnă 71% din interval — sunt excluse doar cele mai slabe 14 numere). Restul pașilor lucrează exclusiv pe acest grup restrâns.<br><br>
-
-      <b style="color:var(--gold);">PASUL 3 — căutare exhaustivă pe TOATE combinațiile posibile din grup</b><br>
-      Din cei ~35 de candidați, aplicația generează și punctează efectiv <b>toate</b> combinațiile posibile de câte numere cere jocul (6 la 6/49, 5 la 5/40 și Joker) — la 6/49 asta înseamnă ~1,6 milioane de combinații verificate una câte una, nu o aproximare. Fiecare combinație primește un scor din 8 componente:<br>
-      <b>1. Percentila medie a scorului de la Pasul 1 (70%)</b> — componenta dominantă: cât de sus punctează, în medie, numerele alese.<br>
-      <b>2. Potrivire sumă (8%)</b> — cât de aproape e suma combinației de suma medie reală din arhivă.<br>
-      <b>3. Raport par/impar (4%)</b> — cât de aproape e de raportul par/impar tipic din arhivă.<br>
-      <b>4. Distribuție jos/sus (4%)</b> — la fel, pentru raportul numere mici/mari.<br>
-      <b>5. Acoperire zone (6%)</b> — cât de tipică e acoperirea pe zone de câte 10 numere (1-10, 11-20 ș.a.m.d.), comparativ cu distribuția reală din arhivă.<br>
-      <b>6. Numere apropiate/consecutive (2%)</b> — cât de aproape e de rata reală de perechi apropiate din arhivă.<br>
-      <b>7. Suprapunere cu ultima extragere (3%)</b> — cât de tipic e numărul de numere comune cu ultima extragere reală.<br>
-      <b>8. Uniformitate a distanțelor dintre numere (3%)</b> — cât de aproape e de tiparul real de spațiere.<br>
-      Există și o penalizare ușoară (×0.7, nu eliminare) pentru combinațiile care acoperă mai puțin de 4 din 5 zone — dar, spre deosebire de versiunea anterioară, nu mai poate anula un scor de la Pasul 1 clar superior; e doar un mic dezavantaj, nu o descalificare.<br><br>
-      <b style="color:var(--gold);">Singura diferență față de "Variante recomandate pentru extragerea curentă":</b> acolo, dintre combinațiile aproape la fel de bine punctate, se alege mereu aceeași (cea cu popularitatea estimată cea mai mică) — de-asta rămâne fixă până apare o extragere reală nouă. Aici, la fiecare apăsare pe "Recalculează variantele", se alege ponderat-aleatoriu dintre acele combinații de top — cele cu scor mai mare tot au șanse mai mari să iasă, dar nu mai e mereu aceeași. Pașii 1-3 de mai sus sunt identici, 1 la 1, în ambele secțiuni.
-    </div>
-    <button class="gen-btn" id="genBtn">Recalculează variantele</button>
-    <div id="genStatus" class="status-msg" style="margin-top:8px;"></div>
-    <div style="height:14px;"></div>
-    <div class="tickets" id="ticketsWrap"></div>
-    <p class="small-note" id="ticketsGenNote"></p>
-    <div class="export-btn-row" style="margin-top:10px;">
-      <button class="btn2 btn2-outline" id="ticketsExportCsvBtn">Exportă variantele (CSV)</button>
-      <button class="btn2 btn2-outline" id="ticketsExportPdfBtn">Exportă variantele (PDF)</button>
     </div>
   </div>
 
@@ -565,6 +517,19 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     <h2>Acoperirea intervalelor în extrageri <span class="sub" id="intervalSub">— toată arhiva, scanată extragere cu extragere</span></h2>
     <p class="small-note" style="margin-bottom:14px;">Împarte intervalul jocului în zone de câte 10 (<span id="intervalZonesTxt">1-10, 11-20, 21-30, 31-40, 41-49</span>) și scanează absolut toate extragerile din arhivă: în ce procent din extrageri apare fiecare zonă, cât de des sunt acoperite toate zonele simultan, și care combinații de zone apar cel mai des. Descriere statistică a trecutului — la fel de onest ca peste tot: nu prezice viitorul, dar îți arată exact cum au arătat extragerile reale.</p>
     <div id="intervalResults"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Generator de variante <span class="sub">— 3 combinații generate din analiza complexă a arhivei complete</span></h2>
+    <div class="small-note" id="ticketsMethodInfo" style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px;"></div>
+    <button class="gen-btn" id="genBtn">Recalculează variantele</button>
+    <div style="height:14px;"></div>
+    <div class="tickets" id="ticketsWrap"></div>
+    <p class="small-note" id="ticketsGenNote"></p>
+    <div class="export-btn-row" style="margin-top:10px;">
+      <button class="btn2 btn2-outline" id="ticketsExportCsvBtn">Exportă variantele (CSV)</button>
+      <button class="btn2 btn2-outline" id="ticketsExportPdfBtn">Exportă variantele (PDF)</button>
+    </div>
   </div>
 
   <div class="panel">
@@ -9538,46 +9503,76 @@ function pickTopStratified(scores, pick, range, usedSet){
   return chosen.sort((a,b)=>a-b);
 }
 
-// 2026-07-28: rewritten to use the EXACT same engine as "Variante recomandate" (same 5-index
-// composite score, same top-~35 pool, same exhaustive search over all combinations, same
-// 8-component shape-fit scoring, same soft zone constraint) — previously this used a simpler,
-// different method (pickTopStratified: weighted-random pick per equal-width band). The ONLY
-// remaining difference from "Variante recomandate": there, bestComboFromPool always freezes on
-// the single least-"popular" combo from the near-best set; here, variedComboFromPool samples
-// weighted-randomly from that same near-best set, so "Recalculează variantele" gives a
-// different (but equally rigorously-scored) combo every press instead of a frozen result.
-function generate3BallTickets(stats, cfg){
+// Câte numere/cifre poate avea o variantă nouă în comun cu o variantă din lotul
+// anterior, înainte s-o considerăm "prea asemănătoare" și s-o regenerăm. Pragul
+// e proporțional (70% din câte numere are combinația) — suficient de permisiv cât
+// să nu strice ponderarea pe scorul compus, dar suficient de strict cât să oblige
+// o schimbare vizibilă față de generarea precedentă (cerință explicită: nici
+// aproape identice, dar nici complet diferite/aleatorii).
+function comboOverlapCount(a, b){
+  const setB = new Set(b);
+  let n = 0;
+  for(const x of a) if(setB.has(x)) n++;
+  return n;
+}
+function maxAllowedOverlap(pickCount){
+  return Math.max(1, Math.floor(pickCount * 0.7));
+}
+
+// "Generator de variante" — folosește EXACT aceeași analiză completă (5 indici pe număr +
+// scor combinat cu 9 componente de "formă" a combinației: percentilă medie, potrivire sumă,
+// raport par/impar, distribuție jos/sus, acoperire zone, numere apropiate, suprapunere cu
+// ultima extragere, uniformitate distanțe — 14 în total) ca la "Variante recomandate", pe
+// aceeași arhivă completă și aceeași căutare exhaustivă peste pool-ul de ~35 candidați.
+// Diferența: "Variante recomandate" alege mereu combinația cu scorul #1 (determinist, rămâne
+// fix până apare o extragere nouă în arhivă). Aici alegem ALEATORIU, ponderat de scor, dintre
+// cele mai bune K combinații găsite de căutarea exhaustivă — toate la fel de riguros analizate,
+// dar rezultatul variază de fiecare dată când apeși "Recalculează variantele". În plus, dintre
+// acele candidate de top, sunt preferate cele care nu seamănă prea mult cu lotul anterior.
+function generate3BallTickets(stats, cfg, prevBatch){
   const baseScores = buildComposite(stats, 1, cfg.range);
   const jokerScores = cfg.hasJoker ? buildComposite(stats, 1, cfg.jokerRange, {
     freq: stats.jokerFreq, overdue: stats.jokerOverdue, recentFreq: stats.jokerRecentFreq,
     hazard: stats.jokerHazard, momentum: stats.jokerMomentum, zScore: {}, pairSynergy: {}
   }) : null;
   const { mn, mx } = compositeMinMax(baseScores);
-  let poolNums = []; for(let i=1;i<=cfg.range;i++) poolNums.push(i);
-  poolNums.sort((a,b)=> baseScores[b]-baseScores[a]);
-  let pool = poolNums.slice(0, Math.min(35, cfg.range));
-  let jokerRanked = null;
-  if(jokerScores){
-    jokerRanked = []; for(let i=1;i<=cfg.jokerRange;i++) jokerRanked.push(i);
-    jokerRanked.sort((a,b)=> jokerScores[b]-jokerScores[a]);
-  }
+
+  let fullPool = []; for(let i=1;i<=cfg.range;i++) fullPool.push(i);
+  fullPool.sort((a,b)=> baseScores[b]-baseScores[a]);
+  fullPool = fullPool.slice(0, Math.min(35, cfg.range));
+
+  const prevCombos = (prevBatch || []).map(it => it.combo).filter(Boolean);
+  const overlapLimit = maxAllowedOverlap(cfg.pick);
+  const K = 40; // câte combinații de top (din căutarea exhaustivă) intră în selecția aleatorie ponderată
+
+  const usedJoker = new Set();
+  let pool = fullPool.slice();
   const tickets = [];
   for(let t=0; t<3; t++){
-    const { combo } = variedComboFromPool(pool, cfg.pick, cfg, stats, baseScores, mn, mx);
-    pool = pool.filter(x=> !combo.includes(x));
+    const topK = bestKCombosFromPool(pool, cfg.pick, cfg, stats, baseScores, mn, mx, K);
+    // Preferă candidații care NU seamănă prea mult cu lotul anterior; dacă absolut toți seamănă
+    // (posibil doar cu arhive foarte mici / pool foarte redus), renunță la filtru ca să nu blocheze generarea.
+    let candidates = topK.filter(c => !prevCombos.some(pc => comboOverlapCount(c.combo, pc) > overlapLimit));
+    if(candidates.length === 0) candidates = topK;
+
+    const minS = Math.min(...candidates.map(x=>x.score));
+    const weights = candidates.map(x => (x.score - minS) + 0.0005);
+    const total = weights.reduce((a,b)=>a+b, 0);
+    let r = Math.random()*total, chosenIdx = candidates.length-1;
+    for(let i=0;i<candidates.length;i++){ r -= weights[i]; if(r<=0){ chosenIdx=i; break; } }
+    const combo = candidates[chosenIdx].combo.slice().sort((a,b)=>a-b);
+    pool = pool.filter(x => !combo.includes(x));
+
     let jok = null;
-    if(jokerRanked){
-      // Joker keeps a touch of variety too — weighted-random among the top 8 ranked jokers.
-      const jokPool = jokerRanked.slice(0, Math.min(8, jokerRanked.length));
-      const jokerScoresObj = {}; jokPool.forEach(j=> jokerScoresObj[j]=jokerScores[j]);
-      jok = weightedPickFromCandidates(jokPool, jokerScoresObj);
+    if(jokerScores){
+      jok = pickTopStratified(jokerScores, 1, cfg.jokerRange, usedJoker)[0];
     }
     tickets.push({ combo, joker: jok });
   }
   return tickets;
 }
 
-function generate3NorocTickets(stats){
+function generate3NorocTickets(stats, prevBatch){
   const posScores = [];
   for(let pos=0; pos<7; pos++){
     const freqObj={}, overdueObj={}, recentObj={}, hazObj={}, momObj={};
@@ -9592,21 +9587,33 @@ function generate3NorocTickets(stats){
       freq: freqObj, overdue: overdueObj, recentFreq: recentObj, hazard: hazObj, momentum: momObj, zScore: {}, pairSynergy: {}
     }));
   }
+  const prevDigitTickets = (prevBatch || []).map(it => it.digits).filter(Boolean);
+  const overlapLimit = maxAllowedOverlap(7);
+  // Pentru cifre poziția contează (e un cod, nu o mulțime) — comparăm poziție cu poziție.
+  function positionMatchCount(a, b){ let n=0; for(let i=0;i<7;i++) if(a[i]===b[i]) n++; return n; }
+
   // Weighted-random, without replacement: for each of the 7 positions, the 10 digits are drawn
   // one at a time with probability proportional to their composite score — so higher-scoring
   // digits are much more likely to be picked, but the result changes every time you press
   // "Recalculează variantele" instead of being frozen on the same top-3 ranked digits forever.
-  const tickets = [[],[],[]];
-  for(let pos=0; pos<7; pos++){
-    const usedDigits = new Set();
-    for(let t=0;t<3;t++){
-      const candidates = [];
-      for(let d=0; d<10; d++){ if(!usedDigits.has(d)) candidates.push(d); }
-      const picked = weightedPickFromCandidates(candidates, posScores[pos]);
-      usedDigits.add(picked);
-      tickets[t].push(picked);
+  // În plus, dacă rezultatul iese prea asemănător (poziție cu poziție) cu lotul anterior,
+  // se regenerează întreg lotul, până apare o diferență vizibilă sau se ating 30 încercări.
+  let tickets, attempts = 0;
+  do{
+    tickets = [[],[],[]];
+    for(let pos=0; pos<7; pos++){
+      const usedDigits = new Set();
+      for(let t=0;t<3;t++){
+        const candidates = [];
+        for(let d=0; d<10; d++){ if(!usedDigits.has(d)) candidates.push(d); }
+        const picked = weightedPickFromCandidates(candidates, posScores[pos]);
+        usedDigits.add(picked);
+        tickets[t].push(picked);
+      }
     }
-  }
+    attempts++;
+  } while(attempts < 30 && tickets.some(tk => prevDigitTickets.some(pd => positionMatchCount(tk, pd) > overlapLimit)));
+
   return { tickets, posScores };
 }
 
@@ -9618,19 +9625,60 @@ function generate3NorocTickets(stats){
 // visits until the archive actually changes (a new real draw gets added) — at which point it
 // recomputes on its own, using the newly completed draw as part of the analysis. That's the
 // full cycle requested: previous draws + whole archive + composite analysis → this draw's picks.
-function generate3RecommendedBallTickets(stats, cfg){
+function generate3RecommendedBallTickets(stats, cfg, prevTickets){
   const baseScores = buildComposite(stats, 1, cfg.range);
   const jokerScores = cfg.hasJoker ? buildComposite(stats, 1, cfg.jokerRange, {
     freq: stats.jokerFreq, overdue: stats.jokerOverdue, recentFreq: stats.jokerRecentFreq,
     hazard: stats.jokerHazard, momentum: stats.jokerMomentum, zScore: {}, pairSynergy: {}
   }) : null;
-  // Delegates to the same shared selection core the dedicated backtest runs — see
-  // pickTop3FromScores. `stats` carries avgSum/stdSum/oddRatio/lowRatio, which is all the
-  // shape information the search needs.
-  const tickets = pickTop3FromScores(baseScores, jokerScores, cfg, stats);
+  // Same 14-indicator core as the plain top-1 search (pickTop3FromScores, still used unchanged
+  // by the honest backtest below), but picks the best-scoring candidate from the exhaustive
+  // search that ALSO doesn't repeat the previous recommended draw's variant too closely — see
+  // pickTop3RecommendedDiverse. `prevTickets` is the recommendation that was shown for the
+  // previous draw (persisted in recommendedCache), not anything from this same render pass.
+  const tickets = pickTop3RecommendedDiverse(baseScores, jokerScores, cfg, stats, prevTickets);
   return { tickets, baseScores };
 }
-function generate3RecommendedNorocTickets(stats){
+// Same exhaustive 9-component search as pickTop3FromScores (identical scoring formula, same
+// ~35-candidate pool), but for each of the 3 ticket slots it keeps the top K best-scoring combos
+// (bestKCombosFromPool) and picks — deterministically, no randomness — the highest-scoring one
+// among them that doesn't overlap too much with any ticket from the PREVIOUS recommendation
+// (prevTickets). If every one of the top K is too similar to the previous recommendation (can
+// happen when the archive barely moved), it falls back to whichever of the top K is the LEAST
+// similar to the previous variants, still preferring higher score as the tiebreaker. Being fully
+// deterministic (no Math.random) means the same archive + the same previous recommendation always
+// produce the same result — the recommendation only changes when a new draw is actually added.
+function pickTop3RecommendedDiverse(baseScores, jokerScores, cfg, shapeStats, prevTickets){
+  const { mn, mx } = compositeMinMax(baseScores);
+  let poolNums = []; for(let i=1;i<=cfg.range;i++) poolNums.push(i);
+  poolNums.sort((a,b)=> baseScores[b]-baseScores[a]);
+  let pool = poolNums.slice(0, Math.min(35, cfg.range));
+  let jokerRanked = null;
+  if(jokerScores){
+    jokerRanked = []; for(let i=1;i<=cfg.jokerRange;i++) jokerRanked.push(i);
+    jokerRanked.sort((a,b)=> jokerScores[b]-jokerScores[a]);
+  }
+  const prevCombos = (prevTickets || []).map(t=> t.combo).filter(Boolean);
+  const overlapLimit = maxAllowedOverlap(cfg.pick);
+  const K = 40;
+  const tickets = [];
+  for(let t=0; t<3; t++){
+    const topK = bestKCombosFromPool(pool, cfg.pick, cfg, shapeStats, baseScores, mn, mx, K);
+    let chosen = topK.find(c => !prevCombos.some(pc => comboOverlapCount(c.combo, pc) > overlapLimit));
+    if(!chosen){
+      chosen = topK.slice().sort((a,b)=>{
+        const oa = prevCombos.length ? Math.max(...prevCombos.map(pc=> comboOverlapCount(a.combo, pc))) : 0;
+        const ob = prevCombos.length ? Math.max(...prevCombos.map(pc=> comboOverlapCount(b.combo, pc))) : 0;
+        if(oa !== ob) return oa - ob;
+        return b.score - a.score;
+      })[0];
+    }
+    pool = pool.filter(x=> !chosen.combo.includes(x));
+    tickets.push({ combo: chosen.combo.slice().sort((a,b)=>a-b), joker: jokerRanked ? jokerRanked[t] : null });
+  }
+  return tickets;
+}
+function generate3RecommendedNorocTickets(stats, prevTickets){
   const posScores = [];
   for(let pos=0; pos<7; pos++){
     const freqObj={}, overdueObj={}, recentObj={}, hazObj={}, momObj={};
@@ -9645,6 +9693,11 @@ function generate3RecommendedNorocTickets(stats){
       freq: freqObj, overdue: overdueObj, recentFreq: recentObj, hazard: hazObj, momentum: momObj, zScore: {}, pairSynergy: {}
     }));
   }
+  // Same top/2nd/3rd-ranked-per-position picking as before, but each ticket slot skips the exact
+  // digit it had in the previous recommendation at that same position (when a higher-ranked
+  // alternative isn't already forced by another ticket using it) — deterministic, no randomness,
+  // so it only changes across a real new draw, not on every reload.
+  const prevDigitTickets = (prevTickets || []).map(t=> t.digits).filter(Boolean);
   const tickets = [[],[],[]];
   for(let pos=0; pos<7; pos++){
     const usedDigits = new Set();
@@ -9652,7 +9705,9 @@ function generate3RecommendedNorocTickets(stats){
       const candidates = [];
       for(let d=0; d<10; d++){ if(!usedDigits.has(d)) candidates.push(d); }
       candidates.sort((a,b)=> (posScores[pos][b]||0)-(posScores[pos][a]||0));
-      const picked = candidates[Math.min(t, candidates.length-1)];
+      const avoid = prevDigitTickets[t] !== undefined ? prevDigitTickets[t][pos] : null;
+      let picked = candidates.find(d=> d !== avoid);
+      if(picked === undefined) picked = candidates[0];
       usedDigits.add(picked);
       tickets[t].push(picked);
     }
@@ -9831,22 +9886,22 @@ function comboRawScoreFast(combo, cfg, stats, compositeScores, mn, mx){
     gapFit = Math.max(0, 1 - deviation);
   }
 
-  // 9 components total. Re-rebalanced (2026-07-28): the previous split (45% avgPercentile /
-  // 55% shape-fit components) let "looks like a typical draw" outweigh "these are the numbers
-  // the 5-index model actually rates highest" — the pool-search could and did discard the true
-  // top-scored numbers in favor of a lower-scored but better-shaped combo. Since the whole point
-  // of this panel is to follow the composite statistical model as closely as possible,
-  // avgPercentile is now the dominant term (70%) and the shape terms are a secondary
-  // tie-breaker, not a co-equal criterion.
-  // zoneFit / hard zone constraint softened for the same reason: covering fewer than 4/5 zones
-  // no longer disqualifies a combo outright (×0.3), just nudges it (×0.7) — a combo of
-  // genuinely top-scored numbers that happens to cluster in fewer zones can still win when its
-  // composite score is clearly better.
+  // 9 components total — rebalanced for better interval coverage and less artificial clustering.
+  // consecFit reduced: close pairs occur naturally in ~78% of draws; actively rewarding them
+  // was pushing the algorithm toward clusters and consecutive numbers, producing "weird" combos.
+  // zoneFit boosted: ensures combinations cover at least 4 out of 5 decade-zones, matching the
+  // most common real-draw pattern (53% of real draws cover 4/5 zones).
+  // chiConfidence removed: it was making all scores "flatter" (entropy ~99.8% = nearly uniform,
+  // so chiConfidence ≈ 0.002 ≈ negligible — added noise without value).
+  //
+  // Hard constraint: combos covering fewer than 4 zones get a severe penalty (×0.3), effectively
+  // filtering them out. This is the single most impactful improvement — the old band-based
+  // system guaranteed this automatically; the pool-based system needed it as an explicit rule.
   const totalZones = Math.ceil(cfg.range / 10); // 5 zones for 6/49, 4 for 5/40, 5 for Joker
   const minZones = Math.max(totalZones - 1, 3); // 4 out of 5 for 6/49, 3 out of 4 for 5/40
-  const zonePenalty = covered < minZones ? 0.7 : 1.0;
+  const zonePenalty = covered < minZones ? 0.3 : 1.0;
 
-  const raw = 0.70*avgPercentile + 0.08*sumFit + 0.04*oddFit + 0.04*lowFit + 0.06*zoneFit + 0.02*consecFit + 0.03*overlapFit + 0.03*gapFit;
+  const raw = 0.45*avgPercentile + 0.14*sumFit + 0.08*oddFit + 0.08*lowFit + 0.10*zoneFit + 0.03*consecFit + 0.06*overlapFit + 0.06*gapFit;
   return raw * zonePenalty;
 }
 // Exhaustive search over all `pick`-sized combinations drawn from `poolNumbers` (a short list —
@@ -9858,27 +9913,48 @@ function comboRawScoreFast(combo, cfg, stats, compositeScores, mn, mx){
 // Pool sizes stay small enough (≤24 numbers) that full enumeration finishes in well under a
 // second even for 6/49, so no shortcuts or heuristics are needed — this is the true best answer
 // for the stated objective, not an approximation.
-// Shared exhaustive-search core: enumerates every `pick`-sized combination from `poolNumbers`
-// and keeps the top K by comboRawScoreFast (same formula shown as "scor de performanță"
-// everywhere). Used by BOTH "Variante recomandate" (bestComboFromPool, below — deterministic,
-// prefers lowest estimated popularity among the near-best set) and "Generator de variante"
-// (variedComboFromPool — weighted-random among the same near-best set, so it gives a different
-// combo each time "Recalculează variantele" is pressed). Same pool, same search, same scoring —
-// only the final tie-break differs, which is the ONLY intentional difference between the two
-// sections.
-const TIE_BREAK_POOL = 25;
-function searchTopKCombos(poolNumbers, pick, cfg, stats, compositeScores, mn, mx, K){
+function bestComboFromPool(poolNumbers, pick, cfg, stats, compositeScores, mn, mx){
+  let bestCombo=null, bestScore=-Infinity;
   const n = poolNumbers.length;
   const combo = new Array(pick);
-  const top = [];
   (function recurse(start, depth){
     if(depth===pick){
       const score = comboRawScoreFast(combo, cfg, stats, compositeScores, mn, mx);
-      if(top.length < K || score > top[top.length-1].score){
-        let i = top.length;
+      if(score>bestScore){ bestScore=score; bestCombo=combo.slice(); }
+      return;
+    }
+    for(let i=start; i<=n-(pick-depth); i++){
+      combo[depth]=poolNumbers[i];
+      recurse(i+1, depth+1);
+    }
+  })(0,0);
+  bestCombo.sort((a,b)=>a-b);
+  return { combo:bestCombo, score:bestScore };
+}
+// Same exhaustive search as bestComboFromPool (identical scoring formula — the 9-component
+// comboRawScoreFast, fed by the same 5-index composite), but instead of keeping only the single
+// global best, keeps the top K best-scoring combinations found. Used by "Generator de variante"
+// so it can pick RANDOMLY among a set of near-optimal combos (all genuinely well-analyzed on the
+// full 14-indicator method) instead of being frozen on the exact same single best answer every
+// time — that's what "Variante recomandate" is for (deterministic, one fixed best answer).
+function bestKCombosFromPool(poolNumbers, pick, cfg, stats, compositeScores, mn, mx, K){
+  const top = [];
+  let minScore = -Infinity, minIdx = -1;
+  const n = poolNumbers.length;
+  const combo = new Array(pick);
+  function recomputeMin(){
+    minScore = Infinity; minIdx = -1;
+    for(let i=0;i<top.length;i++){ if(top[i].score < minScore){ minScore = top[i].score; minIdx = i; } }
+  }
+  (function recurse(start, depth){
+    if(depth===pick){
+      const score = comboRawScoreFast(combo, cfg, stats, compositeScores, mn, mx);
+      if(top.length < K){
         top.push({ combo: combo.slice(), score });
-        while(i>0 && top[i-1].score < top[i].score){ const t=top[i-1]; top[i-1]=top[i]; top[i]=t; i--; }
-        if(top.length > K) top.pop();
+        if(top.length === K) recomputeMin();
+      } else if(score > minScore){
+        top[minIdx] = { combo: combo.slice(), score };
+        recomputeMin();
       }
       return;
     }
@@ -9887,29 +9963,8 @@ function searchTopKCombos(poolNumbers, pick, cfg, stats, compositeScores, mn, mx
       recurse(i+1, depth+1);
     }
   })(0,0);
+  top.sort((a,b)=> b.score-a.score);
   return top;
-}
-
-function bestComboFromPool(poolNumbers, pick, cfg, stats, compositeScores, mn, mx){
-  const top = searchTopKCombos(poolNumbers, pick, cfg, stats, compositeScores, mn, mx, TIE_BREAK_POOL);
-  top.forEach(t=> t.popScore = estimatePopularity(t.combo, cfg).score);
-  top.sort((a,b)=> a.popScore - b.popScore);
-  const chosen = top[0];
-  return { combo: chosen.combo.slice().sort((a,b)=>a-b), score: chosen.score };
-}
-
-// "Generator de variante": same near-best set as above, but instead of always freezing on the
-// least-"popular" combo, samples weighted-randomly (higher score = more likely, never guaranteed)
-// — so pressing "Recalculează variantele" gives a different, still rigorously top-tier combo
-// every time, instead of the frozen result "Variante recomandate" shows.
-function variedComboFromPool(poolNumbers, pick, cfg, stats, compositeScores, mn, mx){
-  const top = searchTopKCombos(poolNumbers, pick, cfg, stats, compositeScores, mn, mx, TIE_BREAK_POOL);
-  const weights = top.map(t=> Math.max(0.0001, t.score));
-  const total = weights.reduce((a,b)=>a+b,0);
-  let r = Math.random()*total;
-  let chosen = top[top.length-1];
-  for(let i=0;i<top.length;i++){ r -= weights[i]; if(r<=0){ chosen = top[i]; break; } }
-  return { combo: chosen.combo.slice().sort((a,b)=>a-b), score: chosen.score };
 }
 
 function scoreTicketQuality(combo, cfg, stats, compositeScores){
@@ -10037,10 +10092,15 @@ function renderTickets(game, stats){
   const cfg = GAMES[game];
   const wrap = document.getElementById('ticketsWrap');
   wrap.innerHTML='';
+  // Capturăm lotul anterior de variante ÎNAINTE de a-l suprascrie mai jos, ca să
+  // putem cere generatorului să evite combinații aproape identice cu ele — dar
+  // doar dacă lotul anterior a fost la același joc (are sens să compari mere cu mere).
+  const prevBatch = (lastGeneratedTickets && lastGeneratedTickets.game === game && lastGeneratedTickets.isDigit === cfg.isDigit)
+    ? lastGeneratedTickets.items : [];
   lastGeneratedTickets = { game, isDigit: cfg.isDigit, items: [] };
 
   if(cfg.isDigit){
-    const { tickets, posScores } = generate3NorocTickets(stats);
+    const { tickets, posScores } = generate3NorocTickets(stats, prevBatch);
     tickets.forEach((digits,t)=>{
       const div = document.createElement('div'); div.className='ticket';
       div.innerHTML = `<div class="idx">Varianta ${t+1}</div>`;
@@ -10053,7 +10113,7 @@ function renderTickets(game, stats){
       lastGeneratedTickets.items.push({ digits: digits.slice(), quality: qualityInfo.score10 });
     });
   } else {
-    const tickets = generate3BallTickets(stats, cfg);
+    const tickets = generate3BallTickets(stats, cfg, prevBatch);
     const compositeScores = buildComposite(stats, 1, cfg.range);
     tickets.forEach(({combo, joker},t)=>{
       const div = document.createElement('div'); div.className='ticket';
@@ -10078,18 +10138,31 @@ function renderTickets(game, stats){
   const from = draws[0] ? fmtDateShort(draws[0].date) : '—';
   const to = draws[draws.length-1] ? fmtDateShort(draws[draws.length-1].date) : '—';
 
-  // 2026-07-28: ticketsMethodInfo is now STATIC markup (identical to "Variante recomandate"'s
-  // methodology text, see the HTML) — it's no longer overwritten here on every render, so the
-  // two sections can never drift out of sync with each other.
+  const infoEl = document.getElementById('ticketsMethodInfo');
+  if(infoEl){
+    if(cfg.isDigit){
+      infoEl.innerHTML = `<b style="color:var(--gold); display:block; margin-bottom:6px; font-size:12.5px;">Pe ce se bazează cele 3 variante</b>
+      Pentru fiecare din cele 7 poziții ale numărului Noroc, cifrele 0-9 primesc un <b>scor compus din 5 indici matematici</b>, calculat din întreg istoricul (${stats.n} extrageri, ${from} – ${to}): <b>frecvență istorică</b> (28%), <b>indice de regularitate/hazard</b> (24%), <b>momentum exponențial recent</b> (20%), <b>deviație z-score</b> (16%) și <b>sinergie de perechi</b> (12%) — aceiași 5 indici detaliați mai sus, la "Metode matematice de predicție folosite". Cifrele sunt apoi alese aleatoriu, dar <b>ponderat de scorul compus</b> pe fiecare poziție — o cifră cu scor mare are șanse mult mai mari să fie aleasă, dar nu e garantat. De-asta apeși "Recalculează variantele" și poți primi combinații diferite de fiecare dată, nu aceleași 3 cifre "câștigătoare" fixe. <b>În plus:</b> generatorul verifică automat lotul obținut față de cel anterior și îl reface dacă iese prea asemănător poziție cu poziție — ca să nu primești variante aproape identice la apăsări succesive, fără să renunțe la ponderarea pe scorul compus.`;
+    } else {
+      infoEl.innerHTML = `<b style="color:var(--gold); display:block; margin-bottom:6px; font-size:12.5px;">Pe ce se bazează cele 3 variante</b>
+      Folosește <b>exact aceeași analiză completă pe 14 indici</b> ca la "Variante recomandate pentru extragerea curentă" (vezi metodologia completă acolo), calculată din întreg istoricul (${stats.n} extrageri, ${from} – ${to}): fiecare număr primește întâi un <b>scor din 5 indici</b> (frecvență istorică, regularitate/hazard, momentum recent, z-score, sinergie de perechi), apoi cele mai bune ~35 numere intră într-o <b>căutare exhaustivă</b> care evaluează fiecare combinație posibilă cu un <b>scor combinat din 9 componente</b> (percentilă medie, potrivire sumă, raport par/impar, distribuție jos/sus, acoperire zone, numere apropiate, suprapunere cu ultima extragere, uniformitate distanțe) — 5+9 = <b>14 indicatori</b> în total. Diferența față de "Variante recomandate": acolo se alege mereu combinația cu scorul #1 (fix, determinist); aici se alege <b>aleatoriu, ponderat de scor</b>, dintre cele mai bune ~40 combinații găsite de căutare — toate la fel de riguros analizate, dar rezultatul chiar variază de fiecare dată când apeși "Recalculează variantele".${cfg.hasJoker ? ' Jokerul (1-20) primește propriul scor din 5 indici, calculat separat din propriul lui istoric, și e ales ponderat aleatoriu.' : ''} Cele 3 variante nu se suprapun niciodată între ele. <b>În plus:</b> dintre combinațiile de top, sunt preferate cele care nu seamănă prea mult (multe numere în comun) cu lotul anterior — ca să ai mereu o diferență vizibilă între generări succesive, nu variante aproape identice.`;
+    }
+  }
 
   const noteEl = document.getElementById('ticketsGenNote');
   if(noteEl){
-    noteEl.textContent = cfg.isDigit
-      ? `Cele 3 variante de mai sus folosesc exact aceiași 5 indici statistici ca "Variante recomandate" pentru Noroc, calculați din întreg istoricul (${stats.n} extrageri, ${from} – ${to}) — dar aici cifrele sunt alese ponderat-aleatoriu pe fiecare poziție, nu fix cele mai bune. Apasă "Recalculează variantele" oricând vrei alte 3 combinații.`
-      : `Cele 3 variante de mai sus folosesc EXACT aceeași analiză ca "Variante recomandate pentru extragerea curentă" (Pașii 1-3 de acolo, identici) — dar aici, în loc să se aleagă mereu aceeași combinație cu popularitatea cea mai mică din grupul de top, se alege ponderat-aleatoriu dintre combinațiile aproape la fel de bine punctate. De-asta apeși "Recalculează variantele" și primești alte combinații de fiecare dată, la fel de riguros analizate, nu un rezultat fix.`;
+    noteEl.textContent = `Cele 3 variante de mai sus sunt alese aleatoriu, dar ponderat de scorul compus pe 5 indici — apasă "Recalculează variantele" oricând vrei alte 3 combinații (numerele cu scor mai mare tot au șanse mult mai mari să apară, dar rezultatul nu mai e fix). Fiecare extragere reală e totuși un eveniment independent — nicio metodă statistică nu poate garanta câștigul, indiferent cât de riguroasă e analiza.`;
   }
 }
 
+// Identifies exactly which archive state (game) a recommendation was computed for: the draw
+// count plus the last draw's timestamp. Changes if and only if a new draw is actually added.
+function currentDrawKey(stats){
+  const draws = stats.draws || [];
+  const last = draws[draws.length-1];
+  const t = last && last.date && typeof last.date.getTime === 'function' ? last.date.getTime() : String(last && last.date);
+  return draws.length + '@' + t;
+}
 function renderRecommendedPanel(game, stats){
   const cfg = GAMES[game];
   const wrap = document.getElementById('recommendedTicketsWrap');
@@ -10101,24 +10174,28 @@ function renderRecommendedPanel(game, stats){
   titleEl.innerHTML = `Variante recomandate pentru extragerea curentă <span class="sub">— ${cfg.label}, ${dateStr}</span>`;
   wrap.innerHTML = '';
 
-  const missingForRec = computeMissingDrawDates(game);
-  if(missingForRec.length > 0){
-    const drawsForRec = getAllDraws(game);
-    const lastDateForRec = drawsForRec.length ? fmtDateShort(drawsForRec[drawsForRec.length-1].date) : '—';
-    const staleWarn = document.createElement('div');
-    staleWarn.style.cssText = 'margin-bottom:16px; padding:12px 16px; border-radius:10px; background:rgba(224,87,74,.12); border:1px solid rgba(224,87,74,.4);';
-    staleWarn.innerHTML = `
-      <div style="color:#e0574a; font-weight:700; font-size:14px; margin-bottom:6px;">⚠ Arhiva ${cfg.label} nu e la zi — variantele de mai jos pot fi identice cu ultima dată</div>
-      <div style="color:#e0574a; font-size:13px; line-height:1.7;">
-        Ultima extragere din arhivă: <b>${lastDateForRec}</b>. Lipsesc încă ${missingForRec.length===1?'1 extragere reală':(missingForRec.length+' extrageri reale')} (${missingForRec.map(fmtDateShort).join(', ')}). Cele 3 variante se calculează din toată arhiva — dacă arhiva nu s-a schimbat de la ultima vizită, ies exact aceleași 3 variante, nu e o eroare. Adaugă extragerile lipsă (butonul "Adaugă automat extrageri care lipsesc" mai sus, sau manual) și recalculează.
-      </div>`;
-    wrap.appendChild(staleWarn);
-  }
-
   const rankLabels = ['Varianta 1 — cea mai bine punctată combinație posibilă din numerele de top', 'Varianta 2 — a doua cea mai bine punctată combinație, din restul numerelor de top', 'Varianta 3 — a treia cea mai bine punctată combinație, din restul numerelor de top'];
 
+  // Reuse the exact same recommendation as long as the archive for this game hasn't grown a new
+  // draw (drawKey unchanged) — keeps it stable across reloads/tab switches and avoids repeating
+  // the (slow) exhaustive search on every render. Only recompute, diversified against whatever
+  // was cached before, when a genuinely new draw shows up in the archive.
+  const drawKey = currentDrawKey(stats);
+  const cached = recommendedCache[game];
+  const haveFreshCache = cached && cached.drawKey === drawKey && Array.isArray(cached.tickets);
+
   if(cfg.isDigit){
-    const { tickets, posScores } = generate3RecommendedNorocTickets(stats);
+    let tickets, posScores;
+    if(haveFreshCache){
+      tickets = cached.tickets;
+      posScores = generate3RecommendedNorocTickets(stats, []).posScores;
+    } else {
+      const prevTickets = (cached && Array.isArray(cached.tickets)) ? cached.tickets.map(digits=> ({digits})) : [];
+      const result = generate3RecommendedNorocTickets(stats, prevTickets);
+      tickets = result.tickets; posScores = result.posScores;
+      recommendedCache[game] = { drawKey, tickets };
+      persistRecommendedCache().catch(()=>{});
+    }
     tickets.forEach((digits,t)=>{
       const div = document.createElement('div'); div.className='ticket';
       div.innerHTML = `<div class="idx">Varianta ${t+1}</div>`;
@@ -10135,7 +10212,18 @@ function renderRecommendedPanel(game, stats){
       wrap.appendChild(div);
     });
   } else {
-    const { tickets, baseScores } = generate3RecommendedBallTickets(stats, cfg);
+    let tickets, baseScores;
+    if(haveFreshCache){
+      tickets = cached.tickets;
+      baseScores = buildComposite(stats, 1, cfg.range);
+    } else {
+      const prevTickets = (cached && Array.isArray(cached.tickets)) ? cached.tickets : [];
+      const result = generate3RecommendedBallTickets(stats, cfg, prevTickets);
+      tickets = result.tickets;
+      baseScores = result.baseScores;
+      recommendedCache[game] = { drawKey, tickets };
+      persistRecommendedCache().catch(()=>{});
+    }
     tickets.forEach(({combo, joker},t)=>{
       const div = document.createElement('div'); div.className='ticket';
       div.innerHTML = `<div class="idx">Varianta ${t+1}</div>`;
@@ -10542,9 +10630,11 @@ function computeShapeStatsForHistory(history, cfg){
   const entropyNorm = maxEntropy ? entropy/maxEntropy : 1;
   return { avgSum, stdSum, oddRatio: totalNums?oddTotal/totalNums:0.5, lowRatio: totalNums?lowTotal/totalNums:0.5, zoneCoverageProbs, zoneMaxProb, consecPct, prevOverlapProbs, prevOverlapMaxProb, avgGapStd, entropyNorm, draws: history };
 }
-// Shared core: given already-built composite scores + shape stats, produces the same 3 tickets
-// "Variante recomandate" would show — used by both the live panel (via generate3RecommendedBallTickets,
-// which wraps this) and this backtest, so both are guaranteed to use identical selection logic.
+// Shared core: given already-built composite scores + shape stats, always returns the single
+// best-scoring combo per slot (deterministic, no diversity-vs-previous logic). Used ONLY by the
+// honest historical backtest below, on purpose — a backtest simulates "what the top pick would
+// have been at each past draw", so it must stay pinned to the literal #1 combo, not the
+// diversity-aware pick used by the live panel (see pickTop3RecommendedDiverse for that).
 function pickTop3FromScores(baseScores, jokerScores, cfg, shapeStats){
   const { mn, mx } = compositeMinMax(baseScores);
   let poolNums = []; for(let i=1;i<=cfg.range;i++) poolNums.push(i);
@@ -11140,52 +11230,17 @@ function renderAutoFillIdle(){
 // ---------- AUTO-FETCH FROM LOTTERYEXTREME.COM ----------
 // LotteryExtreme.com is a well-known international lottery results aggregator (2.6M+ monthly
 // visits) that publishes the last 20 draws for each Romanian lottery game. Since GitHub Pages
-// can't make direct cross-origin requests to it (CORS), we route through a public CORS proxy
-// that adds the necessary headers. The proxy doesn't store or modify the data; it just relays
-// the response.
-//
-// 2026-07-28 reliability fix: this used to hard-depend on a SINGLE proxy (api.allorigins.win).
-// Free public CORS proxies go down / rate-limit / time out fairly often and independently of
-// each other — when that one proxy was unavailable, the button failed outright with
-// "Failed to fetch" and no fallback, even though the underlying LotteryExtreme page was fine.
-// Now we try a short list of independent proxies, one after another, each with its own timeout,
-// and only give up (falling back to manual entry) once every single one has failed. This doesn't
-// make the fetch "always" work — a truly offline machine or a moment when all 4 providers are
-// simultaneously down can still fail — but it removes the single point of failure that was
-// causing routine, avoidable failures.
+// can't make direct cross-origin requests to it (CORS), we route through allorigins.win — a
+// free, established CORS proxy that adds the necessary headers. The proxy doesn't store or
+// modify the data; it just relays the response.
 const LOTTERY_EXTREME_URLS = {
   '649': 'https://www.lotteryextreme.com/Romania/loto_649-results',
   '540': 'https://www.lotteryextreme.com/Romania/loto_540-results',
   'joker': 'https://www.lotteryextreme.com/Romania/joker-results',
   'noroc': 'https://www.lotteryextreme.com/Romania/noroc-results'
 };
-const CORS_PROXIES = [
-  { label: 'allorigins.win',   build: (u)=> `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` },
-  { label: 'codetabs.com',     build: (u)=> `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}` },
-  { label: 'corsproxy.io',     build: (u)=> `https://corsproxy.io/?url=${encodeURIComponent(u)}` },
-  { label: 'r.jina.ai',        build: (u)=> `https://r.jina.ai/${u}` }
-];
-async function fetchViaProxies(url, timeoutMs){
-  const attempts = [];
-  for(const proxy of CORS_PROXIES){
-    const controller = new AbortController();
-    const timer = setTimeout(()=> controller.abort(), timeoutMs || 12000);
-    try{
-      const resp = await fetch(proxy.build(url), { signal: controller.signal });
-      clearTimeout(timer);
-      if(!resp.ok){ attempts.push(`${proxy.label}: HTTP ${resp.status}`); continue; }
-      const text = await resp.text();
-      if(!text || text.length < 200 || !/\d{2}\.\d{2}\.\d{4}/.test(text)){
-        attempts.push(`${proxy.label}: răspuns primit, dar fără conținut recunoscut`);
-        continue;
-      }
-      return { html: text, proxyLabel: proxy.label };
-    }catch(e){
-      clearTimeout(timer);
-      attempts.push(`${proxy.label}: ${e.name === 'AbortError' ? 'timeout' : e.message}`);
-    }
-  }
-  throw new Error(`Toate sursele automate au eșuat — ${attempts.join('; ')}`);
+function corsProxyUrl(url){
+  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 }
 
 // Parse the HTML response from LotteryExtreme to extract draw dates and numbers.
@@ -11233,100 +11288,80 @@ function parseLotteryExtremeHTML(html, game){
   return results;
 }
 
-async function fetchMissingForGame(game){
-  const missing = computeMissingDrawDates(game);
-  if(missing.length===0) return { game, missing, found:[], upToDate:true, error:null };
-  const url = LOTTERY_EXTREME_URLS[game];
-  if(!url) return { game, missing, found:[], upToDate:false, error:'joc fără sursă externă configurată' };
-  try{
-    const { html } = await fetchViaProxies(url);
-    const parsed = parseLotteryExtremeHTML(html, game);
-    const missingSet = new Set(missing);
-    const found = parsed.filter(r=> missingSet.has(r.date));
-    return { game, missing, found, upToDate:false, error:null };
-  }catch(e){
-    return { game, missing, found:[], upToDate:false, error: e.message };
-  }
-}
-
-async function autoFetchAndFillMissingAllGames(){
+async function autoFetchAndFillMissing(game){
+  const cfg = GAMES[game];
   const statusEl = document.getElementById('autoFillStatus');
   const form = document.getElementById('autoFillForm');
+  const missing = computeMissingDrawDates(game);
+
+  if(missing.length===0){
+    statusEl.className = 'status-msg ok';
+    statusEl.textContent = `Arhiva ${cfg.label} e la zi — nu lipsește nicio extragere ✓`;
+    form.innerHTML = '';
+    return;
+  }
+
   statusEl.className = 'status-msg';
-  statusEl.textContent = `Se verifică toate jocurile (${GAME_ORDER.map(g=>GAMES[g].label).join(', ')})...`;
+  statusEl.textContent = `Se caută ${missing.length} extrageri lipsă pentru ${cfg.label} pe LotteryExtreme.com...`;
   form.innerHTML = '';
 
-  const results = [];
-  for(const game of GAME_ORDER){
-    statusEl.textContent = `Se verifică ${GAMES[game].label}... (${results.length+1}/${GAME_ORDER.length})`;
-    results.push(await fetchMissingForGame(game));
-  }
+  try{
+    const url = LOTTERY_EXTREME_URLS[game];
+    if(!url) throw new Error('Jocul selectat nu are o sursă externă configurată.');
+    const resp = await fetch(corsProxyUrl(url));
+    if(!resp.ok) throw new Error(`Eroare la accesarea LotteryExtreme.com: HTTP ${resp.status}`);
+    const html = await resp.text();
+    const parsed = parseLotteryExtremeHTML(html, game);
 
-  const anyMissing = results.some(r=> !r.upToDate);
-  if(!anyMissing){
-    statusEl.className = 'status-msg ok';
-    statusEl.textContent = 'Toate jocurile sunt la zi — nu lipsește nicio extragere, pe niciunul ✓';
-    form.innerHTML = '';
-    return;
-  }
+    const missingSet = new Set(missing);
+    const found = parsed.filter(r=> missingSet.has(r.date));
 
-  const totalMissing = results.reduce((a,r)=> a + r.missing.length, 0);
-  const totalFound = results.reduce((a,r)=> a + r.found.length, 0);
+    if(found.length === 0){
+      statusEl.className = 'status-msg err';
+      statusEl.textContent = `Nu s-au găsit pe LotteryExtreme.com niciuna din cele ${missing.length} extrageri lipsă. Posibil că site-ul nu a fost încă actualizat, sau extragerile sunt prea vechi (afișează doar ultimele 20). Poți adăuga manual cu butonul "Adaugă extragere manual" de mai sus.`;
+      return;
+    }
 
-  if(totalFound === 0){
-    const errParts = results.filter(r=> r.error).map(r=> `${GAMES[r.game].label}: ${r.error}`);
-    statusEl.className = 'status-msg err';
-    statusEl.textContent = `Nu s-a găsit automat nicio extragere lipsă din cele ${totalMissing} (pe niciun joc).${errParts.length ? ' ' + errParts.join(' | ') : ' Posibil ca sursa să nu fi fost încă actualizată.'} Poți adăuga manual mai jos.`;
-    form.innerHTML = '';
-    return;
-  }
-
-  let previewHtml = '';
-  results.forEach(r=>{
-    if(r.upToDate || r.missing.length===0) return;
-    const cfg = GAMES[r.game];
-    const rows = r.found.map(f=>{
-      const numsStr = cfg.isDigit ? f.raw : (cfg.hasJoker ? f.nums.join(', ') + ' + ' + f.joker : f.nums.join(', '));
-      return `<tr><td class="mono">${fmtDateShort(f.date)}</td><td class="mono">${numsStr}</td></tr>`;
+    // Preview what we found before saving
+    const previewRows = found.map(r=>{
+      const numsStr = cfg.isDigit ? r.raw : (cfg.hasJoker ? r.nums.join(', ') + ' + ' + r.joker : r.nums.join(', '));
+      return `<tr><td class="mono">${fmtDateShort(r.date)}</td><td class="mono">${numsStr}</td></tr>`;
     }).join('');
-    const notFound = r.missing.filter(d=> !r.found.find(f=> f.date===d));
-    previewHtml += `<p class="small-note" style="margin:12px 0 4px;"><b style="color:var(--gold);">${cfg.label}</b> — găsite ${r.found.length} din ${r.missing.length}${r.error ? ` (eroare: ${r.error})` : ''}</p>`;
-    if(rows){
-      previewHtml += `<div class="table-scroll"><table class="data-table" style="width:100%; max-width:480px;"><thead><tr><th>Data</th><th>Numere</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-    }
-    if(notFound.length){
-      previewHtml += `<p class="small-note" style="margin:4px 0 8px; color:#e0574a;">Nu s-au găsit: ${notFound.map(fmtDateShort).join(', ')} — adaugă manual.</p>`;
-    }
-  });
+    form.innerHTML = `
+      <p class="small-note" style="margin:10px 0;">S-au găsit <b>${found.length}</b> din ${missing.length} extrageri lipsă pe <a href="${url}" target="_blank" rel="noopener" style="color:var(--blue);">LotteryExtreme.com</a>. Verifică numerele de mai jos, apoi apasă "Confirmă și salvează":</p>
+      <div class="table-scroll"><table class="data-table" style="width:100%; max-width:480px;">
+        <thead><tr><th>Data</th><th>Numere</th></tr></thead>
+        <tbody>${previewRows}</tbody>
+      </table></div>
+      ${found.length < missing.length ? `<p class="small-note" style="margin-top:8px; color:#e0574a;">Nu s-au găsit ${missing.length - found.length} extrageri mai vechi (${missing.filter(d=>!found.find(f=>f.date===d)).map(fmtDateShort).join(', ')}) — probabil prea vechi pentru ultimele 20 afișate pe site. Adaugă-le manual.</p>` : ''}
+      <button class="btn2" id="autoFillConfirmBtn" style="margin-top:10px;">Confirmă și salvează</button>
+      <div id="autoFillConfirmStatus" class="status-msg"></div>
+    `;
+    statusEl.className = 'status-msg ok';
+    statusEl.textContent = `Găsite ${found.length} extrageri pe LotteryExtreme.com — verifică și confirmă mai jos.`;
 
-  const gamesWithFinds = results.filter(r=> r.found.length).length;
-  form.innerHTML = `
-    ${previewHtml}
-    <p class="small-note" style="margin-top:10px;">Verifică numerele de mai sus pentru fiecare joc, apoi salvează tot dintr-o dată:</p>
-    <button class="btn2" id="autoFillConfirmBtn" style="margin-top:6px;">Confirmă și salvează tot (${totalFound} extrageri, ${gamesWithFinds} jocuri)</button>
-    <div id="autoFillConfirmStatus" class="status-msg"></div>
-  `;
-  statusEl.className = 'status-msg ok';
-  statusEl.textContent = `Găsite ${totalFound} din ${totalMissing} extrageri lipsă, pe toate jocurile — verifică și confirmă mai jos.`;
-
-  document.getElementById('autoFillConfirmBtn').addEventListener('click', async ()=>{
-    const confStatus = document.getElementById('autoFillConfirmStatus');
-    confStatus.className = 'status-msg'; confStatus.textContent = 'Se salvează...';
-    try{
-      for(const r of results){
-        for(const draw of r.found){ await saveDraw(r.game, draw); }
+    document.getElementById('autoFillConfirmBtn').addEventListener('click', async ()=>{
+      const confStatus = document.getElementById('autoFillConfirmStatus');
+      confStatus.className = 'status-msg'; confStatus.textContent = 'Se salvează...';
+      try{
+        for(const draw of found){ await saveDraw(game, draw); }
+        confStatus.className = 'status-msg ok';
+        confStatus.textContent = `${found.length} extrageri adăugate și salvate permanent ✓`;
+        setTimeout(()=>{ renderAutoFillIdle(); renderAll(); }, 800);
+      }catch(e){
+        confStatus.className = 'status-msg err'; confStatus.textContent = 'Eroare la salvare: ' + e.message;
       }
-      confStatus.className = 'status-msg ok';
-      confStatus.textContent = `${totalFound} extrageri adăugate și salvate permanent, pe toate jocurile ✓`;
-      setTimeout(()=>{ renderAutoFillIdle(); renderAll(); }, 800);
-    }catch(e){
-      confStatus.className = 'status-msg err'; confStatus.textContent = 'Eroare la salvare: ' + e.message;
-    }
-  });
+    });
+
+  }catch(e){
+    statusEl.className = 'status-msg err';
+    statusEl.textContent = `Nu s-au putut prelua datele automat: ${e.message}`;
+    form.innerHTML = `<p class="small-note" style="margin-top:8px;">Poți adăuga extragerile manual folosind butonul "Adaugă extragere manual" de mai sus, sau încearcă din nou mai târziu.</p>`;
+  }
 }
 
 document.getElementById('autoFillMissingBtn').addEventListener('click', ()=>{
-  autoFetchAndFillMissingAllGames();
+  autoFetchAndFillMissing(currentGame);
 });
 
 
@@ -11334,11 +11369,22 @@ document.getElementById('autoFillMissingBtn').addEventListener('click', ()=>{
 // ---------- JOURNAL STORAGE ----------
 let journalEntries = [];
 let evPrizesByGame = {}; // persisted EV category prize inputs per game, used for theoretical RTP in Buget panel
+// Persisted "Variante recomandate pentru extragerea curentă" per game: { [game]: { drawKey, tickets } }.
+// drawKey identifies exactly which draw archive state the tickets were computed for (draw count +
+// last draw's date). As long as drawKey matches the current archive, renderRecommendedPanel reuses
+// the stored tickets as-is (no recompute, no flicker on reload). The moment a new draw is added to
+// that game's archive, drawKey changes, and the app recomputes — deliberately steering the new pick
+// away from these stored tickets — before overwriting this cache with the new result.
+let recommendedCache = {};
 async function loadJournal(){
   const snap = await userDocRef.get();
   const data = snap.exists ? snap.data() : {};
   journalEntries = data.journal || [];
   evPrizesByGame = data.evPrizes || {};
+  recommendedCache = data.recommendedCache || {};
+}
+async function persistRecommendedCache(){
+  await userDocRef.set({ recommendedCache }, {merge:true});
 }
 async function persistJournal(){
   await userDocRef.set({ journal: journalEntries }, {merge:true});
@@ -11788,15 +11834,20 @@ function renderAll(){
   tickCountdown();
 }
 
-document.getElementById('genBtn').addEventListener('click', ()=>{
-  const cfg = GAMES[currentGame];
-  const statusEl = document.getElementById('genStatus');
-  if(statusEl){ statusEl.className='status-msg'; statusEl.textContent = cfg.isDigit ? '' : 'Se calculează — căutare exhaustivă pe ~1,6 milioane de combinații, poate dura câteva secunde...'; }
+document.getElementById('genBtn').addEventListener('click', (e)=>{
+  // Analiza completă pe 14 indici (căutare exhaustivă, ca la "Variante recomandate") ia puțin mai
+  // mult decât înainte — un scurt feedback vizual ca butonul să nu pară blocat în timpul calculului.
+  const btn = e.currentTarget;
+  const originalText = btn.textContent;
+  btn.textContent = 'Se calculează...';
+  btn.disabled = true;
   setTimeout(()=>{
+    const cfg = GAMES[currentGame];
     const stats = cfg.isDigit ? computeNorocStats() : computeBallStats(currentGame);
     renderTickets(currentGame, stats);
-    if(statusEl){ statusEl.className='status-msg'; statusEl.textContent=''; }
-  }, 30);
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }, 20);
 });
 
 document.getElementById('addDrawBtn').addEventListener('click', async ()=>{
@@ -11813,15 +11864,6 @@ document.getElementById('addDrawBtn').addEventListener('click', async ()=>{
     dateVal = rawDateVal;
   } else {
     statusEl.className='status-msg err'; statusEl.textContent='Format dată invalid. Folosește ZZ-LL-AAAA (ex: 12-07-2026).'; return;
-  }
-  // Guard against double-counting: if this date already exists (in the official archive OR in
-  // a previously-saved manual entry for this game), refuse to save a second draw on top of it —
-  // every stat/backtest treats manual entries identically to archive draws, so a duplicate date
-  // would silently double-weight that draw's numbers in every analysis.
-  if(getAllDraws(currentGame).some(d=> d.date === dateVal)){
-    statusEl.className='status-msg err';
-    statusEl.textContent = `Există deja o extragere salvată pe ${fmtDateShort(dateVal)} (în arhivă sau adăugată manual anterior) — nu am salvat-o din nou, ca să nu fie numărată de două ori în analiză.`;
-    return;
   }
   try{
     if(cfg.isDigit){
