@@ -462,7 +462,7 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       Această secțiune e <b>rezultatul final</b> al întregii aplicații. Cele 3 variante sunt alese printr-o analiză exhaustivă care integrează <b>toate secțiunile de analiză</b> din aplicație, simultan, într-o singură formulă de selecție optimizată. Concret:<br><br>
 
       <b style="color:var(--gold);">PASUL 1 — Scorul individual al fiecărui număr</b><br>
-      Fiecare număr primește un scor unic, calculat din <b>toată arhiva</b> (din 1993 până la ultima extragere adăugată), prin 5 indici:<br>
+      Fiecare număr primește un scor unic, calculat din <b>toată arhiva jocului respectiv</b> — de la prima lui extragere până la ultima adăugată — prin 5 indici. Arhiva completă pornește din <b>1993 pentru 6/49</b>, <b>1995 pentru 5/40</b>, <b>1998 pentru Noroc</b> și <b>2016 pentru Joker</b> (fiecare joc a fost introdus în alt an, deci arhiva fiecăruia are propriul început real, nu aceeași dată pentru toate):<br>
       • <b>Frecvență istorică (25%)</b> — din <em>"Frecvența numerelor"</em> + <em>"Analiza completă"</em><br>
       • <b>Regularitate / hazard (22%)</b> — din <em>"Indicatori generali"</em><br>
       • <b>Momentum recent (25%)</b> — din <em>"Trenduri"</em> (ultimele ~20 extrageri)<br>
@@ -501,7 +501,7 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
 
   <div class="panel" id="repeatScanPanel">
     <h2>Repetări istorice între extrageri <span class="sub" id="repeatScanSub">— arhiva completă, comparată cu ea însăși</span></h2>
-    <p class="small-note" style="margin-bottom:14px;">Scanează TOATE perechile posibile de extrageri reale din arhivă, de la prima (1993) până în prezent, și arată de câte ori s-a întâmplat ca două extrageri diferite să coincidă în <span id="repeatScanLevelsTxt">—</span> — și exact care sunt acele extrageri, cu dată.</p>
+    <p class="small-note" style="margin-bottom:14px;">Scanează TOATE perechile posibile de extrageri reale din arhivă, de la prima extragere a jocului respectiv (1993 pentru 6/49, 1995 pentru 5/40, 1998 pentru Noroc, 2016 pentru Joker) până în prezent, și arată de câte ori s-a întâmplat ca două extrageri diferite să coincidă în <span id="repeatScanLevelsTxt">—</span> — și exact care sunt acele extrageri, cu dată.</p>
     <button class="gen-btn" id="repeatScanBtn">Scanează arhiva</button>
     <div id="repeatScanStatus" class="status-msg" style="margin-top:10px;"></div>
     <div id="repeatScanResults" style="margin-top:16px;"></div>
@@ -9503,22 +9503,19 @@ function pickTopStratified(scores, pick, range, usedSet){
   return chosen.sort((a,b)=>a-b);
 }
 
-// Câte numere/cifre poate avea o variantă nouă în comun cu o variantă din lotul
-// anterior, înainte s-o considerăm "prea asemănătoare" și s-o regenerăm. Pragul
-// e proporțional (70% din câte numere are combinația) — suficient de permisiv cât
-// să nu strice ponderarea pe scorul compus, dar suficient de strict cât să oblige
-// o schimbare vizibilă față de generarea precedentă (cerință explicită: nici
-// aproape identice, dar nici complet diferite/aleatorii).
+// Counts how many numbers two combos have in common — used everywhere below to decide whether a
+// newly generated/recommended ticket is "too similar" to a previous one.
 function comboOverlapCount(a, b){
   const setB = new Set(b);
   let n = 0;
   for(const x of a) if(setB.has(x)) n++;
   return n;
 }
+// How much overlap between two same-size combos is tolerated before they count as "too similar" —
+// scales with pick size (e.g. for pick=6, up to 4 shared numbers is fine; 5 or 6 shared is not).
 function maxAllowedOverlap(pickCount){
   return Math.max(1, Math.floor(pickCount * 0.7));
 }
-
 // "Generator de variante" — folosește EXACT aceeași analiză completă (5 indici pe număr +
 // scor combinat cu 9 componente de "formă" a combinației: percentilă medie, potrivire sumă,
 // raport par/impar, distribuție jos/sus, acoperire zone, numere apropiate, suprapunere cu
@@ -9550,8 +9547,6 @@ function generate3BallTickets(stats, cfg, prevBatch){
   const tickets = [];
   for(let t=0; t<3; t++){
     const topK = bestKCombosFromPool(pool, cfg.pick, cfg, stats, baseScores, mn, mx, K);
-    // Preferă candidații care NU seamănă prea mult cu lotul anterior; dacă absolut toți seamănă
-    // (posibil doar cu arhive foarte mici / pool foarte redus), renunță la filtru ca să nu blocheze generarea.
     let candidates = topK.filter(c => !prevCombos.some(pc => comboOverlapCount(c.combo, pc) > overlapLimit));
     if(candidates.length === 0) candidates = topK;
 
@@ -9572,6 +9567,9 @@ function generate3BallTickets(stats, cfg, prevBatch){
   return tickets;
 }
 
+// Noroc equivalent: same 5-index per-position composite as before, but now retries the whole
+// 3-ticket batch (up to 30 times) if any ticket matches too many digit-positions against the
+// PREVIOUS batch — keeps the result meaningfully different click to click, not near-identical.
 function generate3NorocTickets(stats, prevBatch){
   const posScores = [];
   for(let pos=0; pos<7; pos++){
@@ -9589,15 +9587,8 @@ function generate3NorocTickets(stats, prevBatch){
   }
   const prevDigitTickets = (prevBatch || []).map(it => it.digits).filter(Boolean);
   const overlapLimit = maxAllowedOverlap(7);
-  // Pentru cifre poziția contează (e un cod, nu o mulțime) — comparăm poziție cu poziție.
   function positionMatchCount(a, b){ let n=0; for(let i=0;i<7;i++) if(a[i]===b[i]) n++; return n; }
 
-  // Weighted-random, without replacement: for each of the 7 positions, the 10 digits are drawn
-  // one at a time with probability proportional to their composite score — so higher-scoring
-  // digits are much more likely to be picked, but the result changes every time you press
-  // "Recalculează variantele" instead of being frozen on the same top-3 ranked digits forever.
-  // În plus, dacă rezultatul iese prea asemănător (poziție cu poziție) cu lotul anterior,
-  // se regenerează întreg lotul, până apare o diferență vizibilă sau se ating 30 încercări.
   let tickets, attempts = 0;
   do{
     tickets = [[],[],[]];
@@ -9618,13 +9609,12 @@ function generate3NorocTickets(stats, prevBatch){
 }
 
 // ---------- "VARIANTE RECOMANDATE PENTRU EXTRAGEREA CURENTĂ" ----------
-// Same 5-index composite method, same full archive — but deterministic (rank-based) instead of
-// weighted-random, and framed around one specific, named target draw. Variant 1 = the single
-// highest-scoring number in each band; Variant 2 = the second-highest per band; Variant 3 = the
-// third-highest per band. Because it's deterministic, it automatically stays IDENTICAL across
-// visits until the archive actually changes (a new real draw gets added) — at which point it
-// recomputes on its own, using the newly completed draw as part of the analysis. That's the
-// full cycle requested: previous draws + whole archive + composite analysis → this draw's picks.
+// Same 5-index composite method, same full archive, same 9-component exhaustive combo search —
+// but instead of freezing on the literal #1 combo forever, picks the best-scoring candidate that
+// also doesn't repeat the previous recommendation too closely (see pickTop3RecommendedDiverse).
+// Stays fixed for as long as the archive doesn't grow a new draw (drawKey unchanged in
+// renderRecommendedPanel) and only recomputes — deliberately diversified vs. what it showed
+// before — the moment a new real draw is added.
 function generate3RecommendedBallTickets(stats, cfg, prevTickets){
   const baseScores = buildComposite(stats, 1, cfg.range);
   const jokerScores = cfg.hasJoker ? buildComposite(stats, 1, cfg.jokerRange, {
@@ -10092,9 +10082,6 @@ function renderTickets(game, stats){
   const cfg = GAMES[game];
   const wrap = document.getElementById('ticketsWrap');
   wrap.innerHTML='';
-  // Capturăm lotul anterior de variante ÎNAINTE de a-l suprascrie mai jos, ca să
-  // putem cere generatorului să evite combinații aproape identice cu ele — dar
-  // doar dacă lotul anterior a fost la același joc (are sens să compari mere cu mere).
   const prevBatch = (lastGeneratedTickets && lastGeneratedTickets.game === game && lastGeneratedTickets.isDigit === cfg.isDigit)
     ? lastGeneratedTickets.items : [];
   lastGeneratedTickets = { game, isDigit: cfg.isDigit, items: [] };
@@ -10142,7 +10129,7 @@ function renderTickets(game, stats){
   if(infoEl){
     if(cfg.isDigit){
       infoEl.innerHTML = `<b style="color:var(--gold); display:block; margin-bottom:6px; font-size:12.5px;">Pe ce se bazează cele 3 variante</b>
-      Pentru fiecare din cele 7 poziții ale numărului Noroc, cifrele 0-9 primesc un <b>scor compus din 5 indici matematici</b>, calculat din întreg istoricul (${stats.n} extrageri, ${from} – ${to}): <b>frecvență istorică</b> (28%), <b>indice de regularitate/hazard</b> (24%), <b>momentum exponențial recent</b> (20%), <b>deviație z-score</b> (16%) și <b>sinergie de perechi</b> (12%) — aceiași 5 indici detaliați mai sus, la "Metode matematice de predicție folosite". Cifrele sunt apoi alese aleatoriu, dar <b>ponderat de scorul compus</b> pe fiecare poziție — o cifră cu scor mare are șanse mult mai mari să fie aleasă, dar nu e garantat. De-asta apeși "Recalculează variantele" și poți primi combinații diferite de fiecare dată, nu aceleași 3 cifre "câștigătoare" fixe. <b>În plus:</b> generatorul verifică automat lotul obținut față de cel anterior și îl reface dacă iese prea asemănător poziție cu poziție — ca să nu primești variante aproape identice la apăsări succesive, fără să renunțe la ponderarea pe scorul compus.`;
+      Pentru fiecare din cele 7 poziții ale numărului Noroc, cifrele 0-9 primesc un <b>scor compus din 5 indici matematici</b>, calculat din întreg istoricul (${stats.n} extrageri, ${from} – ${to}): <b>frecvență istorică</b> (28%), <b>indice de regularitate/hazard</b> (24%), <b>momentum exponențial recent</b> (20%), <b>deviație z-score</b> (16%) și <b>sinergie de perechi</b> (12%) — aceiași 5 indici detaliați mai sus, la "Metode matematice de predicție folosite". Cifrele sunt apoi alese aleatoriu, dar <b>ponderat de scorul compus</b> pe fiecare poziție — o cifră cu scor mare are șanse mult mai mari să fie aleasă, dar nu e garantat. <b>În plus:</b> dacă rezultatul seamănă prea mult (prea multe poziții identice) cu lotul generat anterior, aplicația reface automat tragerea (până la 30 de încercări) până obține un rezultat vizibil diferit — de-asta apeși "Recalculează variantele" și primești combinații cu adevărat diferite de fiecare dată, nu aproape aceleași cifre repetate.`;
     } else {
       infoEl.innerHTML = `<b style="color:var(--gold); display:block; margin-bottom:6px; font-size:12.5px;">Pe ce se bazează cele 3 variante</b>
       Folosește <b>exact aceeași analiză completă pe 14 indici</b> ca la "Variante recomandate pentru extragerea curentă" (vezi metodologia completă acolo), calculată din întreg istoricul (${stats.n} extrageri, ${from} – ${to}): fiecare număr primește întâi un <b>scor din 5 indici</b> (frecvență istorică, regularitate/hazard, momentum recent, z-score, sinergie de perechi), apoi cele mai bune ~35 numere intră într-o <b>căutare exhaustivă</b> care evaluează fiecare combinație posibilă cu un <b>scor combinat din 9 componente</b> (percentilă medie, potrivire sumă, raport par/impar, distribuție jos/sus, acoperire zone, numere apropiate, suprapunere cu ultima extragere, uniformitate distanțe) — 5+9 = <b>14 indicatori</b> în total. Diferența față de "Variante recomandate": acolo se alege mereu combinația cu scorul #1 (fix, determinist); aici se alege <b>aleatoriu, ponderat de scor</b>, dintre cele mai bune ~40 combinații găsite de căutare — toate la fel de riguros analizate, dar rezultatul chiar variază de fiecare dată când apeși "Recalculează variantele".${cfg.hasJoker ? ' Jokerul (1-20) primește propriul scor din 5 indici, calculat separat din propriul lui istoric, și e ales ponderat aleatoriu.' : ''} Cele 3 variante nu se suprapun niciodată între ele. <b>În plus:</b> dintre combinațiile de top, sunt preferate cele care nu seamănă prea mult (multe numere în comun) cu lotul anterior — ca să ai mereu o diferență vizibilă între generări succesive, nu variante aproape identice.`;
@@ -11835,8 +11822,6 @@ function renderAll(){
 }
 
 document.getElementById('genBtn').addEventListener('click', (e)=>{
-  // Analiza completă pe 14 indici (căutare exhaustivă, ca la "Variante recomandate") ia puțin mai
-  // mult decât înainte — un scurt feedback vizual ca butonul să nu pară blocat în timpul calculului.
   const btn = e.currentTarget;
   const originalText = btn.textContent;
   btn.textContent = 'Se calculează...';
