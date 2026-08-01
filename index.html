@@ -37,19 +37,20 @@ h1,h2,h3{ font-family:'Space Grotesk',sans-serif; margin:0; }
 
 /* HEADER */
 .topbar{
-  display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
-  gap:16px; padding:16px 20px; background:var(--surface);
+  display:flex; flex-direction:column; gap:14px; padding:16px 20px; background:var(--surface);
   border:1px solid var(--border); border-radius:14px; margin-bottom:18px;
 }
+.topbar-top{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; }
+.topbar-tabs{ display:flex; }
 .date-block{ display:flex; flex-direction:column; gap:2px; }
 .date-block .label{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
 .date-block .value{ font-family:'JetBrains Mono',monospace; font-size:20px; color:var(--gold); font-weight:700; }
 .next-draw{ font-size:12px; color:var(--muted); }
 .next-draw b{ color:var(--blue); }
-.version-block{ display:flex; flex-direction:column; align-items:flex-end; gap:2px; margin-left:auto; }
+.version-block{ display:flex; flex-direction:column; align-items:center; gap:2px; margin-left:auto; flex:1; min-width:260px; max-width:460px; }
 .version-block .version-num{ font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:var(--gold); }
 .version-block .version-date{ font-size:10.5px; color:var(--muted); }
-.version-block .version-note{ font-size:9.5px; color:var(--muted2); max-width:200px; text-align:right; line-height:1.3; }
+.version-block .version-note{ font-size:9.5px; color:var(--muted2); max-width:100%; text-align:center; line-height:1.3; }
 
 .tabs{ display:flex; gap:8px; flex-wrap:wrap; }
 .tab{
@@ -402,24 +403,29 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
 <div class="wrap">
 
   <div class="topbar">
-    <div class="date-block">
-      <span class="label">Astăzi</span>
-      <span class="value" id="todayDate">—</span>
-      <span class="next-draw" id="nextDraw"></span>
-      <span class="label" style="margin-top:6px;">Acces: <span id="accessCodeLabel" class="mono" style="color:var(--gold);">—</span></span>
+    <div class="topbar-top">
+      <div class="date-block">
+        <span class="label">Astăzi</span>
+        <span class="value" id="todayDate">—</span>
+        <span class="next-draw" id="nextDraw"></span>
+        <span class="label" style="margin-top:6px;">Acces: <span id="accessCodeLabel" class="mono" style="color:var(--gold);">—</span></span>
+      </div>
+      <div class="countdown-block">
+        <span class="label">Countdown tragere</span>
+        <div class="countdown-clock mono" id="topCountdown">—</div>
+      </div>
+      <div class="version-block">
+        <span class="version-num">Ver 4.2</span>
+        <span class="version-date">Actualizat: 14.07.2026</span>
+        <span class="version-note">Formula reechilibrată: acoperire zone crescută la 10% + constrângere obligatorie (minim 4 din 5 zone), numere apropiate redus la 3% (apăreau prea multe clustere), chiConfidence eliminat (efect neglijabil). Variantele arată acum echilibrat pe tot intervalul</span>
+      </div>
     </div>
-    <div class="countdown-block">
-      <span class="label">Countdown tragere</span>
-      <div class="countdown-clock mono" id="topCountdown">—</div>
-    </div>
-    <div class="tabs" id="gameTabs"></div>
-    <div class="version-block">
-      <span class="version-num">Ver 4.2</span>
-      <span class="version-date">Actualizat: 14.07.2026</span>
-      <span class="version-note">Formula reechilibrată: acoperire zone crescută la 10% + constrângere obligatorie (minim 4 din 5 zone), numere apropiate redus la 3% (apăreau prea multe clustere), chiConfidence eliminat (efect neglijabil). Variantele arată acum echilibrat pe tot intervalul</span>
+    <div class="topbar-tabs">
+      <div class="tabs" id="gameTabs"></div>
     </div>
   </div>
 
+  <div id="normalPanelsWrap">
   <div class="panel">
     <h2 id="lastDrawTitle">Ultima extragere <span class="sub" id="lastDrawDate"></span></h2>
     <div class="ballgrid" id="numberGrid"></div>
@@ -499,6 +505,19 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     </div>
   </div>
 
+  <div class="panel">
+    <h2>Generator de variante <span class="sub">— 3 combinații generate din analiza complexă a arhivei complete</span></h2>
+    <div class="small-note" id="ticketsMethodInfo" style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px;"></div>
+    <button class="gen-btn" id="genBtn">Recalculează variantele</button>
+    <div style="height:14px;"></div>
+    <div class="tickets" id="ticketsWrap"></div>
+    <p class="small-note" id="ticketsGenNote"></p>
+    <div class="export-btn-row" style="margin-top:10px;">
+      <button class="btn2 btn2-outline" id="ticketsExportCsvBtn">Exportă variantele (CSV)</button>
+      <button class="btn2 btn2-outline" id="ticketsExportPdfBtn">Exportă variantele (PDF)</button>
+    </div>
+  </div>
+
   <div class="panel" id="repeatScanPanel">
     <h2>Repetări istorice între extrageri <span class="sub" id="repeatScanSub">— arhiva completă, comparată cu ea însăși</span></h2>
     <p class="small-note" style="margin-bottom:14px;">Scanează TOATE perechile posibile de extrageri reale din arhivă, de la prima extragere a jocului respectiv (1993 pentru 6/49, 1995 pentru 5/40, 1998 pentru Noroc, 2016 pentru Joker) până în prezent, și arată de câte ori s-a întâmplat ca două extrageri diferite să coincidă în <span id="repeatScanLevelsTxt">—</span> — și exact care sunt acele extrageri, cu dată.</p>
@@ -517,19 +536,6 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     <h2>Acoperirea intervalelor în extrageri <span class="sub" id="intervalSub">— toată arhiva, scanată extragere cu extragere</span></h2>
     <p class="small-note" style="margin-bottom:14px;">Împarte intervalul jocului în zone de câte 10 (<span id="intervalZonesTxt">1-10, 11-20, 21-30, 31-40, 41-49</span>) și scanează absolut toate extragerile din arhivă: în ce procent din extrageri apare fiecare zonă, cât de des sunt acoperite toate zonele simultan, și care combinații de zone apar cel mai des. Descriere statistică a trecutului — la fel de onest ca peste tot: nu prezice viitorul, dar îți arată exact cum au arătat extragerile reale.</p>
     <div id="intervalResults"></div>
-  </div>
-
-  <div class="panel">
-    <h2>Generator de variante <span class="sub">— 3 combinații generate din analiza complexă a arhivei complete</span></h2>
-    <div class="small-note" id="ticketsMethodInfo" style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:14px;"></div>
-    <button class="gen-btn" id="genBtn">Recalculează variantele</button>
-    <div style="height:14px;"></div>
-    <div class="tickets" id="ticketsWrap"></div>
-    <p class="small-note" id="ticketsGenNote"></p>
-    <div class="export-btn-row" style="margin-top:10px;">
-      <button class="btn2 btn2-outline" id="ticketsExportCsvBtn">Exportă variantele (CSV)</button>
-      <button class="btn2 btn2-outline" id="ticketsExportPdfBtn">Exportă variantele (PDF)</button>
-    </div>
   </div>
 
   <div class="panel">
@@ -720,6 +726,16 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     </div>
     <div class="status-msg" id="jeStatusMsg"></div>
     <div class="journal-list" id="journalList"></div>
+  </div>
+  </div>
+
+  <div class="panel" id="fullArchivePanel" style="display:none;">
+    <h2>Arhivă completă <span class="sub" id="fullArchiveSub">— toate extragerile reale, de la prima până la ultima</span></h2>
+    <p class="small-note" style="margin-bottom:14px;">Tabel cu absolut toate extragerile din arhivă pentru jocul ales mai jos — de la prima extragere a jocului respectiv (1993 pentru 6/49, 1995 pentru 5/40, 1998 pentru Noroc, 2016 pentru Joker) până la cea mai recentă extragere adăugată. E aceeași arhivă completă (arhiva de bază + orice extragere adaugi manual) folosită peste tot în aplicație — de aceea tabelul se actualizează automat, fără nimic suplimentar de făcut, de fiecare dată când adaugi o extragere nouă. Coloana <b>Repetare</b> arată dacă acea combinație exactă (aceleași numere, indiferent de ordine) s-a mai extras vreodată în restul arhivei.</p>
+    <div class="tabs" id="fullArchiveGameTabs" style="margin-bottom:14px;"></div>
+    <button class="gen-btn" id="fullArchiveShowBtn">Afișează arhiva completă</button>
+    <div class="status-msg" id="fullArchiveStatus" style="margin-top:10px;"></div>
+    <div id="fullArchiveResults" style="margin-top:16px;"></div>
   </div>
 
   <footer>Date istorice preluate de pe loto49.ro · Analiză generată local, în browser · Joacă responsabil</footer>
@@ -8495,6 +8511,88 @@ function renderTabs(){
     b.onclick = ()=>{ currentGame = k; renderAll(); };
     el.appendChild(b);
   }
+  // "Arhivă completă" isn't a real game (no stats/tickets of its own) — it's a view-mode switch,
+  // rendered as a 5th pill right after Noroc so it looks and behaves like the other tabs.
+  const archiveBtn = document.createElement('button');
+  archiveBtn.className = 'tab' + (currentGame==='archive' ? ' active':'');
+  archiveBtn.textContent = 'Arhivă completă';
+  archiveBtn.onclick = ()=>{
+    if(GAME_ORDER.includes(currentGame)) archiveSelectedGame = currentGame;
+    currentGame = 'archive';
+    renderAll();
+  };
+  el.appendChild(archiveBtn);
+}
+
+// ---------- "ARHIVĂ COMPLETĂ" ----------
+// A plain, honest listing of every real draw in a game's archive — base data + anything added
+// manually since — sorted chronologically from the very first draw to the most recent. Always
+// reads live via getAllDraws(), so it's automatically current: no separate file to keep in sync,
+// no manual refresh step needed after adding a new draw.
+let archiveSelectedGame = '649';
+let archiveTableShown = false; // becomes true after the first "Afișează arhiva completă" click
+// Exact-repeat check for every draw in one pass — O(n) instead of comparing every draw against
+// every other draw. Two ball-game draws "repeat" if they contain the exact same set of numbers
+// regardless of order; two Noroc draws "repeat" only if every digit matches in the same position
+// (it's one 7-digit number, not an interchangeable set, so digit order matters).
+function computeExactRepeatFlags(draws, isDigit){
+  const keyOf = isDigit ? (d)=> d.digits.join('') : (d)=> d.nums.slice().sort((a,b)=>a-b).join(',');
+  const counts = {};
+  draws.forEach(d=>{ const k = keyOf(d); counts[k] = (counts[k]||0)+1; });
+  return draws.map(d=> counts[keyOf(d)] > 1);
+}
+function renderArchiveGameTabs(){
+  const el = document.getElementById('fullArchiveGameTabs');
+  if(!el) return;
+  el.innerHTML = '';
+  GAME_ORDER.forEach(k=>{
+    const b = document.createElement('button');
+    b.className = 'tab' + (k===archiveSelectedGame ? ' active' : '');
+    b.textContent = GAMES[k].label;
+    b.onclick = ()=>{
+      archiveSelectedGame = k;
+      renderArchiveGameTabs();
+      if(archiveTableShown) renderFullArchiveTable(archiveSelectedGame);
+    };
+    el.appendChild(b);
+  });
+}
+function renderFullArchiveTable(game){
+  const cfg = GAMES[game];
+  const draws = getAllDraws(game); // base archive + manually-added draws, already sorted by date ascending
+  const statusEl = document.getElementById('fullArchiveStatus');
+  const resultsEl = document.getElementById('fullArchiveResults');
+  if(!resultsEl) return;
+  if(!draws.length){
+    resultsEl.innerHTML = '';
+    if(statusEl){ statusEl.className='status-msg'; statusEl.textContent='Nu există extrageri în arhivă pentru acest joc.'; }
+    return;
+  }
+  const repeatFlags = computeExactRepeatFlags(draws, cfg.isDigit);
+  const rows = draws.map((d,i)=>{
+    const dateStr = fmtDateShort(d.date);
+    const numsStr = cfg.isDigit
+      ? d.digits.join('')
+      : d.nums.slice().sort((a,b)=>a-b).join(', ');
+    const rep = repeatFlags[i]
+      ? '<span style="color:var(--red); font-weight:700;">Da</span>'
+      : '<span style="color:var(--green);">Nu</span>';
+    return `<tr><td class="mono">${dateStr}</td><td class="mono">${numsStr}</td><td style="text-align:center;">${rep}</td></tr>`;
+  }).join('');
+  resultsEl.innerHTML = `<div class="table-scroll"><table class="data-table" style="width:100%;">
+    <thead><tr><th>Data</th><th>Numere extrase${cfg.isDigit ? ' (număr Noroc, 7 cifre)' : ' (ordine crescătoare)'}</th><th>Repetare</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+  if(statusEl){
+    statusEl.className = 'status-msg ok';
+    const from = fmtDateShort(draws[0].date), to = fmtDateShort(draws[draws.length-1].date);
+    statusEl.textContent = `${draws.length} extrageri afișate — ${cfg.label}, de la ${from} până la ${to}.`;
+  }
+  archiveTableShown = true;
+}
+function renderFullArchivePanel(){
+  renderArchiveGameTabs();
+  if(archiveTableShown) renderFullArchiveTable(archiveSelectedGame);
 }
 
 function mean(arr){ return arr.reduce((a,b)=>a+b,0)/(arr.length||1); }
@@ -11778,6 +11876,23 @@ document.getElementById('jeAddBtn').addEventListener('click', async ()=>{
 // ---------- MAIN RENDER ----------
 function renderAll(){
   renderTabs();
+
+  // "Arhivă completă" is a view-mode switch, not a real game: hide the normal per-game analysis
+  // panels and show only the archive table panel instead. Every other click handler that reads
+  // GAMES[currentGame] lives inside a panel that's now hidden, so it can't be triggered while
+  // this mode is active.
+  const normalWrap = document.getElementById('normalPanelsWrap');
+  const archivePanel = document.getElementById('fullArchivePanel');
+  if(currentGame === 'archive'){
+    if(normalWrap) normalWrap.style.display = 'none';
+    if(archivePanel) archivePanel.style.display = '';
+    renderFullArchivePanel();
+    tickCountdown();
+    return;
+  }
+  if(normalWrap) normalWrap.style.display = '';
+  if(archivePanel) archivePanel.style.display = 'none';
+
   const cfg = GAMES[currentGame];
   const stats = cfg.isDigit ? computeNorocStats() : computeBallStats(currentGame);
   const draws = stats.draws;
@@ -11830,6 +11945,18 @@ document.getElementById('genBtn').addEventListener('click', (e)=>{
     const cfg = GAMES[currentGame];
     const stats = cfg.isDigit ? computeNorocStats() : computeBallStats(currentGame);
     renderTickets(currentGame, stats);
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }, 20);
+});
+
+document.getElementById('fullArchiveShowBtn').addEventListener('click', (e)=>{
+  const btn = e.currentTarget;
+  const originalText = btn.textContent;
+  btn.textContent = 'Se încarcă...';
+  btn.disabled = true;
+  setTimeout(()=>{
+    renderFullArchiveTable(archiveSelectedGame);
     btn.textContent = originalText;
     btn.disabled = false;
   }, 20);
