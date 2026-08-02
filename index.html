@@ -221,7 +221,8 @@ input[type=range]::-moz-range-thumb{
 .data-table{ border-collapse:collapse; font-size:12.5px; }
 .data-table th{ text-align:left; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; padding:6px 8px; border-bottom:1px solid var(--border); }
 .data-table td{ padding:7px 8px; border-bottom:1px solid var(--border); }
-.archive-full-table td{ padding:4px 8px; vertical-align:top; }
+.archive-full-table th{ text-align:center; padding:8px 18px; }
+.archive-full-table td{ padding:10px 18px; vertical-align:top; text-align:center; }
 .archive-filter-input{
   width:100%; box-sizing:border-box; padding:6px 8px; border-radius:6px;
   border:1px solid var(--border); background:var(--surface3); color:var(--text);
@@ -422,9 +423,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
         <div class="countdown-clock mono" id="topCountdown">—</div>
       </div>
       <div class="version-block">
-        <span class="version-num">Ver 5.2</span>
+        <span class="version-num">Ver 5.3</span>
         <span class="version-date">Actualizat: 02.08.2026</span>
-        <span class="version-note">Arhivă completă: coloană nouă "Nr extr" (poziția extragerii în arhivă) în stânga tabelului, plus search bar sub "Numere extrase" — cauți orice număr sau combinație de numere și tabelul arată instant toate extragerile care le conțin.</span>
+        <span class="version-note">Arhivă completă: mai mult spațiu între coloane, titluri și conținut centrate, distanță mai mare între rânduri în coloana de repetări. Coloană nouă "Nr extr" + search bar sub "Numere extrase" pentru orice număr/combinație.</span>
       </div>
     </div>
     <div class="topbar-tabs">
@@ -8718,10 +8719,14 @@ function buildArchiveRepeatCellHtml(target, draws, pick, isDigit){
   // pick-2], ex. 6/6, 5/6, 4/6) — aici le afișăm crescător (4/6 → 6/6), cum s-a cerut.
   const levels = computeRepeatLevels(target, draws, pick, isDigit).slice().reverse();
   const CAP = 3;
+  // Fiecare bloc de nivel (4/6, 5/6, 6/6) e un block cu width:fit-content + margin:0 auto — stă pe
+  // rândul lui (stivuit vertical, ca înainte) dar centrat ca bloc în celulă; textul dinăuntru
+  // rămâne aliniat la stânga, altfel listele de numere/date ar deveni greu de citit centrate literă
+  // cu literă.
   return levels.map(r=>{
     const label = `${r.level}/${pick}`;
     if(r.count === 0){
-      return `<div style="margin-bottom:2px; color:var(--muted);"><b>${label}:</b> —</div>`;
+      return `<div style="margin-bottom:10px; width:fit-content; margin-left:auto; margin-right:auto; text-align:left; color:var(--muted);"><b>${label}:</b> —</div>`;
     }
     const shown = r.matches.slice(0, CAP);
     const rows = shown.map(m=>{
@@ -8732,10 +8737,10 @@ function buildArchiveRepeatCellHtml(target, draws, pick, isDigit){
         const matchedSet = new Set(m.matched);
         numsHtml = m.nums.map(n=> matchedSet.has(n) ? `<b style="color:#3ecf6e;">${n}</b>` : n).join(', ');
       }
-      return `<div style="font-size:11px; line-height:1.25;">#${m.idx+1} <span class="mono">${fmtDateShort(m.date)}</span>: ${numsHtml}</div>`;
+      return `<div style="font-size:11.5px; line-height:1.8;">#${m.idx+1} <span class="mono">${fmtDateShort(m.date)}</span>: ${numsHtml}</div>`;
     }).join('');
-    const more = r.matches.length > CAP ? `<div style="font-size:10.5px; line-height:1.25; color:var(--muted);">+${r.matches.length-CAP} mai multe</div>` : '';
-    return `<div style="margin-bottom:3px;"><b style="color:var(--gold);">${label}</b> (${r.count})${rows}${more}</div>`;
+    const more = r.matches.length > CAP ? `<div style="font-size:10.5px; line-height:1.8; color:var(--muted);">+${r.matches.length-CAP} mai multe</div>` : '';
+    return `<div style="margin-bottom:10px; width:fit-content; margin-left:auto; margin-right:auto; text-align:left;"><b style="color:var(--gold);">${label}</b> (${r.count})${rows}${more}</div>`;
   }).join('');
 }
 
@@ -8776,7 +8781,7 @@ function renderFullArchiveTable(game){
 
   resultsEl.innerHTML = `<div class="table-scroll"><table class="data-table archive-full-table" style="width:100%; table-layout:fixed;">
     <thead>
-      <tr><th style="width:7%;">Nr extr</th><th style="width:12%;">Data extragerii</th><th style="width:20%;">Numere extrase${cfg.isDigit ? ' (număr Noroc, 7 cifre)' : ' (ordine cresc.)'}</th><th style="width:61%;">${repeatColLabel}</th></tr>
+      <tr><th style="width:9%;">Nr extr</th><th style="width:16%;">Data extragerii</th><th style="width:24%;">Numere extrase${cfg.isDigit ? ' (număr Noroc, 7 cifre)' : ' (ordine cresc.)'}</th><th style="width:51%;">${repeatColLabel}</th></tr>
       <tr>
         <th></th>
         <th><input type="text" id="archiveFilterDate" placeholder="ex: 2020 sau 12.07" class="archive-filter-input"></th>
