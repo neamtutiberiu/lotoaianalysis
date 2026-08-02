@@ -221,6 +221,7 @@ input[type=range]::-moz-range-thumb{
 .data-table{ border-collapse:collapse; font-size:12.5px; }
 .data-table th{ text-align:left; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; padding:6px 8px; border-bottom:1px solid var(--border); }
 .data-table td{ padding:7px 8px; border-bottom:1px solid var(--border); }
+.archive-full-table td{ padding:4px 8px; vertical-align:top; }
 .archive-filter-input{
   width:100%; box-sizing:border-box; padding:6px 8px; border-radius:6px;
   border:1px solid var(--border); background:var(--surface3); color:var(--text);
@@ -421,9 +422,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
         <div class="countdown-clock mono" id="topCountdown">—</div>
       </div>
       <div class="version-block">
-        <span class="version-num">Ver 4.9</span>
+        <span class="version-num">Ver 5.2</span>
         <span class="version-date">Actualizat: 02.08.2026</span>
-        <span class="version-note">Arhivă completă: coloană nouă "Repetate 4/6, 5/6, 6/6" — pentru fiecare extragere din tabel, arată automat dacă și cu ce alte extrageri din toată arhiva s-a suprapus parțial (extragere, dată, numere comune evidențiate cu verde aprins). Analiza finală are buton propriu de regenerare, independent de Generator/Recomandate.</span>
+        <span class="version-note">Arhivă completă: coloană nouă "Nr extr" (poziția extragerii în arhivă) în stânga tabelului, plus search bar sub "Numere extrase" — cauți orice număr sau combinație de numere și tabelul arată instant toate extragerile care le conțin.</span>
       </div>
     </div>
     <div class="topbar-tabs">
@@ -771,7 +772,7 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <div class="status-msg" id="archiveComboSearchStatus" style="margin-top:8px;"></div>
       <div id="archiveComboSearchResults" style="margin-top:10px;"></div>
     </div>
-    <p class="small-note" style="margin-bottom:14px;">Tabel cu absolut toate extragerile din arhivă pentru jocul ales mai jos — de la cea mai recentă extragere adăugată, în ordine descrescătoare, până la prima extragere a jocului respectiv (1993 pentru 6/49, 1995 pentru 5/40, 1998 pentru Noroc, 2016 pentru Joker). E aceeași arhivă completă (arhiva de bază + orice extragere adaugi manual) folosită peste tot în aplicație — de aceea tabelul se actualizează automat, fără nimic suplimentar de făcut, de fiecare dată când adaugi o extragere nouă. Coloana <b>Repetare</b> arată dacă acea combinație exactă (aceleași numere, indiferent de ordine) s-a mai extras vreodată în restul arhivei. Coloana <b>Repetate 4/6, 5/6, 6/6</b> (denumirea se adaptează automat la jocul selectat) scanează, pentru fiecare extragere din tabel, toată arhiva + extragerile adăugate și arată — dacă există — cu ce alte extrageri s-a suprapus parțial (numărul extragerii, data și, cu verde aprins, exact care numere sunt comune). Sub titlurile coloanelor Data extragerii și Repetare poți filtra tabelul tastând ce cauți.</p>
+    <p class="small-note" style="margin-bottom:14px;">Tabel cu absolut toate extragerile din arhivă pentru jocul ales mai jos — de la cea mai recentă extragere adăugată, în ordine descrescătoare, până la prima extragere a jocului respectiv (1993 pentru 6/49, 1995 pentru 5/40, 1998 pentru Noroc, 2016 pentru Joker). E aceeași arhivă completă (arhiva de bază + orice extragere adaugi manual) folosită peste tot în aplicație — de aceea tabelul se actualizează automat, fără nimic suplimentar de făcut, de fiecare dată când adaugi o extragere nouă. Coloana <b>Nr extr</b> arată poziția extragerii în arhivă, numărând de la prima extragere reală a jocului — aceeași numerotare "#N" folosită și în detaliile din coloana de repetări, ca să poți face legătura direct între ele. Coloana <b>Repetate 4/6, 5/6, 6/6</b> (denumirea se adaptează automat la jocul selectat) scanează, pentru fiecare extragere din tabel, toată arhiva + extragerile adăugate și arată — pe fiecare din cele 3 niveluri, în ordine crescătoare — dacă și cu ce alte extrageri s-a suprapus (numărul extragerii, data și, cu verde aprins, exact care numere sunt comune; nivelul cel mai de sus, ex. 6/6, acoperă și potrivirea exactă/completă). Sub titlul coloanei Data extragerii poți filtra după dată, iar sub titlul coloanei Numere extrase poți căuta un număr sau o combinație de numere (separate prin virgulă sau spațiu) — tabelul arată instant toate extragerile din arhivă care conțin acele numere.</p>
     <div class="tabs" id="fullArchiveGameTabs" style="margin-bottom:14px;"></div>
     <button class="gen-btn" id="fullArchiveShowBtn">Afișează arhiva completă</button>
     <div class="status-msg" id="fullArchiveStatus" style="margin-top:10px;"></div>
@@ -8713,12 +8714,14 @@ function renderArchiveGameTabs(){
 // numărul extragerii, data și, pentru jocurile cu bile, exact care numere sunt comune (evidențiate
 // cu verde aprins). Rezultatul e un fragment HTML gata de pus direct în celula tabelului.
 function buildArchiveRepeatCellHtml(target, draws, pick, isDigit){
-  const levels = computeRepeatLevels(target, draws, pick, isDigit);
+  // .slice().reverse(): computeRepeatLevels întoarce nivelurile descrescător ([pick, pick-1,
+  // pick-2], ex. 6/6, 5/6, 4/6) — aici le afișăm crescător (4/6 → 6/6), cum s-a cerut.
+  const levels = computeRepeatLevels(target, draws, pick, isDigit).slice().reverse();
   const CAP = 3;
   return levels.map(r=>{
     const label = `${r.level}/${pick}`;
     if(r.count === 0){
-      return `<div style="margin-bottom:5px; color:var(--muted);"><b>${label}:</b> —</div>`;
+      return `<div style="margin-bottom:2px; color:var(--muted);"><b>${label}:</b> —</div>`;
     }
     const shown = r.matches.slice(0, CAP);
     const rows = shown.map(m=>{
@@ -8729,10 +8732,10 @@ function buildArchiveRepeatCellHtml(target, draws, pick, isDigit){
         const matchedSet = new Set(m.matched);
         numsHtml = m.nums.map(n=> matchedSet.has(n) ? `<b style="color:#3ecf6e;">${n}</b>` : n).join(', ');
       }
-      return `<div style="font-size:11px; line-height:1.6;">#${m.idx+1} <span class="mono">${fmtDateShort(m.date)}</span>: ${numsHtml}</div>`;
+      return `<div style="font-size:11px; line-height:1.25;">#${m.idx+1} <span class="mono">${fmtDateShort(m.date)}</span>: ${numsHtml}</div>`;
     }).join('');
-    const more = r.matches.length > CAP ? `<div style="font-size:10.5px; color:var(--muted);">+${r.matches.length-CAP} mai multe</div>` : '';
-    return `<div style="margin-bottom:6px;"><b style="color:var(--gold);">${label}</b> (${r.count})${rows}${more}</div>`;
+    const more = r.matches.length > CAP ? `<div style="font-size:10.5px; line-height:1.25; color:var(--muted);">+${r.matches.length-CAP} mai multe</div>` : '';
+    return `<div style="margin-bottom:3px;"><b style="color:var(--gold);">${label}</b> (${r.count})${rows}${more}</div>`;
   }).join('');
 }
 
@@ -8747,32 +8750,37 @@ function renderFullArchiveTable(game){
     if(statusEl){ statusEl.className='status-msg'; statusEl.textContent='Nu există extrageri în arhivă pentru acest joc.'; }
     return;
   }
-  const repeatFlagsAsc = computeExactRepeatFlags(drawsAsc, cfg.isDigit);
   const repeatPick = cfg.isDigit ? cfg.digits : cfg.pick;
   const repeatColLabel = `Repetate ${repeatPick-2}/${repeatPick}, ${repeatPick-1}/${repeatPick}, ${repeatPick}/${repeatPick}`;
   // Build display rows most-recent-first (as requested), each with its own pre-formatted strings
-  // so the filter handlers below can re-render instantly without recomputing anything. Scanarea
-  // 4/6-5/6-6/6 se face o singură dată aici (nu la fiecare filtrare), la fel ca restul coloanelor.
+  // so the filter handler below can re-render instantly without recomputing anything. Scanarea
+  // 4/6-5/6-6/6 se face o singură dată aici (nu la fiecare filtrare). Nu mai există o coloană
+  // separată "Repetare" — era o duplicare a rândului 6/6 (potrivire exactă) de mai jos.
   const rowData = [];
   for(let i=drawsAsc.length-1; i>=0; i--){
     const d = drawsAsc[i];
     rowData.push({
+      // "Nr extr" = poziția extragerii în arhivă, numărând de la prima extragere reală a jocului
+      // (i+1, unde i e indicele din arhiva ordonată crescător) — exact aceeași numerotare "#N"
+      // deja folosită la extragerile listate în coloana "Repetate" de mai sus, ca să poți face
+      // legătura direct între cele două coloane.
+      extrNr: i+1,
       dateStr: fmtDateShort(d.date),
       numsStr: cfg.isDigit ? d.digits.join('') : d.nums.slice().sort((a,b)=>a-b).join(', '),
-      repeat: repeatFlagsAsc[i],
+      numsArr: cfg.isDigit ? null : d.nums.slice(),
       repeatCellHtml: buildArchiveRepeatCellHtml(d, drawsAsc, repeatPick, cfg.isDigit)
     });
   }
   archiveCurrentRows = rowData;
   const fromDate = fmtDateShort(drawsAsc[0].date), toDate = fmtDateShort(drawsAsc[drawsAsc.length-1].date);
 
-  resultsEl.innerHTML = `<div class="table-scroll"><table class="data-table" style="width:100%;">
+  resultsEl.innerHTML = `<div class="table-scroll"><table class="data-table archive-full-table" style="width:100%; table-layout:fixed;">
     <thead>
-      <tr><th>Data extragerii</th><th>Numere extrase${cfg.isDigit ? ' (număr Noroc, 7 cifre)' : ' (ordine cresc.)'}</th><th>Repetare</th><th>${repeatColLabel}</th></tr>
+      <tr><th style="width:7%;">Nr extr</th><th style="width:12%;">Data extragerii</th><th style="width:20%;">Numere extrase${cfg.isDigit ? ' (număr Noroc, 7 cifre)' : ' (ordine cresc.)'}</th><th style="width:61%;">${repeatColLabel}</th></tr>
       <tr>
-        <th><input type="text" id="archiveFilterDate" placeholder="ex: 2020 sau 12.07" class="archive-filter-input"></th>
         <th></th>
-        <th><input type="text" id="archiveFilterRepeat" placeholder="Da / Nu" class="archive-filter-input"></th>
+        <th><input type="text" id="archiveFilterDate" placeholder="ex: 2020 sau 12.07" class="archive-filter-input"></th>
+        <th><input type="text" id="archiveFilterNums" placeholder="${cfg.isDigit ? 'ex: 234' : 'ex: 5 sau 5, 12, 23'}" class="archive-filter-input"></th>
         <th></th>
       </tr>
     </thead>
@@ -8781,19 +8789,23 @@ function renderFullArchiveTable(game){
 
   function applyFilters(){
     const dateQ = (document.getElementById('archiveFilterDate').value||'').trim().toLowerCase();
-    const repQ = (document.getElementById('archiveFilterRepeat').value||'').trim().toLowerCase();
+    const numsQRaw = (document.getElementById('archiveFilterNums').value||'').trim();
+    const numsQDigits = cfg.isDigit ? numsQRaw.replace(/[^0-9]/g,'') : '';
+    const numsQNums = cfg.isDigit ? [] : numsQRaw.split(/[,\s]+/).map(s=>parseInt(s,10)).filter(n=>!isNaN(n));
     const filtered = archiveCurrentRows.filter(r=>{
       if(dateQ && !r.dateStr.toLowerCase().includes(dateQ)) return false;
-      if(repQ){
-        const repText = r.repeat ? 'da' : 'nu';
-        if(!repText.includes(repQ)) return false;
+      if(numsQRaw){
+        if(cfg.isDigit){
+          if(!numsQDigits || !r.numsStr.includes(numsQDigits)) return false;
+        } else {
+          if(!numsQNums.length || !numsQNums.every(n=> r.numsArr.includes(n))) return false;
+        }
       }
       return true;
     });
     const tbody = document.getElementById('fullArchiveTbody');
     tbody.innerHTML = filtered.map(r=>{
-      const rep = r.repeat ? '<span style="color:var(--red); font-weight:700;">Da</span>' : '<span style="color:var(--green);">Nu</span>';
-      return `<tr><td class="mono">${r.dateStr}</td><td class="mono">${r.numsStr}</td><td style="text-align:center;">${rep}</td><td>${r.repeatCellHtml}</td></tr>`;
+      return `<tr><td class="mono">#${r.extrNr}</td><td class="mono">${r.dateStr}</td><td class="mono">${r.numsStr}</td><td>${r.repeatCellHtml}</td></tr>`;
     }).join('');
     if(statusEl){
       statusEl.className = 'status-msg ok';
@@ -8803,7 +8815,7 @@ function renderFullArchiveTable(game){
     }
   }
   document.getElementById('archiveFilterDate').addEventListener('input', applyFilters);
-  document.getElementById('archiveFilterRepeat').addEventListener('input', applyFilters);
+  document.getElementById('archiveFilterNums').addEventListener('input', applyFilters);
   applyFilters();
   archiveTableShown = true;
 }
