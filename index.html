@@ -421,9 +421,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
         <div class="countdown-clock mono" id="topCountdown">—</div>
       </div>
       <div class="version-block">
-        <span class="version-num">Ver 4.8</span>
+        <span class="version-num">Ver 4.9</span>
         <span class="version-date">Actualizat: 02.08.2026</span>
-        <span class="version-note">Analiza finală: buton nou "Generează alte 3 variante finale" — generează oricând o rundă nouă, diversificată, cu aceeași rigoare (14 indicatori + consens + Pasul 4), independent de Generator/Recomandate. Pasul 4 compară cu o alternativă fără nicio repetare istorică (4+/5+/6+), cu verdict onest.</span>
+        <span class="version-note">Arhivă completă: coloană nouă "Repetate 4/6, 5/6, 6/6" — pentru fiecare extragere din tabel, arată automat dacă și cu ce alte extrageri din toată arhiva s-a suprapus parțial (extragere, dată, numere comune evidențiate cu verde aprins). Analiza finală are buton propriu de regenerare, independent de Generator/Recomandate.</span>
       </div>
     </div>
     <div class="topbar-tabs">
@@ -771,7 +771,7 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <div class="status-msg" id="archiveComboSearchStatus" style="margin-top:8px;"></div>
       <div id="archiveComboSearchResults" style="margin-top:10px;"></div>
     </div>
-    <p class="small-note" style="margin-bottom:14px;">Tabel cu absolut toate extragerile din arhivă pentru jocul ales mai jos — de la cea mai recentă extragere adăugată, în ordine descrescătoare, până la prima extragere a jocului respectiv (1993 pentru 6/49, 1995 pentru 5/40, 1998 pentru Noroc, 2016 pentru Joker). E aceeași arhivă completă (arhiva de bază + orice extragere adaugi manual) folosită peste tot în aplicație — de aceea tabelul se actualizează automat, fără nimic suplimentar de făcut, de fiecare dată când adaugi o extragere nouă. Coloana <b>Repetare</b> arată dacă acea combinație exactă (aceleași numere, indiferent de ordine) s-a mai extras vreodată în restul arhivei. Sub titlurile coloanelor Data extragerii și Repetare poți filtra tabelul tastând ce cauți.</p>
+    <p class="small-note" style="margin-bottom:14px;">Tabel cu absolut toate extragerile din arhivă pentru jocul ales mai jos — de la cea mai recentă extragere adăugată, în ordine descrescătoare, până la prima extragere a jocului respectiv (1993 pentru 6/49, 1995 pentru 5/40, 1998 pentru Noroc, 2016 pentru Joker). E aceeași arhivă completă (arhiva de bază + orice extragere adaugi manual) folosită peste tot în aplicație — de aceea tabelul se actualizează automat, fără nimic suplimentar de făcut, de fiecare dată când adaugi o extragere nouă. Coloana <b>Repetare</b> arată dacă acea combinație exactă (aceleași numere, indiferent de ordine) s-a mai extras vreodată în restul arhivei. Coloana <b>Repetate 4/6, 5/6, 6/6</b> (denumirea se adaptează automat la jocul selectat) scanează, pentru fiecare extragere din tabel, toată arhiva + extragerile adăugate și arată — dacă există — cu ce alte extrageri s-a suprapus parțial (numărul extragerii, data și, cu verde aprins, exact care numere sunt comune). Sub titlurile coloanelor Data extragerii și Repetare poți filtra tabelul tastând ce cauți.</p>
     <div class="tabs" id="fullArchiveGameTabs" style="margin-bottom:14px;"></div>
     <button class="gen-btn" id="fullArchiveShowBtn">Afișează arhiva completă</button>
     <div class="status-msg" id="fullArchiveStatus" style="margin-top:10px;"></div>
@@ -8706,6 +8706,36 @@ function renderArchiveGameTabs(){
     el.appendChild(b);
   });
 }
+// Coloana "Repetate X/Y" din Arhivă completă: pentru o extragere reală (target), reutilizează
+// EXACT computeRepeatLevels (aceeași funcție folosită la "Ultima extragere" și la variantele
+// generate) ca să afle, pe cele 3 niveluri de sus (ex. 4/6, 5/6, 6/6 pentru un joc cu 6 numere),
+// dacă și cu ce alte extrageri reale din toată arhiva (+ extragerile adăugate) s-a suprapus —
+// numărul extragerii, data și, pentru jocurile cu bile, exact care numere sunt comune (evidențiate
+// cu verde aprins). Rezultatul e un fragment HTML gata de pus direct în celula tabelului.
+function buildArchiveRepeatCellHtml(target, draws, pick, isDigit){
+  const levels = computeRepeatLevels(target, draws, pick, isDigit);
+  const CAP = 3;
+  return levels.map(r=>{
+    const label = `${r.level}/${pick}`;
+    if(r.count === 0){
+      return `<div style="margin-bottom:5px; color:var(--muted);"><b>${label}:</b> —</div>`;
+    }
+    const shown = r.matches.slice(0, CAP);
+    const rows = shown.map(m=>{
+      let numsHtml;
+      if(isDigit){
+        numsHtml = `<span class="mono">${m.nums}</span>`;
+      } else {
+        const matchedSet = new Set(m.matched);
+        numsHtml = m.nums.map(n=> matchedSet.has(n) ? `<b style="color:#3ecf6e;">${n}</b>` : n).join(', ');
+      }
+      return `<div style="font-size:11px; line-height:1.6;">#${m.idx+1} <span class="mono">${fmtDateShort(m.date)}</span>: ${numsHtml}</div>`;
+    }).join('');
+    const more = r.matches.length > CAP ? `<div style="font-size:10.5px; color:var(--muted);">+${r.matches.length-CAP} mai multe</div>` : '';
+    return `<div style="margin-bottom:6px;"><b style="color:var(--gold);">${label}</b> (${r.count})${rows}${more}</div>`;
+  }).join('');
+}
+
 function renderFullArchiveTable(game){
   const cfg = GAMES[game];
   const drawsAsc = getAllDraws(game); // base archive + manually-added draws, sorted ascending by date
@@ -8718,15 +8748,19 @@ function renderFullArchiveTable(game){
     return;
   }
   const repeatFlagsAsc = computeExactRepeatFlags(drawsAsc, cfg.isDigit);
+  const repeatPick = cfg.isDigit ? cfg.digits : cfg.pick;
+  const repeatColLabel = `Repetate ${repeatPick-2}/${repeatPick}, ${repeatPick-1}/${repeatPick}, ${repeatPick}/${repeatPick}`;
   // Build display rows most-recent-first (as requested), each with its own pre-formatted strings
-  // so the filter handlers below can re-render instantly without recomputing anything.
+  // so the filter handlers below can re-render instantly without recomputing anything. Scanarea
+  // 4/6-5/6-6/6 se face o singură dată aici (nu la fiecare filtrare), la fel ca restul coloanelor.
   const rowData = [];
   for(let i=drawsAsc.length-1; i>=0; i--){
     const d = drawsAsc[i];
     rowData.push({
       dateStr: fmtDateShort(d.date),
       numsStr: cfg.isDigit ? d.digits.join('') : d.nums.slice().sort((a,b)=>a-b).join(', '),
-      repeat: repeatFlagsAsc[i]
+      repeat: repeatFlagsAsc[i],
+      repeatCellHtml: buildArchiveRepeatCellHtml(d, drawsAsc, repeatPick, cfg.isDigit)
     });
   }
   archiveCurrentRows = rowData;
@@ -8734,11 +8768,12 @@ function renderFullArchiveTable(game){
 
   resultsEl.innerHTML = `<div class="table-scroll"><table class="data-table" style="width:100%;">
     <thead>
-      <tr><th>Data extragerii</th><th>Numere extrase${cfg.isDigit ? ' (număr Noroc, 7 cifre)' : ' (ordine cresc.)'}</th><th>Repetare</th></tr>
+      <tr><th>Data extragerii</th><th>Numere extrase${cfg.isDigit ? ' (număr Noroc, 7 cifre)' : ' (ordine cresc.)'}</th><th>Repetare</th><th>${repeatColLabel}</th></tr>
       <tr>
         <th><input type="text" id="archiveFilterDate" placeholder="ex: 2020 sau 12.07" class="archive-filter-input"></th>
         <th></th>
         <th><input type="text" id="archiveFilterRepeat" placeholder="Da / Nu" class="archive-filter-input"></th>
+        <th></th>
       </tr>
     </thead>
     <tbody id="fullArchiveTbody"></tbody>
@@ -8758,7 +8793,7 @@ function renderFullArchiveTable(game){
     const tbody = document.getElementById('fullArchiveTbody');
     tbody.innerHTML = filtered.map(r=>{
       const rep = r.repeat ? '<span style="color:var(--red); font-weight:700;">Da</span>' : '<span style="color:var(--green);">Nu</span>';
-      return `<tr><td class="mono">${r.dateStr}</td><td class="mono">${r.numsStr}</td><td style="text-align:center;">${rep}</td></tr>`;
+      return `<tr><td class="mono">${r.dateStr}</td><td class="mono">${r.numsStr}</td><td style="text-align:center;">${rep}</td><td>${r.repeatCellHtml}</td></tr>`;
     }).join('');
     if(statusEl){
       statusEl.className = 'status-msg ok';
