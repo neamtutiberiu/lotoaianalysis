@@ -737,6 +737,12 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
 
   <div class="panel" id="fullArchivePanel" style="display:none;">
     <h2>Arhivă completă <span class="sub" id="fullArchiveSub">— toate extragerile reale, cele mai recente primele</span></h2>
+    <div class="archive-search-box" style="margin:4px 0 16px; padding:14px 16px; background:var(--surface2); border:1px solid var(--border); border-radius:10px;">
+      <label for="archiveComboSearchInput" style="display:block; font-size:12.5px; color:var(--muted); margin-bottom:8px;">Caută orice combinație de numere în arhiva jocului ales mai jos — vezi dacă s-a mai repetat și cu câte numere (numere separate prin virgulă sau spațiu)</label>
+      <input type="text" id="archiveComboSearchInput" placeholder="ex: 5, 12, 23, 34, 45, 49" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13.5px;">
+      <div class="status-msg" id="archiveComboSearchStatus" style="margin-top:8px;"></div>
+      <div id="archiveComboSearchResults" style="margin-top:10px;"></div>
+    </div>
     <p class="small-note" style="margin-bottom:14px;">Tabel cu absolut toate extragerile din arhivă pentru jocul ales mai jos — de la cea mai recentă extragere adăugată, în ordine descrescătoare, până la prima extragere a jocului respectiv (1993 pentru 6/49, 1995 pentru 5/40, 1998 pentru Noroc, 2016 pentru Joker). E aceeași arhivă completă (arhiva de bază + orice extragere adaugi manual) folosită peste tot în aplicație — de aceea tabelul se actualizează automat, fără nimic suplimentar de făcut, de fiecare dată când adaugi o extragere nouă. Coloana <b>Repetare</b> arată dacă acea combinație exactă (aceleași numere, indiferent de ordine) s-a mai extras vreodată în restul arhivei. Sub titlurile coloanelor Data extragerii și Repetare poți filtra tabelul tastând ce cauți.</p>
     <div class="tabs" id="fullArchiveGameTabs" style="margin-bottom:14px;"></div>
     <button class="gen-btn" id="fullArchiveShowBtn">Afișează arhiva completă</button>
@@ -8548,6 +8554,113 @@ function computeExactRepeatFlags(draws, isDigit){
   draws.forEach(d=>{ const k = keyOf(d); counts[k] = (counts[k]||0)+1; });
   return draws.map(d=> counts[keyOf(d)] > 1);
 }
+
+// ---------- ARCHIVE COMBO SEARCH ("caută orice combinație de numere") ----------
+// Given an arbitrary combination the person types in (not necessarily a real historical draw),
+// checks every real draw in the archive and buckets matches by overlap level — e.g. for a 6/49
+// search: how many draws shared exactly 3, 4, 5 or 6 numbers with it. Reuses the same overlap-
+// counting idea as computeRepeatLevels (used elsewhere for real-draw repeat checks), generalized
+// to accept a raw numbers array and to report every level from 3 up to the game's pick count
+// (not just the top 3), since the person explicitly wants the full 3/6..6/6-style breakdown.
+function computeComboRepeatLevels(targetVals, draws, pick, isDigit){
+  const maxLevel = Math.min(pick, targetVals.length);
+  const minLevel = Math.min(3, maxLevel);
+  const levels = [];
+  for(let L=minLevel; L<=maxLevel; L++) levels.push(L);
+  const out = levels.map(L=> ({ level:L, count:0, mostRecentDate:null, matches:[] }));
+  draws.forEach((d,idx)=>{
+    let m, matched=[], numsStr;
+    if(isDigit){
+      m = 0;
+      for(let i=0;i<Math.min(7,targetVals.length);i++) if(d.digits[i] === targetVals[i]) m++;
+      numsStr = d.digits.join('');
+    } else {
+      matched = targetVals.filter(n=> d.nums.includes(n));
+      m = matched.length;
+      numsStr = d.nums.slice().sort((a,b)=>a-b).join(', ');
+    }
+    out.forEach(r=>{
+      if(m === r.level){
+        r.count++;
+        r.mostRecentDate = d.date;
+        r.matches.push({ idx, date:d.date, nums:numsStr, matched: isDigit ? null : matched.slice().sort((a,b)=>a-b) });
+      }
+    });
+  });
+  return out;
+}
+function formatComboRepeatLine(r, pick){
+  const label = `${r.level}/${pick}`;
+  if(r.count === 0) return `${label}: nu s-a întâmplat niciodată în arhivă`;
+  return `${label}: da — de ${r.count}× în arhivă, cel mai recent la ${fmtDateShort(r.mostRecentDate)}`;
+}
+function renderComboSearchResult(container, levels, pick){
+  container.innerHTML = '';
+  const anyMatch = levels.some(r=> r.count>0);
+  const exactMatch = levels.find(r=> r.level===pick);
+  const summary = document.createElement('p');
+  summary.className = 'small-note';
+  summary.style.cssText = 'margin-bottom:10px; font-weight:700;';
+  summary.innerHTML = anyMatch
+    ? `<span style="color:var(--gold);">S-a mai repetat:</span> DA${exactMatch ? ` — vezi detaliile pe niveluri mai jos` : ''}`
+    : `<span style="color:var(--muted);">S-a mai repetat:</span> NU — nicio extragere reală din arhivă nu a avut ${levels[0] ? levels[0].level : 3}+ numere în comun cu combinația căutată.`;
+  container.appendChild(summary);
+
+  const CAP = 20;
+  levels.forEach(r=>{
+    const tag = document.createElement('div');
+    const found = r.count>0;
+    tag.className = 'pop-tag ' + (found ? (r.level>=pick ? 'pop-high' : 'pop-mid') : 'pop-low');
+    tag.textContent = formatComboRepeatLine(r, pick);
+    container.appendChild(tag);
+    if(found){
+      const detailDiv = document.createElement('div');
+      detailDiv.style.cssText = 'margin:6px 0 10px; font-size:12px; line-height:1.7;';
+      const shown = r.matches.slice(0, CAP);
+      const rows = shown.map(m=>{
+        const matchedStr = m.matched ? ` — numere comune: <b style="color:var(--gold);">${m.matched.join(', ')}</b>` : '';
+        return `<div class="repeat-detail-row"><span class="mono" style="color:var(--muted);">#${m.idx+1}</span> <span class="mono">${fmtDateShort(m.date)}</span> → <span class="mono">${m.nums}</span>${matchedStr}</div>`;
+      }).join('');
+      const cappedNote = r.matches.length > CAP ? `<div class="small-note" style="margin-top:4px;">...și alte ${r.matches.length-CAP} cazuri (${r.matches.length} total).</div>` : '';
+      detailDiv.innerHTML = rows + cappedNote;
+      container.appendChild(detailDiv);
+    }
+  });
+}
+function performArchiveComboSearch(){
+  const inputEl = document.getElementById('archiveComboSearchInput');
+  const statusEl = document.getElementById('archiveComboSearchStatus');
+  const resultsEl = document.getElementById('archiveComboSearchResults');
+  if(!inputEl || !statusEl || !resultsEl) return;
+  const raw = inputEl.value.trim();
+  if(!raw){ statusEl.className='status-msg'; statusEl.textContent=''; resultsEl.innerHTML=''; return; }
+
+  const cfg = GAMES[archiveSelectedGame];
+  const draws = getAllDraws(archiveSelectedGame);
+
+  if(cfg.isDigit){
+    const digits = raw.replace(/[^0-9]/g,'').split('').map(Number);
+    if(digits.length < 3){ statusEl.className='status-msg err'; statusEl.textContent='Introdu cel puțin 3 cifre (număr Noroc, poziții de la stânga la dreapta).'; resultsEl.innerHTML=''; return; }
+    const trimmed = digits.slice(0,7);
+    const truncNote = digits.length>7 ? ' (folosite doar primele 7 cifre)' : '';
+    const levels = computeComboRepeatLevels(trimmed, draws, 7, true);
+    statusEl.className='status-msg ok';
+    statusEl.textContent = `Căutare: ${trimmed.join('')}${truncNote} — în arhiva Noroc (${draws.length} extrageri).`;
+    renderComboSearchResult(resultsEl, levels, 7);
+  } else {
+    const nums = raw.split(/[,\s]+/).map(s=> parseInt(s,10)).filter(n=> !isNaN(n));
+    const unique = [...new Set(nums)];
+    if(unique.length < 2){ statusEl.className='status-msg err'; statusEl.textContent='Introdu cel puțin 2 numere valide, separate prin virgulă sau spațiu.'; resultsEl.innerHTML=''; return; }
+    const outOfRange = unique.some(n=> n<1 || n>cfg.range);
+    if(outOfRange){ statusEl.className='status-msg err'; statusEl.textContent=`Numerele trebuie să fie între 1 și ${cfg.range}, pentru ${cfg.label}.`; resultsEl.innerHTML=''; return; }
+    const capped = unique.slice(0, cfg.pick);
+    const truncNote = unique.length>cfg.pick ? ` (folosite doar primele ${cfg.pick})` : '';
+    const levels = computeComboRepeatLevels(capped, draws, cfg.pick, false);
+    statusEl.className='status-msg ok';
+    statusEl.textContent = `Căutare: ${capped.slice().sort((a,b)=>a-b).join(', ')}${truncNote} — în arhiva ${cfg.label} (${draws.length} extrageri).`;
+    renderComboSearchResult(resultsEl, levels, cfg.pick);
+  }
+}
 function renderArchiveGameTabs(){
   const el = document.getElementById('fullArchiveGameTabs');
   if(!el) return;
@@ -8560,6 +8673,7 @@ function renderArchiveGameTabs(){
       archiveSelectedGame = k;
       renderArchiveGameTabs();
       if(archiveTableShown) renderFullArchiveTable(archiveSelectedGame);
+      performArchiveComboSearch();
     };
     el.appendChild(b);
   });
@@ -8592,7 +8706,7 @@ function renderFullArchiveTable(game){
 
   resultsEl.innerHTML = `<div class="table-scroll"><table class="data-table" style="width:100%;">
     <thead>
-      <tr><th>Data extragerii</th><th>Numere extrase${cfg.isDigit ? ' (număr Noroc, 7 cifre)' : ' (ordine crescătoare)'}</th><th>Repetare</th></tr>
+      <tr><th>Data extragerii</th><th>Numere extrase${cfg.isDigit ? ' (număr Noroc, 7 cifre)' : ' (ordine cresc.)'}</th><th>Repetare</th></tr>
       <tr>
         <th><input type="text" id="archiveFilterDate" placeholder="ex: 2020 sau 12.07" class="archive-filter-input"></th>
         <th></th>
@@ -8633,6 +8747,7 @@ function renderFullArchiveTable(game){
 function renderFullArchivePanel(){
   renderArchiveGameTabs();
   if(archiveTableShown) renderFullArchiveTable(archiveSelectedGame);
+  performArchiveComboSearch();
 }
 
 function mean(arr){ return arr.reduce((a,b)=>a+b,0)/(arr.length||1); }
@@ -12020,6 +12135,8 @@ document.getElementById('fullArchiveShowBtn').addEventListener('click', (e)=>{
     btn.disabled = false;
   }, 20);
 });
+
+document.getElementById('archiveComboSearchInput').addEventListener('input', performArchiveComboSearch);
 
 document.getElementById('addDrawBtn').addEventListener('click', async ()=>{
   const rawDateVal = document.getElementById('newDate').value.trim();
