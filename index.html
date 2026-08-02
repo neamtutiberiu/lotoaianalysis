@@ -421,9 +421,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
         <div class="countdown-clock mono" id="topCountdown">—</div>
       </div>
       <div class="version-block">
-        <span class="version-num">Ver 4.7</span>
+        <span class="version-num">Ver 4.8</span>
         <span class="version-date">Actualizat: 02.08.2026</span>
-        <span class="version-note">Analiza finală: nou Pasul 4 — caută o alternativă de 3 variante care nu s-au mai repetat NICIODATĂ în arhivă (4+/5+/6+ numere comune) și compară scorul ei cu variantele finale, cu verdict onest (probabilitatea de câștig rămâne mereu egală, comparația e doar despre alinierea cu analiza). Analiza finală se schimbă vizibil la fiecare regenerare din Generator, rămânând stabilă altfel.</span>
+        <span class="version-note">Analiza finală: buton nou "Generează alte 3 variante finale" — generează oricând o rundă nouă, diversificată, cu aceeași rigoare (14 indicatori + consens + Pasul 4), independent de Generator/Recomandate. Pasul 4 compară cu o alternativă fără nicio repetare istorică (4+/5+/6+), cu verdict onest.</span>
       </div>
     </div>
     <div class="topbar-tabs">
@@ -546,10 +546,12 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       Pe lângă cele 3 variante finale, aplicația caută — cu exact aceeași analiză pe 14 indicatori + consens — o a doua alternativă de 3 variante care <b>nu s-au mai întâmplat niciodată</b> în toată arhiva cu 4, 5 sau 6 numere comune față de nicio extragere reală. Le compară pe scor și oferă un verdict.<br><br>
 
       <b style="color:var(--gold);">LIVE — recalculare automată</b><br>
-      Se recalculează la fiecare randare a paginii (inclusiv după fiecare extragere nouă adăugată) și de fiecare dată când apeși „Recalculează variantele" la Generator — rămâne mereu sincronizată cu starea curentă a celorlalte 2 secțiuni, nu e o captură fixă.<br><br>
+      Se recalculează la fiecare randare a paginii (inclusiv după fiecare extragere nouă adăugată) și de fiecare dată când apeși „Recalculează variantele" la Generator — rămâne mereu sincronizată cu starea curentă a celorlalte 2 secțiuni, nu e o captură fixă. În plus, poți oricând apăsa butonul „Generează alte 3 variante finale" de mai jos pentru o rundă suplimentară — tot cu cei 14 indicatori + consens, aceeași rigoare, doar diversificată explicit față de rundele anterioare (excludere fermă, ca la Generator).<br><br>
 
       <b>Onestitate:</b> combinarea a 3 metode statistice tot nu schimbă natura jocului — fiecare extragere reală e un eveniment complet independent. Aceste variante au trecut prin cea mai riguroasă analiză din aplicație, dar asta nu garantează câștigul. Iar comparația de la Pasul 4 nu înseamnă că un set are șanse matematice mai mari de câștig — o extragere reală nu are memorie, probabilitatea e mereu identică pentru orice combinație validă; compară doar alinierea cu metoda de analiză.
     </p>
+    <button class="gen-btn" id="finalAnalysisRegenBtn">Generează alte 3 variante finale</button>
+    <div style="height:14px;"></div>
     <div class="tickets" id="finalAnalysisTicketsWrap"></div>
     <div id="finalAnalysisVerdictWrap"></div>
     <p class="small-note" id="finalAnalysisNote" style="margin-top:14px;"></p>
@@ -10935,7 +10937,7 @@ function buildComboRepeatBlockEl(targetVals, draws, pick, isDigit, minLevel){
   return div;
 }
 
-function renderFinalAnalysisPanel(game, stats){
+function renderFinalAnalysisPanel(game, stats, forceRegen){
   const cfg = GAMES[game];
   const wrap = document.getElementById('finalAnalysisTicketsWrap');
   const noteEl = document.getElementById('finalAnalysisNote');
@@ -10953,7 +10955,7 @@ function renderFinalAnalysisPanel(game, stats){
     const inputsKey = finalAnalysisInputsKey(stats, recDigitTickets, genDigitTickets, true);
     const cachedFinal = finalAnalysisCache[game];
     let tickets, blendedPosScores, agreementByPos, maxAgreement;
-    if(cachedFinal && cachedFinal.inputsKey === inputsKey && cachedFinal.isDigit){
+    if(!forceRegen && cachedFinal && cachedFinal.inputsKey === inputsKey && cachedFinal.isDigit){
       tickets = cachedFinal.tickets; blendedPosScores = cachedFinal.blendedPosScores;
       agreementByPos = cachedFinal.agreementByPos; maxAgreement = cachedFinal.maxAgreement;
     } else {
@@ -11024,7 +11026,7 @@ function renderFinalAnalysisPanel(game, stats){
     const inputsKey = finalAnalysisInputsKey(stats, recCombos, genCombos, false);
     const cachedFinal = finalAnalysisCache[game];
     let tickets, blendedScores, agreementCount, maxAgreement, poolTop35;
-    if(cachedFinal && cachedFinal.inputsKey === inputsKey && !cachedFinal.isDigit){
+    if(!forceRegen && cachedFinal && cachedFinal.inputsKey === inputsKey && !cachedFinal.isDigit){
       tickets = cachedFinal.tickets; blendedScores = cachedFinal.blendedScores;
       agreementCount = cachedFinal.agreementCount; maxAgreement = cachedFinal.maxAgreement;
       poolTop35 = cachedFinal.poolTop35;
@@ -12715,6 +12717,23 @@ document.getElementById('genBtn').addEventListener('click', (e)=>{
     const stats = cfg.isDigit ? computeNorocStats() : computeBallStats(currentGame);
     renderTickets(currentGame, stats);
     renderFinalAnalysisPanel(currentGame, stats);
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }, 20);
+});
+
+document.getElementById('finalAnalysisRegenBtn').addEventListener('click', (e)=>{
+  const btn = e.currentTarget;
+  const originalText = btn.textContent;
+  btn.textContent = 'Se calculează...';
+  btn.disabled = true;
+  setTimeout(()=>{
+    const cfg = GAMES[currentGame];
+    const stats = cfg.isDigit ? computeNorocStats() : computeBallStats(currentGame);
+    // forceRegen=true: recalculează chiar dacă Recomandate/Generator nu s-au schimbat, cu aceeași
+    // excludere fermă folosită și la schimbări reale — garantează o rundă nouă, vizibil diferită,
+    // fără să atingă deloc "Variante recomandate" sau "Generator de variante".
+    renderFinalAnalysisPanel(currentGame, stats, true);
     btn.textContent = originalText;
     btn.disabled = false;
   }, 20);
