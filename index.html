@@ -33,7 +33,7 @@ body{
 h1,h2,h3{ font-family:'Space Grotesk',sans-serif; margin:0; }
 .mono{ font-family:'JetBrains Mono',monospace; }
 
-.wrap{ max-width:1100px; margin:0 auto; }
+.wrap{ max-width:1400px; margin:0 auto; }
 
 /* HEADER */
 .topbar{
@@ -423,9 +423,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
         <div class="countdown-clock mono" id="topCountdown">—</div>
       </div>
       <div class="version-block">
-        <span class="version-num">Ver 5.3</span>
+        <span class="version-num">Ver 5.5</span>
         <span class="version-date">Actualizat: 02.08.2026</span>
-        <span class="version-note">Arhivă completă: mai mult spațiu între coloane, titluri și conținut centrate, distanță mai mare între rânduri în coloana de repetări. Coloană nouă "Nr extr" + search bar sub "Numere extrase" pentru orice număr/combinație.</span>
+        <span class="version-note">Arhivă completă: căutarea din "Numere extrase" e acum live, ca la dată — se restrânge pe măsură ce tastezi fiecare cifră, în loc să ceară un număr complet exact.</span>
       </div>
     </div>
     <div class="topbar-tabs">
@@ -773,7 +773,7 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <div class="status-msg" id="archiveComboSearchStatus" style="margin-top:8px;"></div>
       <div id="archiveComboSearchResults" style="margin-top:10px;"></div>
     </div>
-    <p class="small-note" style="margin-bottom:14px;">Tabel cu absolut toate extragerile din arhivă pentru jocul ales mai jos — de la cea mai recentă extragere adăugată, în ordine descrescătoare, până la prima extragere a jocului respectiv (1993 pentru 6/49, 1995 pentru 5/40, 1998 pentru Noroc, 2016 pentru Joker). E aceeași arhivă completă (arhiva de bază + orice extragere adaugi manual) folosită peste tot în aplicație — de aceea tabelul se actualizează automat, fără nimic suplimentar de făcut, de fiecare dată când adaugi o extragere nouă. Coloana <b>Nr extr</b> arată poziția extragerii în arhivă, numărând de la prima extragere reală a jocului — aceeași numerotare "#N" folosită și în detaliile din coloana de repetări, ca să poți face legătura direct între ele. Coloana <b>Repetate 4/6, 5/6, 6/6</b> (denumirea se adaptează automat la jocul selectat) scanează, pentru fiecare extragere din tabel, toată arhiva + extragerile adăugate și arată — pe fiecare din cele 3 niveluri, în ordine crescătoare — dacă și cu ce alte extrageri s-a suprapus (numărul extragerii, data și, cu verde aprins, exact care numere sunt comune; nivelul cel mai de sus, ex. 6/6, acoperă și potrivirea exactă/completă). Sub titlul coloanei Data extragerii poți filtra după dată, iar sub titlul coloanei Numere extrase poți căuta un număr sau o combinație de numere (separate prin virgulă sau spațiu) — tabelul arată instant toate extragerile din arhivă care conțin acele numere.</p>
+    <p class="small-note" style="margin-bottom:14px;">Tabel cu absolut toate extragerile din arhivă pentru jocul ales mai jos — de la cea mai recentă extragere adăugată, în ordine descrescătoare, până la prima extragere a jocului respectiv (1993 pentru 6/49, 1995 pentru 5/40, 1998 pentru Noroc, 2016 pentru Joker). E aceeași arhivă completă (arhiva de bază + orice extragere adaugi manual) folosită peste tot în aplicație — de aceea tabelul se actualizează automat, fără nimic suplimentar de făcut, de fiecare dată când adaugi o extragere nouă. Coloana <b>Nr extr</b> arată poziția extragerii în arhivă, numărând de la prima extragere reală a jocului — aceeași numerotare "#N" folosită și în detaliile din coloana de repetări, ca să poți face legătura direct între ele. Coloana <b>Repetate 4/6, 5/6, 6/6</b> (denumirea se adaptează automat la jocul selectat) scanează, pentru fiecare extragere din tabel, toată arhiva + extragerile adăugate și arată — pe fiecare din cele 3 niveluri, în ordine crescătoare — dacă și cu ce alte extrageri s-a suprapus (numărul extragerii, data și, cu verde aprins, exact care numere sunt comune; nivelul cel mai de sus, ex. 6/6, acoperă și potrivirea exactă/completă). Sub titlul coloanei Data extragerii poți filtra după dată, iar sub titlul coloanei Numere extrase poți căuta un număr sau o combinație de numere (separate prin virgulă sau spațiu) — căutarea e live, ca la dată: pe măsură ce tastezi fiecare cifră, tabelul arată instant toate extragerile din arhivă care conțin un număr ce se potrivește cu ce ai scris până acum (ex. "2" găsește 2, 12, 20-29, 32, 42 etc.; adaugă mai multe cifre ca să restrângi la un număr exact).</p>
     <div class="tabs" id="fullArchiveGameTabs" style="margin-bottom:14px;"></div>
     <button class="gen-btn" id="fullArchiveShowBtn">Afișează arhiva completă</button>
     <div class="status-msg" id="fullArchiveStatus" style="margin-top:10px;"></div>
@@ -8781,7 +8781,7 @@ function renderFullArchiveTable(game){
 
   resultsEl.innerHTML = `<div class="table-scroll"><table class="data-table archive-full-table" style="width:100%; table-layout:fixed;">
     <thead>
-      <tr><th style="width:9%;">Nr extr</th><th style="width:16%;">Data extragerii</th><th style="width:24%;">Numere extrase${cfg.isDigit ? ' (număr Noroc, 7 cifre)' : ' (ordine cresc.)'}</th><th style="width:51%;">${repeatColLabel}</th></tr>
+      <tr><th style="width:25%;">Nr extr</th><th style="width:25%;">Data extragerii</th><th style="width:25%;">Numere extrase${cfg.isDigit ? ' (număr Noroc, 7 cifre)' : ' (ordine cresc.)'}</th><th style="width:25%;">${repeatColLabel}</th></tr>
       <tr>
         <th></th>
         <th><input type="text" id="archiveFilterDate" placeholder="ex: 2020 sau 12.07" class="archive-filter-input"></th>
@@ -8796,14 +8796,20 @@ function renderFullArchiveTable(game){
     const dateQ = (document.getElementById('archiveFilterDate').value||'').trim().toLowerCase();
     const numsQRaw = (document.getElementById('archiveFilterNums').value||'').trim();
     const numsQDigits = cfg.isDigit ? numsQRaw.replace(/[^0-9]/g,'') : '';
-    const numsQNums = cfg.isDigit ? [] : numsQRaw.split(/[,\s]+/).map(s=>parseInt(s,10)).filter(n=>!isNaN(n));
+    // Căutare "live", ca la Data extragerii: fiecare grup de cifre tastat (separat prin virgulă
+    // sau spațiu) e căutat ca SUBȘIR în numerele extrase — deci ex. "2" găsește orice extragere cu
+    // 2, 12, 20-29, 32, 42 etc. (nu doar exact 2), iar pe măsură ce mai tastezi cifre (ex. "23"),
+    // rezultatele se restrâng automat la ce se potrivește cu tot ce ai scris până acum. Dacă tastezi
+    // mai multe grupuri (ex. "5, 23"), extragerea trebuie să conțină câte un număr care se
+    // potrivește cu FIECARE grup.
+    const numsQTokens = cfg.isDigit ? [] : numsQRaw.split(/[,\s]+/).filter(Boolean);
     const filtered = archiveCurrentRows.filter(r=>{
       if(dateQ && !r.dateStr.toLowerCase().includes(dateQ)) return false;
       if(numsQRaw){
         if(cfg.isDigit){
           if(!numsQDigits || !r.numsStr.includes(numsQDigits)) return false;
         } else {
-          if(!numsQNums.length || !numsQNums.every(n=> r.numsArr.includes(n))) return false;
+          if(!numsQTokens.length || !numsQTokens.every(tok=> r.numsArr.some(n=> String(n).includes(tok)))) return false;
         }
       }
       return true;
