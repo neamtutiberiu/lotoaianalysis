@@ -421,9 +421,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
         <div class="countdown-clock mono" id="topCountdown">—</div>
       </div>
       <div class="version-block">
-        <span class="version-num">Ver 4.4</span>
+        <span class="version-num">Ver 4.5</span>
         <span class="version-date">Actualizat: 02.08.2026</span>
-        <span class="version-note">Secțiune nouă "Analiza finală" (sub Generator de variante) — combină arhiva completă, Variante recomandate și Generator de variante într-un scor final cu procentaj, trend și repetări istorice pe variantă. Arhivă completă: search bar pentru orice combinație, cu repetări pe niveluri (3/6...6/6). Generator + Variante recomandate diversificate de la o generare/extragere la alta.</span>
+        <span class="version-note">Analiza finală: variante afișate strict în ordinea punctajului, repetările istorice arată doar 4+ numere comune (nu mai bruiază cu potriviri de 3). Eliminat "Ultimele 10 extrageri" (înlocuit de Arhivă completă). Secțiune "Analiza finală" combină arhiva completă, Variante recomandate și Generator de variante într-un scor final cu procentaj, trend și repetări istorice.</span>
       </div>
     </div>
     <div class="topbar-tabs">
@@ -530,17 +530,17 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <b style="color:var(--gold);">Metodologia completă — cum sunt alese cele 3 variante finale:</b><br><br>
       Această secțiune nu e o metodă nouă separată — combină, într-o singură formulă, exact cele trei surse: <b>arhiva completă a jocului</b> (inclusiv orice extragere adăugată nou), rezultatul curent al secțiunii <b>„Variante recomandate pentru extragerea curentă"</b> și rezultatul curent (ultimul lot generat) al secțiunii <b>„Generator de variante"</b>.<br><br>
 
-      <b style="color:var(--gold);">PASUL 1 — Cei 14 indicatori (identic cu secțiunile de mai sus)</b><br>
-      Fiecare număr primește scorul lui din <b>toată arhiva jocului</b> (din 1993 pentru 6/49, 1995 pentru 5/40, 1998 pentru Noroc, 2016 pentru Joker) prin cei 5 indici de bază (frecvență, regularitate/hazard, momentum, z-score, sinergie perechi), apoi fiecare combinație candidată e evaluată cu scorul pe 9 componente (percentilă medie, potrivire sumă, par/impar, jos/sus, acoperire zone, numere apropiate, suprapunere cu ultima extragere, uniformitate distanțe) — exact aceiași <b>14 indicatori</b> ca la „Variante recomandate" și „Generator de variante".<br><br>
+      <b style="color:var(--gold);">PASUL 1 — Scanare completă și continuă a arhivei (tehnică + fundamentală)</b><br>
+      Fiecare număr primește scorul lui dintr-o <b>scanare completă a întregii arhive</b> a jocului (din 1993 pentru 6/49, 1995 pentru 5/40, 1998 pentru Noroc, 2016 pentru Joker) — nu doar extrageri recente. Scanarea acoperă tot ce există acum <b>și orice extragere adăugată în viitor</b>: de fiecare dată când apare o extragere nouă, tiparele (frecvență, regularitate/hazard, momentum recent, z-score, sinergie perechi — partea „tehnică") și forma tipică a combinațiilor reale (sumă, par/impar, jos/sus, acoperire zone, numere apropiate, suprapunere cu ultima extragere, uniformitate distanțe — partea „fundamentală") se recalculează de la zero din toată arhiva, nu dintr-o valoare fixă memorată. 5+9 = aceiași <b>14 indicatori</b> ca la „Variante recomandate" și „Generator de variante".<br><br>
 
       <b style="color:var(--gold);">PASUL 2 — Consens cu cele 2 secțiuni de mai sus</b><br>
       Pe lângă scorul din Pasul 1, fiecare număr primește și un <b>scor de consens</b>: în câte din cele 6 variante afișate ACUM de „Variante recomandate" (3 variante) și „Generator de variante" (ultimele 3 generate) apare acel număr. Un număr ales independent de ambele metode — deși sunt calculate diferit (una fixă/determinist-optimă, cealaltă diversificată/ponderat-aleatorie) — e un semnal statistic mai puternic decât oricare metodă singură.<br><br>
 
       <b style="color:var(--gold);">PASUL 3 — Scorul final combinat + căutare exhaustivă</b><br>
-      Scor final pe număr = <b>70% scor din cei 14 indicatori</b> + <b>30% scor de consens</b>. Cu acest scor combinat rulează aceeași căutare exhaustivă (~1.600.000 combinații posibile din pool-ul de top 35 numere) folosită peste tot în aplicație, iar cele 3 variante finale sunt cele mai bine punctate 3 combinații care nu se suprapun între ele.<br><br>
+      Scor final pe număr = <b>70% scor din analiza completă a arhivei (Pasul 1)</b> + <b>30% scor de consens (Pasul 2)</b>. Cu acest scor combinat rulează aceeași căutare exhaustivă (~1.600.000 combinații posibile din pool-ul de top 35 numere) folosită peste tot în aplicație, iar cele 3 variante finale sunt cele mai bine punctate 3 combinații care nu se suprapun între ele — afișate <b>în ordinea punctajului</b> (Varianta finală 1 = scorul cel mai mare).<br><br>
 
       <b style="color:var(--gold);">CE AFIȘEAZĂ FIECARE VARIANTĂ FINALĂ</b><br>
-      <b>Scor</b> (1-10, din formula de mai sus), <b>procentaj</b> (percentila medie a numerelor alese față de restul), <b>trend</b> (dacă numerele alese sunt, în medie, în creștere, în scădere sau stabile față de ultimele extrageri — comparație statistică relativă, nu o predicție de direcție viitoare) și <b>consens</b> (cu câte din cele 6 variante Recomandate+Generator se suprapune, în medie, pe număr). Sub fiecare variantă apare și verificarea în toată arhiva: dacă acea combinație (sau părți din ea) s-a mai întâmplat vreodată, cu câte numere comune (de la minim 3 până la potrivire totală, în funcție de câte numere se extrag la acest joc), la ce dată.<br><br>
+      <b>Scor</b> (1-10, din formula de mai sus), <b>procentaj</b> (percentila medie a numerelor alese față de restul), <b>trend</b> (dacă numerele alese sunt, în medie, în creștere, în scădere sau stabile față de ultimele extrageri — comparație statistică relativă, nu o predicție de direcție viitoare) și <b>consens</b> (cu câte din cele 6 variante Recomandate+Generator se suprapune, în medie, pe număr). Sub fiecare variantă apare și verificarea în toată arhiva: dacă acea combinație (sau părți din ea) s-a mai întâmplat, cu 4, 5 sau toate numerele comune (nivelurile foarte joase, cu prea multe potriviri ca să fie relevante, sunt omise aici — le găsești oricând complete la căutarea din „Arhivă completă"), la ce dată.<br><br>
 
       <b style="color:var(--gold);">LIVE — recalculare automată</b><br>
       Se recalculează la fiecare randare a paginii (inclusiv după fiecare extragere nouă adăugată) și de fiecare dată când apeși „Recalculează variantele" la Generator — rămâne mereu sincronizată cu starea curentă a celorlalte 2 secțiuni, nu e o captură fixă.<br><br>
@@ -620,11 +620,6 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     <h2>Metode matematice de predicție folosite <span class="sub" id="methodsSub"></span></h2>
     <ul class="method-list" id="methodsList"></ul>
     <p class="small-note">Toate cele 5 metode de mai sus alimentează atât rubrica "Analiză completă", cât și "Generatorul de variante" — sunt aceleași calcule, aplicate consistent în toată aplicația, pe întreaga arhivă disponibilă pentru jocul selectat.</p>
-  </div>
-
-  <div class="panel">
-    <h2>Ultimele 10 extrageri <span class="sub" id="lastDrawsSub">— pentru jocul selectat</span></h2>
-    <div class="last-draws-grid" id="lastDrawsGrid"></div>
   </div>
 
   <div class="panel" id="backtestPanel">
@@ -10649,8 +10644,13 @@ function generate3FinalTickets(stats, cfg, recCombos, genCombos){
     const best = topK[0];
     const combo = best.combo.slice().sort((a,b)=>a-b);
     pool = pool.filter(x=> !combo.includes(x));
-    tickets.push({ combo, joker: jokerRanked ? jokerRanked[t] : null });
+    tickets.push({ combo, joker: jokerRanked ? jokerRanked[t] : null, _finalScore: best.score });
   }
+  // Garantează explicit "în ordinea punctajului" — biletul 1 e mereu cel cu scorul final cel mai
+  // mare dintre cele 3, indiferent de ordinea în care au fost extrase din pool-ul care se
+  // micșorează progresiv mai sus.
+  tickets.sort((a,b)=> b._finalScore - a._finalScore);
+  tickets.forEach(t=> delete t._finalScore);
   return { tickets, baseScores, blendedScores, agreementCount, maxAgreement };
 }
 
@@ -10702,7 +10702,12 @@ function generate3FinalNorocTickets(stats, recDigitTickets, genDigitTickets){
       tickets[t].push(picked);
     }
   }
-  return { tickets, posScores, blendedPosScores, agreementByPos, maxAgreement };
+  // Garantează explicit "în ordinea punctajului", la fel ca la jocurile cu bile.
+  const sortedTickets = tickets
+    .map(digits=> ({ digits, score: avgPercentileNorocOf(digits, blendedPosScores) }))
+    .sort((a,b)=> b.score - a.score)
+    .map(x=> x.digits);
+  return { tickets: sortedTickets, posScores, blendedPosScores, agreementByPos, maxAgreement };
 }
 
 function buildFinalAnalysisNarrative(qualityInfo, pct, trend, agreeAvg, maxAgreement, rankLabel){
@@ -10715,10 +10720,11 @@ function buildFinalAnalysisNarrative(qualityInfo, pct, trend, agreeAvg, maxAgree
 // Wrapper subțire peste computeComboRepeatLevels + renderComboSearchResult (deja construite pentru
 // search bar-ul din "Arhivă completă") — returnează un div gata de atașat, fără să scrie direct
 // într-un id fix, ca să poată fi refolosit aici pentru fiecare din cele 3 variante finale.
-function buildComboRepeatBlockEl(targetVals, draws, pick, isDigit){
+function buildComboRepeatBlockEl(targetVals, draws, pick, isDigit, minLevel){
   const div = document.createElement('div');
   div.style.cssText = 'margin-bottom:4px;';
-  const levels = computeComboRepeatLevels(targetVals, draws, pick, isDigit);
+  let levels = computeComboRepeatLevels(targetVals, draws, pick, isDigit);
+  if(minLevel) levels = levels.filter(l=> l.level >= minLevel);
   renderComboSearchResult(div, levels, pick);
   return div;
 }
@@ -10754,7 +10760,7 @@ function renderFinalAnalysisPanel(game, stats){
       const agreeAvg = mean(digits.map((dg,pos)=> agreementByPos[pos][dg]||0));
 
       const infoWrap = document.createElement('div'); infoWrap.className='ticket-info';
-      infoWrap.appendChild(buildComboRepeatBlockEl(digits, draws, 7, true));
+      infoWrap.appendChild(buildComboRepeatBlockEl(digits, draws, 7, true, 4));
 
       const scoreRow = document.createElement('div'); scoreRow.className='ticket-score-row';
       scoreRow.innerHTML = `<span class="ticket-score-label">Scor final (14 indici + consens)</span><span class="ticket-score-val">${qualityInfo.score10}/10</span>`;
@@ -10812,7 +10818,7 @@ function renderFinalAnalysisPanel(game, stats){
       const agreeAvg = mean(combo.map(n=> agreementCount[n]||0));
 
       const infoWrap = document.createElement('div'); infoWrap.className='ticket-info';
-      infoWrap.appendChild(buildComboRepeatBlockEl(combo, draws, cfg.pick, false));
+      infoWrap.appendChild(buildComboRepeatBlockEl(combo, draws, cfg.pick, false, 4));
 
       const scoreRow = document.createElement('div'); scoreRow.className='ticket-score-row';
       scoreRow.innerHTML = `<span class="ticket-score-label">Scor final (14 indici + consens)</span><span class="ticket-score-val">${qualityInfo.score10}/10</span>`;
@@ -12431,7 +12437,6 @@ function renderAll(){
   renderAnalysis(stats, currentGame);
   renderTrends(stats, currentGame);
   renderMethods(stats, currentGame);
-  renderLastDrawsTable(currentGame);
   renderTickets(currentGame, stats);
   renderRecommendedPanel(currentGame, stats);
   renderFinalAnalysisPanel(currentGame, stats);
