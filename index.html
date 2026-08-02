@@ -421,9 +421,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
         <div class="countdown-clock mono" id="topCountdown">—</div>
       </div>
       <div class="version-block">
-        <span class="version-num">Ver 4.3</span>
-        <span class="version-date">Actualizat: 01.08.2026</span>
-        <span class="version-note">Generator de variante trecut pe analiza completă cu 14 indici + garantat diferit față de generarea anterioară. Variante recomandate diversificate de la o extragere la alta. Secțiune nouă "Arhivă completă" cu tabel filtrabil pentru fiecare joc. Layout reorganizat (pastile jocuri sub dată, Generator sub Variante recomandate)</span>
+        <span class="version-num">Ver 4.4</span>
+        <span class="version-date">Actualizat: 02.08.2026</span>
+        <span class="version-note">Secțiune nouă "Analiza finală" (sub Generator de variante) — combină arhiva completă, Variante recomandate și Generator de variante într-un scor final cu procentaj, trend și repetări istorice pe variantă. Arhivă completă: search bar pentru orice combinație, cu repetări pe niveluri (3/6...6/6). Generator + Variante recomandate diversificate de la o generare/extragere la alta.</span>
       </div>
     </div>
     <div class="topbar-tabs">
@@ -522,6 +522,33 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <button class="btn2 btn2-outline" id="ticketsExportCsvBtn">Exportă variantele (CSV)</button>
       <button class="btn2 btn2-outline" id="ticketsExportPdfBtn">Exportă variantele (PDF)</button>
     </div>
+  </div>
+
+  <div class="panel" id="finalAnalysisPanel">
+    <h2>Analiza finală <span class="sub">— sinteza dintre arhiva completă, Variante recomandate și Generator de variante</span></h2>
+    <p class="small-note" style="margin-bottom:14px;">
+      <b style="color:var(--gold);">Metodologia completă — cum sunt alese cele 3 variante finale:</b><br><br>
+      Această secțiune nu e o metodă nouă separată — combină, într-o singură formulă, exact cele trei surse: <b>arhiva completă a jocului</b> (inclusiv orice extragere adăugată nou), rezultatul curent al secțiunii <b>„Variante recomandate pentru extragerea curentă"</b> și rezultatul curent (ultimul lot generat) al secțiunii <b>„Generator de variante"</b>.<br><br>
+
+      <b style="color:var(--gold);">PASUL 1 — Cei 14 indicatori (identic cu secțiunile de mai sus)</b><br>
+      Fiecare număr primește scorul lui din <b>toată arhiva jocului</b> (din 1993 pentru 6/49, 1995 pentru 5/40, 1998 pentru Noroc, 2016 pentru Joker) prin cei 5 indici de bază (frecvență, regularitate/hazard, momentum, z-score, sinergie perechi), apoi fiecare combinație candidată e evaluată cu scorul pe 9 componente (percentilă medie, potrivire sumă, par/impar, jos/sus, acoperire zone, numere apropiate, suprapunere cu ultima extragere, uniformitate distanțe) — exact aceiași <b>14 indicatori</b> ca la „Variante recomandate" și „Generator de variante".<br><br>
+
+      <b style="color:var(--gold);">PASUL 2 — Consens cu cele 2 secțiuni de mai sus</b><br>
+      Pe lângă scorul din Pasul 1, fiecare număr primește și un <b>scor de consens</b>: în câte din cele 6 variante afișate ACUM de „Variante recomandate" (3 variante) și „Generator de variante" (ultimele 3 generate) apare acel număr. Un număr ales independent de ambele metode — deși sunt calculate diferit (una fixă/determinist-optimă, cealaltă diversificată/ponderat-aleatorie) — e un semnal statistic mai puternic decât oricare metodă singură.<br><br>
+
+      <b style="color:var(--gold);">PASUL 3 — Scorul final combinat + căutare exhaustivă</b><br>
+      Scor final pe număr = <b>70% scor din cei 14 indicatori</b> + <b>30% scor de consens</b>. Cu acest scor combinat rulează aceeași căutare exhaustivă (~1.600.000 combinații posibile din pool-ul de top 35 numere) folosită peste tot în aplicație, iar cele 3 variante finale sunt cele mai bine punctate 3 combinații care nu se suprapun între ele.<br><br>
+
+      <b style="color:var(--gold);">CE AFIȘEAZĂ FIECARE VARIANTĂ FINALĂ</b><br>
+      <b>Scor</b> (1-10, din formula de mai sus), <b>procentaj</b> (percentila medie a numerelor alese față de restul), <b>trend</b> (dacă numerele alese sunt, în medie, în creștere, în scădere sau stabile față de ultimele extrageri — comparație statistică relativă, nu o predicție de direcție viitoare) și <b>consens</b> (cu câte din cele 6 variante Recomandate+Generator se suprapune, în medie, pe număr). Sub fiecare variantă apare și verificarea în toată arhiva: dacă acea combinație (sau părți din ea) s-a mai întâmplat vreodată, cu câte numere comune (de la minim 3 până la potrivire totală, în funcție de câte numere se extrag la acest joc), la ce dată.<br><br>
+
+      <b style="color:var(--gold);">LIVE — recalculare automată</b><br>
+      Se recalculează la fiecare randare a paginii (inclusiv după fiecare extragere nouă adăugată) și de fiecare dată când apeși „Recalculează variantele" la Generator — rămâne mereu sincronizată cu starea curentă a celorlalte 2 secțiuni, nu e o captură fixă.<br><br>
+
+      <b>Onestitate:</b> combinarea a 3 metode statistice tot nu schimbă natura jocului — fiecare extragere reală e un eveniment complet independent. Aceste variante au trecut prin cea mai riguroasă analiză din aplicație, dar asta nu garantează câștigul.
+    </p>
+    <div class="tickets" id="finalAnalysisTicketsWrap"></div>
+    <p class="small-note" id="finalAnalysisNote" style="margin-top:14px;"></p>
   </div>
 
   <div class="panel" id="repeatScanPanel">
@@ -10508,6 +10535,321 @@ function renderRecommendedPanel(game, stats){
 }
 
 
+// ---------- "ANALIZA FINALĂ" ----------
+// Sintetizează cele 3 surse cerute explicit: (1) arhiva completă (+ orice extragere adăugată nouă),
+// analizată cu aceiași 14 indicatori folosiți peste tot în aplicație; (2) rezultatul curent al
+// secțiunii "Variante recomandate pentru extragerea curentă"; (3) rezultatul curent (ultimul lot
+// generat) al secțiunii "Generator de variante". Fiecare număr primește, pe lângă scorul lui din
+// cei 14 indicatori (PASUL 1, identic cu mai sus), un al treilea semnal: în câte din cele 6
+// variante afișate acum de cele două secțiuni de mai sus apare acel număr ("consens", PASUL 2). Un
+// număr pe care ambele metode îl aleg independent — deși sunt calculate diferit (una determinist-
+// optimă, cealaltă diversificată/ponderat-aleatorie) — e un semnal mai puternic decât oricare
+// metodă singură (tehnică standard de "ansamblu"/consens, nu o predicție nouă inventată). Scorul
+// final (PASUL 3) = 70% scor de formă (14 indicatori, exact aceeași formulă comboRawScoreFast
+// folosită peste tot) + 30% scor de consens. Cele 3 variante finale sunt combinația #1 găsită de
+// căutarea exhaustivă existentă (bestKCombosFromPool), rulată pe acest scor combinat — la fel de
+// determinist ca la "Variante recomandate", nicio parte aleatorie. Recalculare: la fiecare
+// renderAll() (deci și la fiecare extragere nouă) și la fiecare click pe "Recalculează
+// variantele" — rămâne mereu sincronizată live cu starea curentă a celorlalte 2 secțiuni.
+function computeAgreementCounts(cfg, recCombos, genCombos){
+  const counts = {};
+  for(let i=1;i<=cfg.range;i++) counts[i]=0;
+  [...(recCombos||[]), ...(genCombos||[])].forEach(combo=>{
+    (combo||[]).forEach(n=>{ if(counts[n]!==undefined) counts[n]++; });
+  });
+  return counts;
+}
+function buildFinalBlendedScores(baseScores, agreementCount, maxAgreement, cfg){
+  const { mn, mx } = compositeMinMax(baseScores);
+  const range = (mx-mn)||1;
+  const blended = {};
+  for(let i=1;i<=cfg.range;i++){
+    const baseNorm = ((baseScores[i]||0)-mn)/range;
+    const agreeNorm = maxAgreement ? (agreementCount[i]||0)/maxAgreement : 0;
+    blended[i] = 0.7*baseNorm + 0.3*agreeNorm;
+  }
+  return blended;
+}
+function avgPercentileOf(combo, scores){
+  const vals = Object.values(scores);
+  const mn = Math.min(...vals), mx = Math.max(...vals);
+  const range = (mx-mn)||1;
+  return mean(combo.map(n=> ((scores[n]||0)-mn)/range));
+}
+function computeNumberDeltas(stats, cfg){
+  const histTotal = stats.n*cfg.pick;
+  const recTotal = stats.recentN*cfg.pick;
+  const deltas = {};
+  for(let i=1;i<=cfg.range;i++){
+    const recentShare = recTotal ? (stats.recentFreq[i]||0)/recTotal : 0;
+    const histShare = histTotal ? (stats.freq[i]||0)/histTotal : 0;
+    deltas[i] = recentShare - histShare;
+  }
+  return deltas;
+}
+// Clasifică trendul unei variante relativ la distribuția reală a "delta"-urilor tuturor numerelor
+// (nu un prag fix arbitrar) — treimea de sus = "în creștere", treimea de jos = "în scădere",
+// mijlocul = "stabil". Exact aceeași metrică delta = pondere_recentă - pondere_istorică folosită la
+// graficul "Trenduri" (recent vs. istoric).
+function ticketTrendInfo(vals, deltas){
+  const allVals = Object.values(deltas).sort((a,b)=>a-b);
+  const n = allVals.length;
+  const p33 = allVals[Math.floor(n*0.33)];
+  const p67 = allVals[Math.floor(n*0.67)];
+  const avgDelta = mean(vals.map(v=> deltas[v]||0));
+  if(avgDelta >= p67) return { label:'în creștere', cls:'pop-low', avgDelta };
+  if(avgDelta <= p33) return { label:'în scădere', cls:'pop-high', avgDelta };
+  return { label:'stabil', cls:'pop-mid', avgDelta };
+}
+function computeDigitDeltas(stats){
+  const histTotal = stats.n*7;
+  const recTotal = stats.recentN*7;
+  const deltas = {};
+  for(let d=0; d<10; d++){
+    const recentShare = recTotal ? (stats.recentFreq[d]||0)/recTotal : 0;
+    const histShare = histTotal ? (stats.overallFreq[d]||0)/histTotal : 0;
+    deltas[d] = recentShare - histShare;
+  }
+  return deltas;
+}
+function avgPercentileNorocOf(digits, posScoresArr){
+  const percentiles = digits.map((dg,pos)=>{
+    const vals = Object.values(posScoresArr[pos]);
+    const mn = Math.min(...vals), mx = Math.max(...vals);
+    const range = (mx-mn)||1;
+    return ((posScoresArr[pos][dg]||0)-mn)/range;
+  });
+  return mean(percentiles);
+}
+
+function generate3FinalTickets(stats, cfg, recCombos, genCombos){
+  const baseScores = buildComposite(stats, 1, cfg.range);
+  const jokerScores = cfg.hasJoker ? buildComposite(stats, 1, cfg.jokerRange, {
+    freq: stats.jokerFreq, overdue: stats.jokerOverdue, recentFreq: stats.jokerRecentFreq,
+    hazard: stats.jokerHazard, momentum: stats.jokerMomentum, zScore: {}, pairSynergy: {}
+  }) : null;
+  const agreementCount = computeAgreementCounts(cfg, recCombos, genCombos);
+  const maxAgreement = (recCombos||[]).length + (genCombos||[]).length;
+  const blendedScores = buildFinalBlendedScores(baseScores, agreementCount, maxAgreement, cfg);
+  const { mn, mx } = compositeMinMax(blendedScores);
+
+  let pool = []; for(let i=1;i<=cfg.range;i++) pool.push(i);
+  pool.sort((a,b)=> blendedScores[b]-blendedScores[a]);
+  pool = pool.slice(0, Math.min(35, cfg.range));
+
+  let jokerRanked = null;
+  if(jokerScores){
+    jokerRanked = []; for(let i=1;i<=cfg.jokerRange;i++) jokerRanked.push(i);
+    jokerRanked.sort((a,b)=> jokerScores[b]-jokerScores[a]);
+  }
+
+  const tickets = [];
+  for(let t=0; t<3; t++){
+    const topK = bestKCombosFromPool(pool, cfg.pick, cfg, stats, blendedScores, mn, mx, 40);
+    const best = topK[0];
+    const combo = best.combo.slice().sort((a,b)=>a-b);
+    pool = pool.filter(x=> !combo.includes(x));
+    tickets.push({ combo, joker: jokerRanked ? jokerRanked[t] : null });
+  }
+  return { tickets, baseScores, blendedScores, agreementCount, maxAgreement };
+}
+
+function generate3FinalNorocTickets(stats, recDigitTickets, genDigitTickets){
+  const posScores = [];
+  for(let pos=0; pos<7; pos++){
+    const freqObj={}, overdueObj={}, recentObj={}, hazObj={}, momObj={};
+    for(let d=0; d<10; d++){
+      freqObj[d]=stats.posFreq[pos][d];
+      overdueObj[d]=stats.posOverdue[pos][d];
+      recentObj[d]=stats.posRecentFreq[pos][d];
+      hazObj[d]=stats.posGapProfile[pos].hazard[d];
+      momObj[d]=stats.posMomentum[pos][d];
+    }
+    posScores.push(buildComposite(stats, 0, 9, {
+      freq: freqObj, overdue: overdueObj, recentFreq: recentObj, hazard: hazObj, momentum: momObj, zScore: {}, pairSynergy: {}
+    }));
+  }
+  const agreementByPos = [];
+  for(let pos=0; pos<7; pos++){
+    const counts = {}; for(let d=0;d<10;d++) counts[d]=0;
+    (recDigitTickets||[]).forEach(tk=>{ if(tk && tk[pos]!==undefined) counts[tk[pos]]++; });
+    (genDigitTickets||[]).forEach(tk=>{ if(tk && tk[pos]!==undefined) counts[tk[pos]]++; });
+    agreementByPos.push(counts);
+  }
+  const maxAgreement = (recDigitTickets||[]).length + (genDigitTickets||[]).length;
+  const blendedPosScores = posScores.map((sc,pos)=>{
+    const vals = Object.values(sc);
+    const mn = Math.min(...vals), mx = Math.max(...vals);
+    const range = (mx-mn)||1;
+    const blended = {};
+    for(let d=0; d<10; d++){
+      const baseNorm = ((sc[d]||0)-mn)/range;
+      const agreeNorm = maxAgreement ? (agreementByPos[pos][d]||0)/maxAgreement : 0;
+      blended[d] = 0.7*baseNorm + 0.3*agreeNorm;
+    }
+    return blended;
+  });
+
+  const tickets = [[],[],[]];
+  for(let pos=0; pos<7; pos++){
+    const usedDigits = new Set();
+    for(let t=0;t<3;t++){
+      const candidates = [];
+      for(let d=0; d<10; d++){ if(!usedDigits.has(d)) candidates.push(d); }
+      candidates.sort((a,b)=> (blendedPosScores[pos][b]||0)-(blendedPosScores[pos][a]||0));
+      const picked = candidates[0];
+      usedDigits.add(picked);
+      tickets[t].push(picked);
+    }
+  }
+  return { tickets, posScores, blendedPosScores, agreementByPos, maxAgreement };
+}
+
+function buildFinalAnalysisNarrative(qualityInfo, pct, trend, agreeAvg, maxAgreement, rankLabel){
+  const consensusTxt = maxAgreement
+    ? `consens ${agreeAvg.toFixed(1)}/${maxAgreement} cu variantele curente de la Recomandate + Generator`
+    : `nicio variantă de comparat încă la Recomandate/Generator (consens neutru)`;
+  return `${rankLabel} — scor final ${qualityInfo.score10}/10, percentilă medie ${pct}%, trend ${trend.label}, ${consensusTxt}.`;
+}
+
+// Wrapper subțire peste computeComboRepeatLevels + renderComboSearchResult (deja construite pentru
+// search bar-ul din "Arhivă completă") — returnează un div gata de atașat, fără să scrie direct
+// într-un id fix, ca să poată fi refolosit aici pentru fiecare din cele 3 variante finale.
+function buildComboRepeatBlockEl(targetVals, draws, pick, isDigit){
+  const div = document.createElement('div');
+  div.style.cssText = 'margin-bottom:4px;';
+  const levels = computeComboRepeatLevels(targetVals, draws, pick, isDigit);
+  renderComboSearchResult(div, levels, pick);
+  return div;
+}
+
+function renderFinalAnalysisPanel(game, stats){
+  const cfg = GAMES[game];
+  const wrap = document.getElementById('finalAnalysisTicketsWrap');
+  const noteEl = document.getElementById('finalAnalysisNote');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  const draws = stats.draws;
+  const rankLabels = ['Varianta finală 1', 'Varianta finală 2', 'Varianta finală 3'];
+
+  if(cfg.isDigit){
+    const cachedRec = recommendedCache[game];
+    const recDigitTickets = (cachedRec && Array.isArray(cachedRec.tickets)) ? cachedRec.tickets : [];
+    const genDigitTickets = (lastGeneratedTickets && lastGeneratedTickets.game===game && lastGeneratedTickets.isDigit)
+      ? lastGeneratedTickets.items.map(it=> it.digits) : [];
+
+    const { tickets, blendedPosScores, agreementByPos, maxAgreement } = generate3FinalNorocTickets(stats, recDigitTickets, genDigitTickets);
+    const deltas = computeDigitDeltas(stats);
+
+    tickets.forEach((digits,t)=>{
+      const div = document.createElement('div'); div.className='ticket';
+      div.innerHTML = `<div class="idx">${rankLabels[t]}</div>`;
+      const numsWrap = document.createElement('div'); numsWrap.className='nums';
+      digits.forEach(dg=> numsWrap.appendChild(digitEl(dg)));
+      div.appendChild(numsWrap);
+
+      const qualityInfo = scoreNorocTicketQuality(digits, blendedPosScores);
+      const pct = Math.round(avgPercentileNorocOf(digits, blendedPosScores)*100);
+      const trend = ticketTrendInfo(digits, deltas);
+      const agreeAvg = mean(digits.map((dg,pos)=> agreementByPos[pos][dg]||0));
+
+      const infoWrap = document.createElement('div'); infoWrap.className='ticket-info';
+      infoWrap.appendChild(buildComboRepeatBlockEl(digits, draws, 7, true));
+
+      const scoreRow = document.createElement('div'); scoreRow.className='ticket-score-row';
+      scoreRow.innerHTML = `<span class="ticket-score-label">Scor final (14 indici + consens)</span><span class="ticket-score-val">${qualityInfo.score10}/10</span>`;
+      infoWrap.appendChild(scoreRow);
+      const bar = document.createElement('div'); bar.className='pop-score-bar';
+      const fill = document.createElement('div'); fill.className = 'pop-score-fill ' + (qualityInfo.score10>=7?'pop-low':qualityInfo.score10>=4?'pop-mid':'pop-high');
+      fill.style.width = (qualityInfo.score10*10)+'%'; bar.appendChild(fill); infoWrap.appendChild(bar);
+
+      const pctRow = document.createElement('div'); pctRow.className='ticket-score-row';
+      pctRow.innerHTML = `<span class="ticket-score-label">Procentaj (percentilă medie)</span><span class="ticket-score-val">${pct}%</span>`;
+      infoWrap.appendChild(pctRow);
+
+      const trendRow = document.createElement('div'); trendRow.className='ticket-score-row';
+      trendRow.innerHTML = `<span class="ticket-score-label">Trend</span><span class="ticket-score-val" style="color:${trend.cls==='pop-low'?'var(--green)':trend.cls==='pop-high'?'var(--red)':'var(--gold)'};">${trend.label}</span>`;
+      infoWrap.appendChild(trendRow);
+
+      const agreeRow = document.createElement('div'); agreeRow.className='ticket-score-row';
+      agreeRow.innerHTML = `<span class="ticket-score-label">Consens Recomandate + Generator</span><span class="ticket-score-val">${agreeAvg.toFixed(1)}/${maxAgreement}</span>`;
+      infoWrap.appendChild(agreeRow);
+
+      div.appendChild(infoWrap);
+
+      const narrative = document.createElement('p'); narrative.className='small-note';
+      narrative.style.cssText='margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);';
+      narrative.textContent = buildFinalAnalysisNarrative(qualityInfo, pct, trend, agreeAvg, maxAgreement, rankLabels[t]);
+      div.appendChild(narrative);
+
+      wrap.appendChild(div);
+    });
+  } else {
+    const cachedRec = recommendedCache[game];
+    const recCombos = (cachedRec && Array.isArray(cachedRec.tickets)) ? cachedRec.tickets.map(t=>t.combo).filter(Boolean) : [];
+    const genCombos = (lastGeneratedTickets && lastGeneratedTickets.game===game && !lastGeneratedTickets.isDigit)
+      ? lastGeneratedTickets.items.map(it=> it.combo).filter(Boolean) : [];
+
+    const { tickets, blendedScores, agreementCount, maxAgreement } = generate3FinalTickets(stats, cfg, recCombos, genCombos);
+    const deltas = computeNumberDeltas(stats, cfg);
+
+    tickets.forEach(({combo, joker}, t)=>{
+      const div = document.createElement('div'); div.className='ticket';
+      div.innerHTML = `<div class="idx">${rankLabels[t]}</div>`;
+      const numsWrap = document.createElement('div'); numsWrap.className='nums';
+      combo.forEach(nm=> numsWrap.appendChild(ballEl(nm)));
+      if(joker!==null){
+        const sep=document.createElement('span'); sep.className='mono'; sep.style.cssText='color:var(--muted);align-self:center;margin:0 2px;'; sep.textContent='+';
+        numsWrap.appendChild(sep);
+        numsWrap.appendChild(ballEl(joker,'joker-ball'));
+      }
+      div.appendChild(numsWrap);
+      div.appendChild(popBadgeEl(combo, cfg));
+
+      const qualityInfo = scoreTicketQuality(combo, cfg, stats, blendedScores);
+      const pct = Math.round(avgPercentileOf(combo, blendedScores)*100);
+      const trend = ticketTrendInfo(combo, deltas);
+      const agreeAvg = mean(combo.map(n=> agreementCount[n]||0));
+
+      const infoWrap = document.createElement('div'); infoWrap.className='ticket-info';
+      infoWrap.appendChild(buildComboRepeatBlockEl(combo, draws, cfg.pick, false));
+
+      const scoreRow = document.createElement('div'); scoreRow.className='ticket-score-row';
+      scoreRow.innerHTML = `<span class="ticket-score-label">Scor final (14 indici + consens)</span><span class="ticket-score-val">${qualityInfo.score10}/10</span>`;
+      scoreRow.title = qualityInfo.notes.join(' · ');
+      infoWrap.appendChild(scoreRow);
+      const bar = document.createElement('div'); bar.className='pop-score-bar';
+      const fill = document.createElement('div'); fill.className = 'pop-score-fill ' + (qualityInfo.score10>=7?'pop-low':qualityInfo.score10>=4?'pop-mid':'pop-high');
+      fill.style.width = (qualityInfo.score10*10)+'%'; bar.appendChild(fill); infoWrap.appendChild(bar);
+
+      const pctRow = document.createElement('div'); pctRow.className='ticket-score-row';
+      pctRow.innerHTML = `<span class="ticket-score-label">Procentaj (percentilă medie)</span><span class="ticket-score-val">${pct}%</span>`;
+      infoWrap.appendChild(pctRow);
+
+      const trendRow = document.createElement('div'); trendRow.className='ticket-score-row';
+      trendRow.innerHTML = `<span class="ticket-score-label">Trend</span><span class="ticket-score-val" style="color:${trend.cls==='pop-low'?'var(--green)':trend.cls==='pop-high'?'var(--red)':'var(--gold)'};">${trend.label}</span>`;
+      infoWrap.appendChild(trendRow);
+
+      const agreeRow = document.createElement('div'); agreeRow.className='ticket-score-row';
+      agreeRow.innerHTML = `<span class="ticket-score-label">Consens Recomandate + Generator</span><span class="ticket-score-val">${agreeAvg.toFixed(1)}/${maxAgreement}</span>`;
+      infoWrap.appendChild(agreeRow);
+
+      div.appendChild(infoWrap);
+
+      const narrative = document.createElement('p'); narrative.className='small-note';
+      narrative.style.cssText='margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);';
+      narrative.textContent = buildFinalAnalysisNarrative(qualityInfo, pct, trend, agreeAvg, maxAgreement, rankLabels[t]);
+      div.appendChild(narrative);
+
+      wrap.appendChild(div);
+    });
+  }
+
+  if(noteEl){
+    noteEl.textContent = `Analiza finală se recalculează automat la fiecare randare a paginii (deci și la fiecare extragere nouă adăugată) și de fiecare dată când apeși "Recalculează variantele" la Generator — rămâne mereu sincronizată live cu starea curentă a arhivei complete + a celor două secțiuni de mai sus. Fiecare extragere reală rămâne un eveniment independent — niciun scor, procentaj sau trend de mai sus nu garantează câștigul.`;
+  }
+}
+
 
 // ---------- WHEELING ----------
 // Not a formal mathematically-guaranteed wheel (those require dozens of tickets for a pool
@@ -12092,6 +12434,7 @@ function renderAll(){
   renderLastDrawsTable(currentGame);
   renderTickets(currentGame, stats);
   renderRecommendedPanel(currentGame, stats);
+  renderFinalAnalysisPanel(currentGame, stats);
   renderWheel(currentGame, stats);
   renderPairNetwork(currentGame, stats);
   renderChiSquare(stats, cfg);
@@ -12119,6 +12462,7 @@ document.getElementById('genBtn').addEventListener('click', (e)=>{
     const cfg = GAMES[currentGame];
     const stats = cfg.isDigit ? computeNorocStats() : computeBallStats(currentGame);
     renderTickets(currentGame, stats);
+    renderFinalAnalysisPanel(currentGame, stats);
     btn.textContent = originalText;
     btn.disabled = false;
   }, 20);
