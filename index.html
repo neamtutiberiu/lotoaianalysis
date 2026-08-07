@@ -438,9 +438,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <div class="countdown-clock mono" id="topCountdown">—</div>
     </div>
     <div class="version-block">
-      <span class="version-num">Ver 5.13</span>
+      <span class="version-num">Ver 5.14</span>
       <span class="version-date">Actualizat: 07.08.2026</span>
-      <span class="version-note">„Pattern-uri & Structuri" e acum tab separat, propriu, lângă „Arhivă completă" — fiecare arată doar conținutul lui, ca și taburile de jocuri. Arhivă completă restaurată (+ Câștiguri live, categoria I și II, date reale). Topbar reorganizat: taburi sub Astăzi/dată, countdown centrat exact. Panou live de report per joc + ultima câștigare.</span>
+      <span class="version-note">„Câștiguri" și „Pattern-uri & Structuri" sunt acum 2 sub-butoane independente, unul lângă altul, în interiorul tab-ului „Arhivă completă" (nu mai sunt tab separat de sine stătător). Topbar reorganizat: taburi sub Astăzi/dată, countdown centrat exact. Panou live de report per joc + ultima câștigare.</span>
     </div>
   </div>
 
@@ -779,11 +779,22 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
 
   <div class="panel" id="fullArchivePanel" style="display:none;">
     <h2>Arhivă completă <span class="sub" id="fullArchiveSub">— toate extragerile reale, cele mai recente primele</span></h2>
-    <div class="panel" style="background:var(--surface2); margin:4px 0 16px; padding:14px 16px;">
+
+    <div class="tabs" id="archiveSubTabs" style="margin-bottom:14px;"></div>
+
+    <div id="castiguriPanel">
       <h2 style="font-size:15px; margin-bottom:6px;">Câștiguri <span class="sub">— categoria I (6/6) și categoria a II-a (5/6), urmărite live</span></h2>
       <p class="small-note" style="margin-bottom:10px;">Date reale, preluate direct din tabelul oficial "Detalii câștiguri" publicat de Loteria Română pentru fiecare extragere (loto.ro) — nu e o estimare. NU este însă o arhivă istorică din 1993: Loteria Română nu publică un istoric complet ușor de preluat automat pentru toți acei ani, deci secțiunea urmărește live de acum înainte (din 07.08.2026), verificând la fiecare 5 minute cât ai pagina deschisă și înregistrând automat fiecare extragere nouă la care categoria I sau a II-a a fost câștigată.</p>
       <div id="castiguriSection"></div>
     </div>
+
+    <div id="patternsSubPanel" style="display:none;">
+      <h2 style="font-size:15px; margin-bottom:6px;">Pattern-uri &amp; Structuri <span class="sub">— analiză statistică descriptivă, pe toată arhiva</span></h2>
+      <p class="small-note" style="margin-bottom:10px;">Important: fiecare extragere e un eveniment complet independent — nimic din tabelele de mai jos nu poate prezice sau influența extragerea următoare. Ce vezi aici sunt tipare <b>descriptive</b>, calculate din arhiva reală (aceeași folosită peste tot în aplicație, deci se actualizează automat la fiecare extragere nouă adăugată): perechi de numere care au apărut cel mai des împreună, structura tipică a unei extrageri (sumă, paritate, răspândire), de câte extrageri nu a mai apărut fiecare număr, și diferențe reale între zilele de tragere.</p>
+      <div class="tabs" id="patternGameTabs" style="margin-bottom:14px;"></div>
+      <div id="patternSection"></div>
+    </div>
+
     <div class="archive-search-box" style="margin:4px 0 16px; padding:14px 16px; background:var(--surface2); border:1px solid var(--border); border-radius:10px;">
       <label for="archiveComboSearchInput" style="display:block; font-size:12.5px; color:var(--muted); margin-bottom:8px;">Caută orice combinație de numere în arhiva jocului ales mai jos — vezi dacă s-a mai repetat și cu câte numere (numere separate prin virgulă sau spațiu)</label>
       <input type="text" id="archiveComboSearchInput" placeholder="ex: 5, 12, 23, 34, 45, 49" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13.5px;">
@@ -795,13 +806,6 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     <button class="gen-btn" id="fullArchiveShowBtn">Afișează arhiva completă</button>
     <div class="status-msg" id="fullArchiveStatus" style="margin-top:10px;"></div>
     <div id="fullArchiveResults" style="margin-top:16px;"></div>
-  </div>
-
-  <div class="panel" id="patternsPanel" style="display:none;">
-    <h2>Pattern-uri &amp; Structuri <span class="sub">— analiză statistică descriptivă, pe toată arhiva</span></h2>
-    <p class="small-note" style="margin-bottom:14px;">Important: fiecare extragere e un eveniment complet independent — nimic din tabelele de mai jos nu poate prezice sau influența extragerea următoare. Ce vezi aici sunt tipare <b>descriptive</b>, calculate din arhiva reală (aceeași folosită peste tot în aplicație, deci se actualizează automat la fiecare extragere nouă adăugată): perechi de numere care au apărut cel mai des împreună, structura tipică a unei extrageri (sumă, paritate, răspândire), de câte extrageri nu a mai apărut fiecare număr, și diferențe reale între zilele de tragere.</p>
-    <div class="tabs" id="patternGameTabs" style="margin-bottom:14px;"></div>
-    <div id="patternSection"></div>
   </div>
 
   <footer>Date istorice preluate de pe loto49.ro · Analiză generată local, în browser · Joacă responsabil</footer>
@@ -8588,17 +8592,6 @@ function renderTabs(){
     renderAll();
   };
   el.appendChild(archiveBtn);
-
-  // "Pattern-uri & Structuri" — tab separat, individual, propriu (nu mai e cuibărit în Arhivă
-  // completă): la click arată DOAR conținutul lui, exact ca celelalte taburi.
-  const patternsBtn = document.createElement('button');
-  patternsBtn.className = 'tab' + (currentGame==='patterns' ? ' active':'');
-  patternsBtn.textContent = 'Pattern-uri & Structuri';
-  patternsBtn.onclick = ()=>{
-    currentGame = 'patterns';
-    renderAll();
-  };
-  el.appendChild(patternsBtn);
 }
 
 // ---------- "ARHIVĂ COMPLETĂ" ----------
@@ -8862,11 +8855,41 @@ function renderFullArchiveTable(game){
   applyFilters();
   archiveTableShown = true;
 }
+// "Câștiguri" și "Pattern-uri & Structuri" sunt 2 sub-butoane independente, unul lângă altul,
+// în interiorul tab-ului "Arhivă completă" — click pe unul arată DOAR conținutul lui.
+let archiveSubTab = 'castiguri';
+function renderArchiveSubTabs(){
+  const wrap = document.getElementById('archiveSubTabs');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  const defs = [ {key:'castiguri', label:'Câștiguri'}, {key:'patterns', label:'Pattern-uri & Structuri'} ];
+  defs.forEach(d=>{
+    const b = document.createElement('button');
+    b.className = 'tab' + (archiveSubTab===d.key ? ' active' : '');
+    b.textContent = d.label;
+    b.onclick = ()=>{ archiveSubTab = d.key; renderArchiveSubTabs(); renderArchiveSubPanels(); };
+    wrap.appendChild(b);
+  });
+}
+function renderArchiveSubPanels(){
+  const cP = document.getElementById('castiguriPanel');
+  const pP = document.getElementById('patternsSubPanel');
+  if(cP) cP.style.display = archiveSubTab==='castiguri' ? '' : 'none';
+  if(pP) pP.style.display = archiveSubTab==='patterns' ? '' : 'none';
+  if(archiveSubTab==='castiguri'){
+    renderCastiguriSection();
+  } else {
+    renderPatternGameTabs();
+    renderPatternSection();
+  }
+}
+
 function renderFullArchivePanel(){
   renderArchiveGameTabs();
   if(archiveTableShown) renderFullArchiveTable(archiveSelectedGame);
   performArchiveComboSearch();
-  renderCastiguriSection();
+  renderArchiveSubTabs();
+  renderArchiveSubPanels();
 }
 
 function mean(arr){ return arr.reduce((a,b)=>a+b,0)/(arr.length||1); }
@@ -12364,7 +12387,7 @@ document.getElementById('autoFillMissingBtn').addEventListener('click', ()=>{
 
 // ---------- LIVE REPORT / JACKPOT WIDGET (loto.ro — sursa oficială Loteria Română) ----------
 const LOTO_RO_URL = 'https://www.loto.ro/';
-const EUR_RON_APPROX = 5.25; // curs orientativ, consistent cu conversiile din comunicatele oficiale Loteria Română
+const EUR_RON_APPROX = 5.25;
 
 function parseReportHTML(html){
   const text = html.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
@@ -13163,27 +13186,15 @@ function renderAll(){
   // this mode is active.
   const normalWrap = document.getElementById('normalPanelsWrap');
   const archivePanel = document.getElementById('fullArchivePanel');
-  const patternsPanel = document.getElementById('patternsPanel');
   if(currentGame === 'archive'){
     if(normalWrap) normalWrap.style.display = 'none';
     if(archivePanel) archivePanel.style.display = '';
-    if(patternsPanel) patternsPanel.style.display = 'none';
     renderFullArchivePanel();
-    tickCountdown();
-    return;
-  }
-  if(currentGame === 'patterns'){
-    if(normalWrap) normalWrap.style.display = 'none';
-    if(archivePanel) archivePanel.style.display = 'none';
-    if(patternsPanel) patternsPanel.style.display = '';
-    renderPatternGameTabs();
-    renderPatternSection();
     tickCountdown();
     return;
   }
   if(normalWrap) normalWrap.style.display = '';
   if(archivePanel) archivePanel.style.display = 'none';
-  if(patternsPanel) patternsPanel.style.display = 'none';
 
   const cfg = GAMES[currentGame];
   const stats = cfg.isDigit ? computeNorocStats() : computeBallStats(currentGame);
@@ -13882,9 +13893,8 @@ document.getElementById('recBacktestBtn').addEventListener('click', ()=>{
 
   populateJeGameSelect();
   renderAll();
-  renderCastiguriSection();
-  renderPatternGameTabs();
-  renderPatternSection();
+  renderArchiveSubTabs();
+  renderArchiveSubPanels();
   tickCountdown();
   setInterval(tickCountdown, 1000);
   loadReportWidget();
