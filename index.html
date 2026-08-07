@@ -438,9 +438,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <div class="countdown-clock mono" id="topCountdown">—</div>
     </div>
     <div class="version-block">
-      <span class="version-num">Ver 5.10</span>
+      <span class="version-num">Ver 5.12</span>
       <span class="version-date">Actualizat: 07.08.2026</span>
-      <span class="version-note">Am descoperit și restaurat „Arhivă completă" și „Analiza finală", care lipseau (backup vechi încărcat din greșeală). Topbar reorganizat: taburi sub Astăzi/dată, countdown centrat exact între cele două laturi. Panou live de report per joc + ultima câștigare (best-effort din știrile loto.ro). Secțiune „Câștiguri" (categoria I) în Arhivă completă, urmărită live de acum înainte — fără istoric 1993, care nu există public. Buton "Adaugă automat extrageri lipsă" verifică toate cele 4 jocuri simultan.</span>
+      <span class="version-note">Nou: secțiune „Pattern-uri & Structuri" în Arhivă completă — perechi de numere frecvente, sumă/paritate/răspândire tipică, interval de la ultima apariție per număr, diferențe pe zi de tragere și suprapunere 6/49↔5/40 — calculat live din arhivă. Secțiunea „Câștiguri" citește acum date reale (nu estimare) direct din tabelul oficial Loteria Română, pentru categoria I ȘI a II-a. Restaurate „Arhivă completă" și „Analiza finală". Topbar reorganizat: taburi sub Astăzi/dată, countdown centrat exact. Panou live de report per joc + ultima câștigare.</span>
     </div>
   </div>
 
@@ -780,9 +780,15 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
   <div class="panel" id="fullArchivePanel" style="display:none;">
     <h2>Arhivă completă <span class="sub" id="fullArchiveSub">— toate extragerile reale, cele mai recente primele</span></h2>
     <div class="panel" style="background:var(--surface2); margin:4px 0 16px; padding:14px 16px;">
-      <h2 style="font-size:15px; margin-bottom:6px;">Câștiguri <span class="sub">— categoria I (marele premiu), detectate automat, live</span></h2>
-      <p class="small-note" style="margin-bottom:10px;">Aceasta NU este o arhivă istorică din 1993 — Loteria Română nu publică un istoric complet al câștigătorilor pe care să-l pot prelua automat, deci nu pot construi date corecte pentru trecut. În schimb, aplicația urmărește live reportul de pe loto.ro (la fiecare verificare, cel mult o dată la 5 minute cât ai pagina deschisă) și, când reportul scade brusc, înseamnă că a fost câștigată categoria I — evenimentul se salvează automat de aici înainte. Acoperă doar categoria I (6/6) — reportul nu conține informație despre categoria a II-a (5/6).</p>
+      <h2 style="font-size:15px; margin-bottom:6px;">Câștiguri <span class="sub">— categoria I (6/6) și categoria a II-a (5/6), urmărite live</span></h2>
+      <p class="small-note" style="margin-bottom:10px;">Date reale, preluate direct din tabelul oficial "Detalii câștiguri" publicat de Loteria Română pentru fiecare extragere (loto.ro) — nu e o estimare. NU este însă o arhivă istorică din 1993: Loteria Română nu publică un istoric complet ușor de preluat automat pentru toți acei ani, deci secțiunea urmărește live de acum înainte (din 07.08.2026), verificând la fiecare 5 minute cât ai pagina deschisă și înregistrând automat fiecare extragere nouă la care categoria I sau a II-a a fost câștigată.</p>
       <div id="castiguriSection"></div>
+    </div>
+    <div class="panel" style="background:var(--surface2); margin:4px 0 16px; padding:14px 16px;">
+      <h2 style="font-size:15px; margin-bottom:6px;">Pattern-uri &amp; Structuri <span class="sub">— analiză statistică descriptivă, pe toată arhiva</span></h2>
+      <p class="small-note" style="margin-bottom:10px;">Important: fiecare extragere e un eveniment complet independent — nimic din tabelul de mai jos nu poate prezice sau influența extragerea următoare. Ce vezi aici sunt tipare <b>descriptive</b>, calculate din arhiva reală (aceeași folosită peste tot în aplicație, deci se actualizează automat la fiecare extragere nouă adăugată): perechi de numere care au apărut cel mai des împreună, structura tipică a unei extrageri (sumă, paritate, răspândire), de câte extrageri nu a mai apărut fiecare număr, și diferențe reale între zilele de tragere.</p>
+      <div class="tabs" id="patternGameTabs" style="margin-bottom:14px;"></div>
+      <div id="patternSection"></div>
     </div>
     <div class="archive-search-box" style="margin:4px 0 16px; padding:14px 16px; background:var(--surface2); border:1px solid var(--border); border-radius:10px;">
       <label for="archiveComboSearchInput" style="display:block; font-size:12.5px; color:var(--muted); margin-bottom:8px;">Caută orice combinație de numere în arhiva jocului ales mai jos — vezi dacă s-a mai repetat și cu câte numere (numere separate prin virgulă sau spațiu)</label>
@@ -8848,6 +8854,9 @@ function renderFullArchivePanel(){
   renderArchiveGameTabs();
   if(archiveTableShown) renderFullArchiveTable(archiveSelectedGame);
   performArchiveComboSearch();
+  renderCastiguriSection();
+  renderPatternGameTabs();
+  renderPatternSection();
 }
 
 function mean(arr){ return arr.reduce((a,b)=>a+b,0)/(arr.length||1); }
@@ -12417,23 +12426,6 @@ async function loadReportWidget(){
     const reports = parseReportHTML(html);
     const lastWins = parseLastWinDates(html);
 
-    // Detectare automată câștig categoria I: dacă reportul cunoscut anterior era semnificativ mai
-    // mare și acum a scăzut brusc (sau a dispărut), înseamnă că cineva a câștigat marele premiu
-    // între ultimele două verificări — logăm evenimentul cu data verificării curente. Acoperă doar
-    // câștigurile de categoria I (6/6) — reportul nu conține informație despre categoria a II-a (5/6).
-    ['649','540','joker'].forEach(g=>{
-      const prevRon = lastKnownReportRon[g];
-      const newRon = reports[g];
-      const droppedSharply = (typeof prevRon === 'number' && prevRon > 50000) &&
-        (typeof newRon !== 'number' || newRon < prevRon * 0.5);
-      if(droppedSharply){
-        reportWinEvents[g] = reportWinEvents[g] || [];
-        reportWinEvents[g].unshift({ detectedOn: todayISO(), prevRon, newRon: newRon || 0 });
-      }
-      if(typeof newRon === 'number') lastKnownReportRon[g] = newRon;
-    });
-    persistReportTracking().catch(()=>{});
-
     el.innerHTML = GAME_ORDER.map(g=>{
       const cfg = GAMES[g];
       if(g==='noroc'){
@@ -12448,11 +12440,75 @@ async function loadReportWidget(){
       }
       return `<div class="rw-item" title="Sursă: loto.ro"><span class="rw-game">${cfg.label}</span><span class="rw-status no">Report: NU</span>${lastWinLine}</div>`;
     }).join('');
-
-    renderCastiguriSection();
   }catch(e){
     el.innerHTML = `<span style="color:var(--muted2); font-size:10.5px;">Report indisponibil momentan (sursă offline)</span>`;
   }
+}
+
+// ---------- CÂȘTIGURI CATEGORIA I ȘI A II-A — citire directă din tabelul oficial per extragere ----------
+// Loteria Română publică, pentru fiecare extragere, un tabel "Detalii câștiguri" cu o coloană
+// "Numar castiguri" care arată fie "REPORT" (necâștigat — se reportează), fie un număr real de
+// câștigători. Citim asta direct, per extragere — e informație exactă, nu o estimare — pentru
+// categoria I (6/6 la 6/49 și 5/40; 5/5+Joker la Joker) ȘI categoria a II-a (5/6; 5/5 fără Joker).
+const LOTO_RESULTS_URLS = {
+  '649': 'https://www.loto.ro/loto-new/newLotoSiteNexioFinalVersion/web/app2.php/jocuri/649_si_noroc/rezultate_extragere.html',
+  '540': 'https://www.loto.ro/loto-new/newLotoSiteNexioFinalVersion/web/app2.php/jocuri/540_si_super_noroc/rezultate_extrageri.html',
+  'joker': 'https://www.loto.ro/loto-new/newLotoSiteNexioFinalVersion/web/app2.php/jocuri/joker_si_noroc_plus/rezultate_extrageri.html'
+};
+const GAME_LABEL_MATCH = {
+  '649': /6\s*\/\s*49/i,
+  '540': /5\s*\/\s*40/i,
+  'joker': /^joker$/i
+};
+const CATEGORY_LABEL = { '649':{I:'6/6', II:'5/6'}, '540':{I:'6/6', II:'5/6'}, 'joker':{I:'5+Joker', II:'5 fără Joker'} };
+
+function parseDetaliiCastiguri(html){
+  const text = html.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
+  const blockRe = /Detalii\s+\S+\s+la\s+(.+?)\s+din\s+(\d{2})\.(\d{2})\.(\d{4})([\s\S]{0,500}?)(?=Detalii\s+\S+\s+la|$)/gi;
+  const blocks = [];
+  let m;
+  while((m = blockRe.exec(text)) !== null){
+    const label = m[1].trim();
+    const date = `${m[4]}-${m[3]}-${m[2]}`;
+    const body = m[5];
+    const catI = body.match(/\bI\s*\([^)]*\)\s*(REPORT|\d[\d.,]*)/i);
+    const catII = body.match(/\bII\s*\([^)]*\)\s*(REPORT|\d[\d.,]*)/i);
+    blocks.push({
+      label, date,
+      catI: catI ? (catI[1].toUpperCase()==='REPORT' ? null : catI[1]) : undefined,
+      catII: catII ? (catII[1].toUpperCase()==='REPORT' ? null : catII[1]) : undefined
+    });
+  }
+  return blocks;
+}
+
+async function checkCastiguriLive(){
+  let changed = false;
+  for(const g of ['649','540','joker']){
+    try{
+      const html = await fetchTextViaProxies(LOTO_RESULTS_URLS[g]);
+      const blocks = parseDetaliiCastiguri(html).filter(b=> GAME_LABEL_MATCH[g].test(b.label));
+      blocks.forEach(b=>{
+        const key = `${g}-${b.date}`;
+        if(processedDrawKeys[key]) return;
+        processedDrawKeys[key] = true;
+        changed = true;
+        reportWinEvents[g] = reportWinEvents[g] || [];
+        if(b.catI !== undefined && b.catI !== null){
+          reportWinEvents[g].unshift({ date:b.date, category:'I', winners:b.catI });
+        }
+        if(b.catII !== undefined && b.catII !== null){
+          reportWinEvents[g].unshift({ date:b.date, category:'II', winners:b.catII });
+        }
+      });
+    }catch(e){
+      // sursă indisponibilă momentan pentru acest joc — reîncercăm la următoarea verificare
+    }
+  }
+  if(changed){
+    await persistReportTracking().catch(()=>{});
+  }
+  renderCastiguriSection();
 }
 
 function findDrawAtOrBefore(game, dateISO){
@@ -12468,24 +12524,24 @@ function renderCastiguriSection(){
   const games = ['649','540','joker'];
   const anyEvents = games.some(g=> (reportWinEvents[g]||[]).length>0);
   if(!anyEvents){
-    el.innerHTML = `<p class="small-note" style="color:var(--muted);">Nicio câștigare de categoria I detectată încă de când urmărim live (din 07.08.2026). Va apărea aici automat de îndată ce se întâmplă.</p>`;
+    el.innerHTML = `<p class="small-note" style="color:var(--muted);">Nicio câștigare de categoria I sau a II-a detectată încă de când urmărim live (din 07.08.2026). Va apărea aici automat de îndată ce se întâmplă.</p>`;
     return;
   }
   el.innerHTML = games.map(g=>{
     const events = reportWinEvents[g] || [];
     if(events.length===0) return '';
     const cfg = GAMES[g];
+    const catLabels = CATEGORY_LABEL[g];
     const byYear = {};
     events.forEach(ev=>{
-      const year = ev.detectedOn.slice(0,4);
+      const year = ev.date.slice(0,4);
       (byYear[year] = byYear[year] || []).push(ev);
     });
     const years = Object.keys(byYear).sort((a,b)=> b-a);
     const yearBlocks = years.map(year=>{
       const rows = byYear[year].map(ev=>{
-        const draw = findDrawAtOrBefore(g, ev.detectedOn);
-        const drawInfo = draw ? `extragerea din ${fmtDateShort(draw.date)}` : 'extragere neidentificată';
-        return `<li>Detectat pe ${fmtDateShort(ev.detectedOn)} — probabil câștigată la ${drawInfo}. Report anterior: ${fmtRon(ev.prevRon)}.</li>`;
+        const catTxt = ev.category==='I' ? `Categoria I (${catLabels.I})` : `Categoria a II-a (${catLabels.II})`;
+        return `<li><b>${catTxt}</b> — extragerea din ${fmtDateShort(ev.date)}, ${ev.winners} câștigător${ev.winners==='1'?'':'i'}.</li>`;
       }).join('');
       return `<div style="margin-top:6px;"><b>${year}</b><ul style="margin:4px 0 0 18px; font-size:12.5px; color:var(--text);">${rows}</ul></div>`;
     }).join('');
@@ -12493,9 +12549,178 @@ function renderCastiguriSection(){
   }).join('');
 }
 
+// ---------- PATTERN-URI & STRUCTURI — analiză statistică descriptivă pe toată arhiva ----------
+// Toate calculele de mai jos sunt descriptive (ce s-a întâmplat în trecut), NU predictive — o
+// extragere loto e un eveniment independent, fără memorie. Totul se calculează instant, în
+// browser, din aceeași arhivă (getAllDraws) folosită peste tot în aplicație — deci reflectă mereu
+// starea curentă, fără nicio cerere de rețea.
+let patternSelectedGame = '649';
+const PATTERN_GAMES = ['649','540','joker']; // Noroc e bazat pe cifre, nu pe seturi de numere — nu se aplică
 
+function computePairFrequencies(game){
+  const cfg = GAMES[game];
+  const draws = getAllDraws(game);
+  const pairCounts = {};
+  draws.forEach(d=>{
+    const nums = [...d.nums].sort((a,b)=>a-b);
+    for(let i=0;i<nums.length;i++){
+      for(let j=i+1;j<nums.length;j++){
+        const key = `${nums[i]} + ${nums[j]}`;
+        pairCounts[key] = (pairCounts[key]||0)+1;
+      }
+    }
+  });
+  const total = draws.length;
+  return {
+    total,
+    top: Object.entries(pairCounts).map(([key,count])=>({key,count,pct:(count/total*100)})).sort((a,b)=>b.count-a.count).slice(0,15)
+  };
+}
 
-// ---------- JOURNAL STORAGE ----------
+function computeDrawStructureStats(game){
+  const cfg = GAMES[game];
+  const draws = getAllDraws(game);
+  const half = Math.ceil(cfg.range/2);
+  let sumTotal=0, spreadTotal=0;
+  const oddCounts = {}, lowCounts = {};
+  draws.forEach(d=>{
+    const nums = d.nums;
+    const sum = nums.reduce((a,b)=>a+b,0);
+    const odd = nums.filter(n=> n%2===1).length;
+    const low = nums.filter(n=> n<=half).length;
+    const spread = Math.max(...nums) - Math.min(...nums);
+    sumTotal += sum; spreadTotal += spread;
+    oddCounts[odd] = (oddCounts[odd]||0)+1;
+    lowCounts[low] = (lowCounts[low]||0)+1;
+  });
+  const n = draws.length;
+  const bestOf = (obj)=> Object.entries(obj).sort((a,b)=>b[1]-a[1])[0];
+  const mOdd = bestOf(oddCounts), mLow = bestOf(lowCounts);
+  return {
+    n,
+    avgSum: n? (sumTotal/n).toFixed(1) : '-',
+    avgSpread: n? (spreadTotal/n).toFixed(1) : '-',
+    oddSplit: mOdd ? `${mOdd[0]} impare / ${cfg.pick-mOdd[0]} pare` : '-',
+    oddSplitPct: mOdd ? (mOdd[1]/n*100).toFixed(1) : '-',
+    lowSplit: mLow ? `${mLow[0]} mici (1-${half}) / ${cfg.pick-mLow[0]} mari` : '-',
+    lowSplitPct: mLow ? (mLow[1]/n*100).toFixed(1) : '-'
+  };
+}
+
+function computeGaps(game){
+  const cfg = GAMES[game];
+  const draws = getAllDraws(game); // ascending
+  const lastSeenIdx = {};
+  draws.forEach((d,idx)=>{ d.nums.forEach(n=> lastSeenIdx[n]=idx); });
+  const total = draws.length;
+  const gaps = [];
+  for(let n=1;n<=cfg.range;n++){
+    const idx = lastSeenIdx[n];
+    const gap = (idx===undefined) ? total : (total-1-idx);
+    gaps.push({ n, gap, lastDate: idx!==undefined ? draws[idx].date : null });
+  }
+  gaps.sort((a,b)=> b.gap-a.gap);
+  return gaps;
+}
+
+function computeDayOfWeekStats(game){
+  const draws = getAllDraws(game);
+  const dayNames = ['Duminică','Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă'];
+  const byDow = {};
+  draws.forEach(d=>{
+    const dow = new Date(d.date+'T12:00:00').getDay();
+    const sum = d.nums.reduce((a,b)=>a+b,0);
+    const odd = d.nums.filter(x=> x%2===1).length;
+    if(!byDow[dow]) byDow[dow] = {n:0, sumTotal:0, oddTotal:0};
+    byDow[dow].n++; byDow[dow].sumTotal += sum; byDow[dow].oddTotal += odd;
+  });
+  return Object.entries(byDow)
+    .filter(([,s])=> s.n>0)
+    .map(([dow,s])=>({ day:dayNames[dow], n:s.n, avgSum:(s.sumTotal/s.n).toFixed(1), avgOdd:(s.oddTotal/s.n).toFixed(2) }));
+}
+
+function computeCrossGameOverlap(){
+  const d649 = getAllDraws('649');
+  const d540 = getAllDraws('540');
+  const map540 = {};
+  d540.forEach(d=> map540[d.date]=d);
+  let sameDay=0, overlapTotal=0;
+  d649.forEach(d=>{
+    const match = map540[d.date];
+    if(match){
+      sameDay++;
+      const set1 = new Set(d.nums);
+      overlapTotal += match.nums.filter(n=> set1.has(n)).length;
+    }
+  });
+  return { sameDay, avgOverlap: sameDay ? (overlapTotal/sameDay).toFixed(2) : '-' };
+}
+
+function renderPatternGameTabs(){
+  const wrap = document.getElementById('patternGameTabs');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  PATTERN_GAMES.forEach(k=>{
+    const b = document.createElement('button');
+    b.className = 'tab' + (k===patternSelectedGame ? ' active' : '');
+    b.textContent = GAMES[k].label;
+    b.onclick = ()=>{ patternSelectedGame = k; renderPatternGameTabs(); renderPatternSection(); };
+    wrap.appendChild(b);
+  });
+}
+
+function renderPatternSection(){
+  const el = document.getElementById('patternSection');
+  if(!el) return;
+  const game = patternSelectedGame;
+  const cfg = GAMES[game];
+  const pairs = computePairFrequencies(game);
+  const struct = computeDrawStructureStats(game);
+  const gaps = computeGaps(game);
+  const dow = computeDayOfWeekStats(game);
+  const overlap = game==='649' || game==='540' ? computeCrossGameOverlap() : null;
+
+  const pairRows = pairs.top.map(p=> `<tr><td class="mono">${p.key}</td><td class="mono">${p.count}×</td><td class="mono">${p.pct.toFixed(1)}%</td></tr>`).join('');
+  const overdueRows = gaps.slice(0,10).map(g=> `<tr><td class="mono">${g.n}</td><td class="mono">${g.gap} extrageri</td><td class="mono">${g.lastDate ? fmtDateShort(g.lastDate) : 'niciodată'}</td></tr>`).join('');
+  const recentRows = gaps.slice(-10).reverse().map(g=> `<tr><td class="mono">${g.n}</td><td class="mono">${g.gap} extrageri</td><td class="mono">${g.lastDate ? fmtDateShort(g.lastDate) : '-'}</td></tr>`).join('');
+  const dowRows = dow.map(d=> `<tr><td>${d.day}</td><td class="mono">${d.n}</td><td class="mono">${d.avgSum}</td><td class="mono">${d.avgOdd}</td></tr>`).join('');
+
+  el.innerHTML = `
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:16px;">
+      <div class="prob-item"><span class="pct">${struct.avgSum}</span><span style="font-size:10px; color:var(--muted);">Sumă medie / extragere</span></div>
+      <div class="prob-item"><span class="pct">${struct.avgSpread}</span><span style="font-size:10px; color:var(--muted);">Răspândire medie (max-min)</span></div>
+      <div class="prob-item"><span class="pct">${struct.oddSplit}</span><span style="font-size:10px; color:var(--muted);">Split par/impar tipic (${struct.oddSplitPct}%)</span></div>
+      <div class="prob-item"><span class="pct">${struct.lowSplit}</span><span style="font-size:10px; color:var(--muted);">Split mic/mare tipic (${struct.lowSplitPct}%)</span></div>
+    </div>
+
+    <h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">Perechi de numere cele mai frecvente (din ${pairs.total} extrageri)</h3>
+    <div class="table-scroll" style="margin-bottom:16px;"><table class="data-table" style="width:100%; max-width:420px;">
+      <thead><tr><th>Pereche</th><th>Apariții</th><th>% din extrageri</th></tr></thead>
+      <tbody>${pairRows}</tbody>
+    </table></div>
+
+    <h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">Numere care nu au mai apărut de cel mai mult timp</h3>
+    <div class="table-scroll" style="margin-bottom:16px;"><table class="data-table" style="width:100%; max-width:420px;">
+      <thead><tr><th>Număr</th><th>Interval curent</th><th>Ultima apariție</th></tr></thead>
+      <tbody>${overdueRows}</tbody>
+    </table></div>
+
+    <h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">Numere apărute cel mai recent</h3>
+    <div class="table-scroll" style="margin-bottom:16px;"><table class="data-table" style="width:100%; max-width:420px;">
+      <thead><tr><th>Număr</th><th>Interval curent</th><th>Ultima apariție</th></tr></thead>
+      <tbody>${recentRows}</tbody>
+    </table></div>
+
+    <h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">Diferențe pe zi de tragere</h3>
+    <div class="table-scroll" style="margin-bottom:${overlap?'16px':'0'};"><table class="data-table" style="width:100%; max-width:420px;">
+      <thead><tr><th>Zi</th><th>Extrageri</th><th>Sumă medie</th><th>Impare medii</th></tr></thead>
+      <tbody>${dowRows}</tbody>
+    </table></div>
+
+    ${overlap ? `<h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">Suprapunere 6/49 ↔ 5/40 (extrageri din aceeași zi)</h3>
+    <p class="small-note">Din <b>${overlap.sameDay}</b> extrageri care au avut loc în aceeași zi la ambele jocuri, în medie <b>${overlap.avgOverlap}</b> numere coincid între cele două rezultate — pur coincidență statistică (jocuri complet independente), util doar ca reper descriptiv.</p>` : ''}
+  `;
+}
 let journalEntries = [];
 let evPrizesByGame = {}; // persisted EV category prize inputs per game, used for theoretical RTP in Buget panel
 // Persisted "Variante recomandate pentru extragerea curentă" per game: { [game]: { drawKey, tickets } }.
@@ -12505,10 +12730,11 @@ let evPrizesByGame = {}; // persisted EV category prize inputs per game, used fo
 // that game's archive, drawKey changes, and the app recomputes — deliberately steering the new pick
 // away from these stored tickets — before overwriting this cache with the new result.
 let recommendedCache = {};
-// Câștiguri categoria I (marele premiu), detectate automat prin monitorizarea live a reportului
-// de pe loto.ro — vezi loadReportWidget(). Pornim urmărirea din 07.08.2026; nu există istoric
-// real anterior (Loteria Română nu publică un arhivă de câștigători accesibilă automat).
+// Câștiguri categoria I (6/6) și a II-a (5/6), detectate automat prin citirea directă a tabelului
+// oficial "Detalii câștiguri" per extragere de pe loto.ro — vezi checkCastiguriLive(). Urmărim
+// din 07.08.2026 înainte; nu există istoric real dinainte, accesibil automat.
 let reportWinEvents = { '649':[], '540':[], joker:[] };
+let processedDrawKeys = {};
 let lastKnownReportRon = {};
 async function loadJournal(){
   const snap = await userDocRef.get();
@@ -12517,13 +12743,14 @@ async function loadJournal(){
   evPrizesByGame = data.evPrizes || {};
   recommendedCache = data.recommendedCache || {};
   reportWinEvents = data.reportWinEvents || { '649':[], '540':[], joker:[] };
+  processedDrawKeys = data.processedDrawKeys || {};
   lastKnownReportRon = data.lastKnownReportRon || {};
 }
 async function persistRecommendedCache(){
   await userDocRef.set({ recommendedCache }, {merge:true});
 }
 async function persistReportTracking(){
-  await userDocRef.set({ reportWinEvents, lastKnownReportRon }, {merge:true});
+  await userDocRef.set({ reportWinEvents, processedDrawKeys, lastKnownReportRon }, {merge:true});
 }
 async function persistJournal(){
   await userDocRef.set({ journal: journalEntries }, {merge:true});
@@ -13645,10 +13872,14 @@ document.getElementById('recBacktestBtn').addEventListener('click', ()=>{
   populateJeGameSelect();
   renderAll();
   renderCastiguriSection();
+  renderPatternGameTabs();
+  renderPatternSection();
   tickCountdown();
   setInterval(tickCountdown, 1000);
   loadReportWidget();
   setInterval(loadReportWidget, 5*60*1000);
+  checkCastiguriLive();
+  setInterval(checkCastiguriLive, 5*60*1000);
 })();
 </script>
 </body>
