@@ -37,19 +37,21 @@ h1,h2,h3{ font-family:'Space Grotesk',sans-serif; margin:0; }
 
 /* HEADER */
 .topbar{
-  display:grid; grid-template-columns:1fr auto 1fr; align-items:center;
-  gap:16px; padding:16px 20px; background:var(--surface);
+  display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:16px;
+  padding:16px 20px; background:var(--surface);
   border:1px solid var(--border); border-radius:14px; margin-bottom:18px;
 }
 .topbar-left{ display:flex; flex-direction:column; gap:20px; align-items:flex-start; justify-self:start; }
+.topbar-tabs{ display:flex; margin-top:4px; }
 .date-block{ display:flex; flex-direction:column; gap:2px; }
 .date-block .label{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
 .date-block .value{ font-family:'JetBrains Mono',monospace; font-size:20px; color:var(--gold); font-weight:700; }
 .next-draw{ font-size:12px; color:var(--muted); }
 .next-draw b{ color:var(--blue); }
+.countdown-block{ display:flex; flex-direction:column; align-items:center; gap:4px; justify-self:center; }
 .version-block{ display:flex; flex-direction:column; align-items:center; gap:2px; justify-self:end; min-width:200px; max-width:270px; }
-.version-block .version-num{ font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:var(--gold); }
-.version-block .version-date{ font-size:10.5px; color:var(--muted); }
+.version-block .version-num{ font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:var(--gold); text-align:center; }
+.version-block .version-date{ font-size:10.5px; color:var(--muted); text-align:center; }
 .version-block .version-note{ font-size:9.5px; color:var(--muted2); max-width:100%; text-align:center; line-height:1.3; }
 
 .tabs{ display:flex; gap:8px; flex-wrap:wrap; }
@@ -278,7 +280,7 @@ input[type=range]::-moz-range-thumb{
 footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px; }
 
 /* COUNTDOWN */
-.countdown-block{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:2px; justify-self:center; }
+.countdown-block{ display:flex; flex-direction:column; align-items:center; text-align:center; gap:2px; flex:1; }
 .countdown-block .label{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
 .countdown-clock{
   font-size:19px; font-weight:700; color:var(--blue); letter-spacing:.02em;
@@ -287,19 +289,19 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
 .countdown-clock .unit{ color:var(--text); }
 .countdown-clock .u-label{ font-size:10px; color:var(--muted); font-weight:400; margin-right:6px; text-transform:uppercase; }
 .countdown-inline{
-  margin-top:14px; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px;
+  margin-top:14px; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:14px;
   background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 14px;
 }
 .countdown-inline .ci-label{ font-size:12px; color:var(--muted); justify-self:start; }
 .countdown-inline .ci-label b{ color:var(--gold); }
 .countdown-inline .ci-clock{ font-size:17px; font-weight:700; color:var(--blue); justify-self:end; }
-.report-widget{ justify-self:center; display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
-.report-widget .rw-item{ display:flex; flex-direction:column; align-items:center; gap:1px; }
-.report-widget .rw-game{ font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
-.report-widget .rw-status{ font-weight:700; font-size:11px; }
-.report-widget .rw-status.yes{ color:#e0574a; }
-.report-widget .rw-status.no{ color:#3ecf8e; }
-.report-widget .rw-val{ font-size:9.5px; color:var(--muted2); font-family:'JetBrains Mono',monospace; }
+.report-widget{ justify-self:center; display:flex; gap:16px; flex-wrap:wrap; align-items:center; justify-content:center; }
+.report-widget .rw-item{ display:flex; flex-direction:column; align-items:center; gap:1px; min-width:70px; }
+.report-widget .rw-game{ font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+.report-widget .rw-status{ font-size:11px; font-weight:700; }
+.report-widget .rw-status.yes{ color:var(--green); }
+.report-widget .rw-status.no{ color:var(--muted); }
+.report-widget .rw-val{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--gold); }
 .report-widget .rw-lastwin{ font-size:9px; color:var(--muted2); }
 .sales-cutoff-banner{
   margin-top:10px; padding:10px 14px; border-radius:10px; font-size:13px; font-weight:700;
@@ -357,9 +359,10 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
   .wrap{ padding:0 10px; }
   .ball{ width:32px; height:32px; font-size:11px; }
   .topbar{ display:flex; flex-direction:column; align-items:flex-start; padding:14px; }
+  .topbar-left{ align-items:flex-start; }
+  .countdown-block{ align-items:flex-start; }
   .version-block{ align-items:flex-start; }
-  .version-block .version-note{ text-align:left; }
-  .countdown-block{ align-items:flex-start; text-align:left; }
+  .version-block .version-num, .version-block .version-date{ text-align:left; }
   .countdown-inline{ display:flex; flex-direction:column; align-items:flex-start; }
   .report-widget{ justify-content:flex-start; }
   .panel{ padding:14px 12px; }
@@ -431,16 +434,18 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
         <span class="next-draw" id="nextDraw"></span>
         <span class="label" style="margin-top:6px;">Acces: <span id="accessCodeLabel" class="mono" style="color:var(--gold);">—</span></span>
       </div>
-      <div class="tabs" id="gameTabs"></div>
+      <div class="topbar-tabs">
+        <div class="tabs" id="gameTabs"></div>
+      </div>
     </div>
     <div class="countdown-block">
       <span class="label">Countdown tragere</span>
       <div class="countdown-clock mono" id="topCountdown">—</div>
     </div>
     <div class="version-block">
-      <span class="version-num">Ver 5.14</span>
-      <span class="version-date">Actualizat: 07.08.2026</span>
-      <span class="version-note">„Câștiguri" și „Pattern-uri & Structuri" sunt acum 2 sub-butoane independente, unul lângă altul, în interiorul tab-ului „Arhivă completă" (nu mai sunt tab separat de sine stătător). Topbar reorganizat: taburi sub Astăzi/dată, countdown centrat exact. Panou live de report per joc + ultima câștigare.</span>
+      <span class="version-num">Ver 5.16</span>
+      <span class="version-date">Actualizat: 08.08.2026</span>
+      <span class="version-note">Pattern-uri &amp; Structuri: buton nou "Generează alte 3 variante" — la fiecare apăsare propune 3 variante NOI, filtrate să fie "rare" (n-au avut niciodată 5/6 sau 6/6 comune cu vreo extragere reală din toată arhiva). Sub fiecare din cele 6 variante afișate (cele 3 recomandate + cele 3 rare) apare acum și istoricul exact de repetări 4/6, 5/6, 6/6 — cu dată și numărul extragerii.</span>
     </div>
   </div>
 
@@ -452,7 +457,7 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
     <div id="lastDrawRepeatInfo" style="margin-top:6px;"></div>
     <div class="countdown-inline" id="panelCountdownWrap">
       <span class="ci-label">⏱ Timp rămas până la următoarea extragere <b id="panelCountdownGame"></b></span>
-      <div class="report-widget" id="reportWidget"><span style="color:var(--muted); font-size:11px;">Se încarcă reportul...</span></div>
+      <div class="report-widget" id="reportWidget"><span class="small-note" style="font-size:11px;">Se încarcă reportul live de pe loto.ro...</span></div>
       <span class="ci-clock mono" id="panelCountdown">—</span>
     </div>
     <div id="salesCutoffBanner" class="sales-cutoff-banner"></div>
@@ -779,20 +784,19 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
 
   <div class="panel" id="fullArchivePanel" style="display:none;">
     <h2>Arhivă completă <span class="sub" id="fullArchiveSub">— toate extragerile reale, cele mai recente primele</span></h2>
-
-    <div class="tabs" id="archiveSubTabs" style="margin-bottom:14px;"></div>
+    <div class="tabs" id="archiveSubTabs" style="margin-bottom:16px;"></div>
 
     <div id="castiguriPanel">
-      <h2 style="font-size:15px; margin-bottom:6px;">Câștiguri <span class="sub">— categoria I (6/6) și categoria a II-a (5/6), urmărite live</span></h2>
-      <p class="small-note" style="margin-bottom:10px;">Date reale, preluate direct din tabelul oficial "Detalii câștiguri" publicat de Loteria Română pentru fiecare extragere (loto.ro) — nu e o estimare. NU este însă o arhivă istorică din 1993: Loteria Română nu publică un istoric complet ușor de preluat automat pentru toți acei ani, deci secțiunea urmărește live de acum înainte (din 07.08.2026), verificând la fiecare 5 minute cât ai pagina deschisă și înregistrând automat fiecare extragere nouă la care categoria I sau a II-a a fost câștigată.</p>
-      <div id="castiguriSection"></div>
+      <h2 style="font-size:15px;">Câștiguri <span class="sub">— date exacte, categoria I (jackpot) și a II-a, direct de pe loto.ro</span></h2>
+      <p class="small-note" style="margin-bottom:12px;">Verifică live, la fiecare 5 minute, paginile oficiale cu detalii de câștiguri per extragere pentru Loto 6/49, Loto 5/40 și Joker. Acoperă doar extrageri de la data la care această funcție a fost activată (2026) înainte — nu există un istoric oficial retroactiv 1993-2026 pe care aplicația să îl poată citi automat, așa că nu inventăm date pentru perioada dinainte.</p>
+      <div id="castiguriSection"><p class="small-note">Se încarcă...</p></div>
     </div>
 
     <div id="patternsSubPanel" style="display:none;">
-      <h2 style="font-size:15px; margin-bottom:6px;">Pattern-uri &amp; Structuri <span class="sub">— analiză statistică descriptivă, pe toată arhiva</span></h2>
-      <p class="small-note" style="margin-bottom:10px;">Important: fiecare extragere e un eveniment complet independent — nimic din tabelele de mai jos nu poate prezice sau influența extragerea următoare. Ce vezi aici sunt tipare <b>descriptive</b>, calculate din arhiva reală (aceeași folosită peste tot în aplicație, deci se actualizează automat la fiecare extragere nouă adăugată): perechi de numere care au apărut cel mai des împreună, structura tipică a unei extrageri (sumă, paritate, răspândire), de câte extrageri nu a mai apărut fiecare număr, și diferențe reale între zilele de tragere.</p>
+      <h2 style="font-size:15px;">Pattern-uri &amp; Structuri <span class="sub">— analizor complex bazat pe întreaga arhivă, cu backtest onest și 3 variante recomandate</span></h2>
+      <p class="small-note" style="margin-bottom:12px;">Model statistic ansamblu (frecvență + interval de la ultima apariție + afinitate de perechi), calibrat prin backtest pe extrageri reale, apoi simulat prin generare de mii de combinații candidate pentru a propune 3 variante finale — separate de metoda cu 14 indicatori din "Variante recomandate", ca să le poți compara.</p>
       <div class="tabs" id="patternGameTabs" style="margin-bottom:14px;"></div>
-      <div id="patternSection"></div>
+      <div id="patternSection"><p class="small-note">Se încarcă...</p></div>
     </div>
 
     <div class="archive-search-box" style="margin:4px 0 16px; padding:14px 16px; background:var(--surface2); border:1px solid var(--border); border-radius:10px;">
@@ -8855,35 +8859,28 @@ function renderFullArchiveTable(game){
   applyFilters();
   archiveTableShown = true;
 }
-// "Câștiguri" și "Pattern-uri & Structuri" sunt 2 sub-butoane independente, unul lângă altul,
-// în interiorul tab-ului "Arhivă completă" — click pe unul arată DOAR conținutul lui.
-let archiveSubTab = 'castiguri';
+let archiveSubTab = 'castiguri'; // 'castiguri' | 'patterns'
 function renderArchiveSubTabs(){
-  const wrap = document.getElementById('archiveSubTabs');
-  if(!wrap) return;
-  wrap.innerHTML = '';
-  const defs = [ {key:'castiguri', label:'Câștiguri'}, {key:'patterns', label:'Pattern-uri & Structuri'} ];
-  defs.forEach(d=>{
+  const el = document.getElementById('archiveSubTabs');
+  if(!el) return;
+  el.innerHTML = '';
+  const defs = [ ['castiguri','Câștiguri'], ['patterns','Pattern-uri & Structuri'] ];
+  defs.forEach(([key,label])=>{
     const b = document.createElement('button');
-    b.className = 'tab' + (archiveSubTab===d.key ? ' active' : '');
-    b.textContent = d.label;
-    b.onclick = ()=>{ archiveSubTab = d.key; renderArchiveSubTabs(); renderArchiveSubPanels(); };
-    wrap.appendChild(b);
+    b.className = 'tab' + (archiveSubTab===key ? ' active' : '');
+    b.textContent = label;
+    b.onclick = ()=>{ archiveSubTab = key; renderArchiveSubTabs(); renderArchiveSubPanels(); };
+    el.appendChild(b);
   });
 }
 function renderArchiveSubPanels(){
-  const cP = document.getElementById('castiguriPanel');
-  const pP = document.getElementById('patternsSubPanel');
-  if(cP) cP.style.display = archiveSubTab==='castiguri' ? '' : 'none';
-  if(pP) pP.style.display = archiveSubTab==='patterns' ? '' : 'none';
-  if(archiveSubTab==='castiguri'){
-    renderCastiguriSection();
-  } else {
-    renderPatternGameTabs();
-    renderPatternSection();
-  }
+  const cp = document.getElementById('castiguriPanel');
+  const pp = document.getElementById('patternsSubPanel');
+  if(cp) cp.style.display = archiveSubTab==='castiguri' ? '' : 'none';
+  if(pp) pp.style.display = archiveSubTab==='patterns' ? '' : 'none';
+  if(archiveSubTab==='castiguri') renderCastiguriSection();
+  else { renderPatternGameTabs(); renderPatternSection(); }
 }
-
 function renderFullArchivePanel(){
   renderArchiveGameTabs();
   if(archiveTableShown) renderFullArchiveTable(archiveSelectedGame);
@@ -12209,32 +12206,8 @@ const LOTTERY_EXTREME_URLS = {
   'joker': 'https://www.lotteryextreme.com/Romania/joker-results',
   'noroc': 'https://www.lotteryextreme.com/Romania/noroc-results'
 };
-const PUBLIC_CORS_PROXIES = [
-  (url)=> `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  (url)=> `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-  (url)=> `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-  (url)=> `https://thingproxy.freeboard.io/fetch/${url}`
-];
-async function fetchTextViaProxies(url, timeoutMs=12000){
-  let lastErr = null;
-  for(const buildProxyUrl of PUBLIC_CORS_PROXIES){
-    const proxyUrl = buildProxyUrl(url);
-    const controller = new AbortController();
-    const timer = setTimeout(()=> controller.abort(), timeoutMs);
-    try{
-      const resp = await fetch(proxyUrl, { signal: controller.signal });
-      clearTimeout(timer);
-      if(!resp.ok){ lastErr = new Error(`HTTP ${resp.status}`); continue; }
-      const text = await resp.text();
-      if(!text || text.trim().length < 50){ lastErr = new Error('Răspuns gol de la proxy'); continue; }
-      return text;
-    }catch(e){
-      clearTimeout(timer);
-      lastErr = e;
-      continue;
-    }
-  }
-  throw (lastErr || new Error('Toate sursele au eșuat'));
+function corsProxyUrl(url){
+  return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 }
 
 // Parse the HTML response from LotteryExtreme to extract draw dates and numbers.
@@ -12282,98 +12255,161 @@ function parseLotteryExtremeHTML(html, game){
   return results;
 }
 
-async function fetchMissingForGame(game){
+async function autoFetchAndFillMissing(game){
   const cfg = GAMES[game];
+  const statusEl = document.getElementById('autoFillStatus');
+  const form = document.getElementById('autoFillForm');
   const missing = computeMissingDrawDates(game);
-  const url = LOTTERY_EXTREME_URLS[game];
-  if(missing.length===0) return { game, cfg, url, missing, found: [], notFoundDates: [] };
+
+  if(missing.length===0){
+    statusEl.className = 'status-msg ok';
+    statusEl.textContent = `Arhiva ${cfg.label} e la zi — nu lipsește nicio extragere ✓`;
+    form.innerHTML = '';
+    return;
+  }
+
+  statusEl.className = 'status-msg';
+  statusEl.textContent = `Se caută ${missing.length} extrageri lipsă pentru ${cfg.label} pe LotteryExtreme.com...`;
+  form.innerHTML = '';
+
   try{
-    const html = await fetchTextViaProxies(url);
+    const url = LOTTERY_EXTREME_URLS[game];
+    if(!url) throw new Error('Jocul selectat nu are o sursă externă configurată.');
+    const resp = await fetch(corsProxyUrl(url));
+    if(!resp.ok) throw new Error(`Eroare la accesarea LotteryExtreme.com: HTTP ${resp.status}`);
+    const html = await resp.text();
     const parsed = parseLotteryExtremeHTML(html, game);
+
     const missingSet = new Set(missing);
     const found = parsed.filter(r=> missingSet.has(r.date));
-    const notFoundDates = missing.filter(d=> !found.find(f=>f.date===d));
-    return { game, cfg, url, missing, found, notFoundDates };
+
+    if(found.length === 0){
+      statusEl.className = 'status-msg err';
+      statusEl.textContent = `Nu s-au găsit pe LotteryExtreme.com niciuna din cele ${missing.length} extrageri lipsă. Posibil că site-ul nu a fost încă actualizat, sau extragerile sunt prea vechi (afișează doar ultimele 20). Poți adăuga manual cu butonul "Adaugă extragere manual" de mai sus.`;
+      return;
+    }
+
+    // Preview what we found before saving
+    const previewRows = found.map(r=>{
+      const numsStr = cfg.isDigit ? r.raw : (cfg.hasJoker ? r.nums.join(', ') + ' + ' + r.joker : r.nums.join(', '));
+      return `<tr><td class="mono">${fmtDateShort(r.date)}</td><td class="mono">${numsStr}</td></tr>`;
+    }).join('');
+    form.innerHTML = `
+      <p class="small-note" style="margin:10px 0;">S-au găsit <b>${found.length}</b> din ${missing.length} extrageri lipsă pe <a href="${url}" target="_blank" rel="noopener" style="color:var(--blue);">LotteryExtreme.com</a>. Verifică numerele de mai jos, apoi apasă "Confirmă și salvează":</p>
+      <div class="table-scroll"><table class="data-table" style="width:100%; max-width:480px;">
+        <thead><tr><th>Data</th><th>Numere</th></tr></thead>
+        <tbody>${previewRows}</tbody>
+      </table></div>
+      ${found.length < missing.length ? `<p class="small-note" style="margin-top:8px; color:#e0574a;">Nu s-au găsit ${missing.length - found.length} extrageri mai vechi (${missing.filter(d=>!found.find(f=>f.date===d)).map(fmtDateShort).join(', ')}) — probabil prea vechi pentru ultimele 20 afișate pe site. Adaugă-le manual.</p>` : ''}
+      <button class="btn2" id="autoFillConfirmBtn" style="margin-top:10px;">Confirmă și salvează</button>
+      <div id="autoFillConfirmStatus" class="status-msg"></div>
+    `;
+    statusEl.className = 'status-msg ok';
+    statusEl.textContent = `Găsite ${found.length} extrageri pe LotteryExtreme.com — verifică și confirmă mai jos.`;
+
+    document.getElementById('autoFillConfirmBtn').addEventListener('click', async ()=>{
+      const confStatus = document.getElementById('autoFillConfirmStatus');
+      confStatus.className = 'status-msg'; confStatus.textContent = 'Se salvează...';
+      try{
+        for(const draw of found){ await saveDraw(game, draw); }
+        confStatus.className = 'status-msg ok';
+        confStatus.textContent = `${found.length} extrageri adăugate și salvate permanent ✓`;
+        setTimeout(()=>{ renderAutoFillIdle(); renderAll(); }, 800);
+      }catch(e){
+        confStatus.className = 'status-msg err'; confStatus.textContent = 'Eroare la salvare: ' + e.message;
+      }
+    });
+
   }catch(e){
-    return { game, cfg, url, missing, found: [], notFoundDates: missing, error: e.message };
+    statusEl.className = 'status-msg err';
+    statusEl.textContent = `Nu s-au putut prelua datele automat: ${e.message}`;
+    form.innerHTML = `<p class="small-note" style="margin-top:8px;">Poți adăuga extragerile manual folosind butonul "Adaugă extragere manual" de mai sus, sau încearcă din nou mai târziu.</p>`;
   }
 }
 
-// Checks and updates ALL 4 games (6/49, 5/40, Joker, Noroc) in one pass, regardless of which
-// tab is currently active — fetched in parallel, then shown together for a single confirm+save.
-async function autoFetchAndFillMissingAllGames(){
+// Checks & fills missing draws across ALL 4 games at once from a single click, so switching
+// tabs isn't required — the button always audits/updates 6/49, 5/40, Joker and Noroc together.
+async function autoFetchAndFillAllGames(){
   const statusEl = document.getElementById('autoFillStatus');
   const form = document.getElementById('autoFillForm');
+  if(!statusEl || !form) return;
   statusEl.className = 'status-msg';
-  statusEl.textContent = 'Se verifică toate cele 4 jocuri (6/49, 5/40, Joker, Noroc) pe LotteryExtreme.com...';
+  statusEl.textContent = 'Se verifică extrageri lipsă la toate cele 4 jocuri (6/49, 5/40, Joker, Noroc)...';
   form.innerHTML = '';
 
-  const results = await Promise.all(GAME_ORDER.map(g=> fetchMissingForGame(g)));
-
-  const totalMissing = results.reduce((s,r)=> s + r.missing.length, 0);
-  const totalFound = results.reduce((s,r)=> s + r.found.length, 0);
+  const perGame = {};
+  let totalMissing = 0;
+  GAME_ORDER.forEach(game=>{
+    const missing = computeMissingDrawDates(game);
+    perGame[game] = { missing, found: [] };
+    totalMissing += missing.length;
+  });
 
   if(totalMissing===0){
     statusEl.className = 'status-msg ok';
     statusEl.textContent = 'Toate cele 4 jocuri sunt la zi — nu lipsește nicio extragere ✓';
-    form.innerHTML = '';
     return;
   }
 
+  statusEl.textContent = `Se caută ${totalMissing} extrageri lipsă (toate jocurile) pe LotteryExtreme.com...`;
+
+  for(const game of GAME_ORDER){
+    if(perGame[game].missing.length===0) continue;
+    try{
+      const url = LOTTERY_EXTREME_URLS[game];
+      const resp = await fetch(corsProxyUrl(url));
+      if(!resp.ok) throw new Error('HTTP '+resp.status);
+      const html = await resp.text();
+      const parsed = parseLotteryExtremeHTML(html, game);
+      const missingSet = new Set(perGame[game].missing);
+      perGame[game].found = parsed.filter(r=> missingSet.has(r.date));
+    }catch(e){
+      perGame[game].error = e.message;
+    }
+  }
+
+  const totalFound = GAME_ORDER.reduce((s,g)=> s+perGame[g].found.length, 0);
   if(totalFound===0){
     statusEl.className = 'status-msg err';
-    statusEl.textContent = `Nu s-a găsit pe LotteryExtreme.com nicio extragere din cele ${totalMissing} lipsă, la niciun joc. Poți adăuga manual cu butonul "Adaugă extragere manual" de mai sus.`;
-    form.innerHTML = '';
+    statusEl.textContent = 'Nu s-a găsit nicio extragere lipsă pe LotteryExtreme.com pentru niciun joc. Poți adăuga manual cu formularul de mai sus.';
     return;
   }
 
-  statusEl.className = 'status-msg ok';
-  statusEl.textContent = `Găsite ${totalFound} din ${totalMissing} extrageri lipsă, pe toate jocurile — verifică mai jos și confirmă.`;
-
-  const sections = results.map(r=>{
-    if(r.missing.length===0){
-      return `<div style="margin:10px 0;"><b>${r.cfg.label}</b> — <span style="color:var(--muted);">la zi ✓</span></div>`;
-    }
-    if(r.error){
-      return `<div style="margin:10px 0;"><b>${r.cfg.label}</b> — <span style="color:#e0574a;">nu s-a putut prelua: ${r.error}</span></div>`;
-    }
-    if(r.found.length===0){
-      return `<div style="margin:10px 0;"><b>${r.cfg.label}</b> — <span style="color:#e0574a;">niciuna din cele ${r.missing.length} lipsă nu a fost găsită pe LotteryExtreme.com</span></div>`;
-    }
-    const rows = r.found.map(x=>{
-      const numsStr = r.cfg.isDigit ? x.raw : (r.cfg.hasJoker ? x.nums.join(', ') + ' + ' + x.joker : x.nums.join(', '));
-      return `<tr><td class="mono">${fmtDateShort(x.date)}</td><td class="mono">${numsStr}</td></tr>`;
+  let previewHTML = '';
+  GAME_ORDER.forEach(game=>{
+    const { missing, found, error } = perGame[game];
+    if(missing.length===0) return;
+    const cfg = GAMES[game];
+    previewHTML += `<div style="margin-top:12px;"><b style="color:var(--gold); font-size:12.5px;">${cfg.label}</b> — `;
+    if(error){ previewHTML += `<span style="color:var(--red);">eroare: ${error}</span></div>`; return; }
+    if(found.length===0){ previewHTML += `<span style="color:var(--muted);">niciuna găsită din ${missing.length} lipsă</span></div>`; return; }
+    previewHTML += `<span style="color:var(--muted);">${found.length}/${missing.length} găsite</span>`;
+    const rows = found.map(r=>{
+      const numsStr = cfg.isDigit ? r.raw : (cfg.hasJoker ? r.nums.join(', ') + ' + ' + r.joker : r.nums.join(', '));
+      return `<tr><td class="mono">${fmtDateShort(r.date)}</td><td class="mono">${numsStr}</td></tr>`;
     }).join('');
-    const missedNote = r.notFoundDates.length ? `<p class="small-note" style="margin-top:4px; color:#e0574a;">Nu s-au găsit ${r.notFoundDates.length} extrageri mai vechi (${r.notFoundDates.map(fmtDateShort).join(', ')}) — adaugă-le manual.</p>` : '';
-    return `
-      <div style="margin:14px 0;">
-        <b>${r.cfg.label}</b> — găsite ${r.found.length} din ${r.missing.length} lipsă
-        (<a href="${r.url}" target="_blank" rel="noopener" style="color:var(--blue);">sursă</a>)
-        <div class="table-scroll"><table class="data-table" style="width:100%; max-width:480px; margin-top:6px;">
-          <thead><tr><th>Data</th><th>Numere</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table></div>
-        ${missedNote}
-      </div>`;
-  }).join('');
+    previewHTML += `<div class="table-scroll"><table class="data-table" style="width:100%; max-width:480px; margin-top:4px;"><thead><tr><th>Data</th><th>Numere</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  });
 
   form.innerHTML = `
-    <p class="small-note" style="margin:10px 0;">Verifică numerele de mai jos pentru toate jocurile, apoi apasă „Confirmă și salvează pentru toate":</p>
-    ${sections}
-    <button class="btn2" id="autoFillConfirmBtn" style="margin-top:10px;">Confirmă și salvează pentru toate</button>
+    <p class="small-note" style="margin:10px 0;">S-au găsit <b>${totalFound}</b> extrageri lipsă în total, pe toate jocurile, de pe <a href="https://www.lotteryextreme.com" target="_blank" rel="noopener" style="color:var(--blue);">LotteryExtreme.com</a>. Verifică mai jos, apoi confirmă:</p>
+    ${previewHTML}
+    <button class="btn2" id="autoFillConfirmBtn" style="margin-top:12px;">Confirmă și salvează la toate jocurile</button>
     <div id="autoFillConfirmStatus" class="status-msg"></div>
   `;
+  statusEl.className = 'status-msg ok';
+  statusEl.textContent = `Găsite ${totalFound} extrageri pe toate jocurile — verifică și confirmă mai jos.`;
 
   document.getElementById('autoFillConfirmBtn').addEventListener('click', async ()=>{
     const confStatus = document.getElementById('autoFillConfirmStatus');
     confStatus.className = 'status-msg'; confStatus.textContent = 'Se salvează...';
     try{
       let savedCount = 0;
-      for(const r of results){
-        for(const draw of r.found){ await saveDraw(r.game, draw); savedCount++; }
+      for(const game of GAME_ORDER){
+        for(const draw of perGame[game].found){ await saveDraw(game, draw); savedCount++; }
       }
       confStatus.className = 'status-msg ok';
-      confStatus.textContent = `${savedCount} extrageri adăugate și salvate permanent, pe toate jocurile ✓`;
+      confStatus.textContent = `${savedCount} extrageri adăugate și salvate, la toate jocurile, live și simultan ✓`;
       setTimeout(()=>{ renderAutoFillIdle(); renderAll(); }, 800);
     }catch(e){
       confStatus.className = 'status-msg err'; confStatus.textContent = 'Eroare la salvare: ' + e.message;
@@ -12382,309 +12418,431 @@ async function autoFetchAndFillMissingAllGames(){
 }
 
 document.getElementById('autoFillMissingBtn').addEventListener('click', ()=>{
-  autoFetchAndFillMissingAllGames();
+  autoFetchAndFillAllGames();
 });
 
-// ---------- LIVE REPORT / JACKPOT WIDGET (loto.ro — sursa oficială Loteria Română) ----------
-const LOTO_RO_URL = 'https://www.loto.ro/';
-const EUR_RON_APPROX = 5.25;
 
+
+// ================================================================================
+// ---------- LIVE REPORT / JACKPOT WIDGET (loto.ro, official) ----------
+// ================================================================================
+const LOTO_RO_URL = 'https://www.loto.ro/';
+const EUR_RON_APPROX = 5.25; // aproximativ, doar pentru orientare — nu e un curs live
+const PUBLIC_CORS_PROXIES = [
+  (u)=> `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  (u)=> `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  (u)=> `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`
+];
+async function fetchTextViaProxies(url, timeoutMs){
+  timeoutMs = timeoutMs || 9000;
+  let lastErr = null;
+  for(const build of PUBLIC_CORS_PROXIES){
+    const controller = new AbortController();
+    const t = setTimeout(()=> controller.abort(), timeoutMs);
+    try{
+      const resp = await fetch(build(url), { signal: controller.signal });
+      clearTimeout(t);
+      if(!resp.ok) throw new Error('HTTP '+resp.status);
+      const text = await resp.text();
+      if(text && text.length > 50) return text;
+      throw new Error('răspuns gol');
+    }catch(e){
+      clearTimeout(t);
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('toate proxy-urile au eșuat');
+}
+
+// Extrage valorile de report (RON) pentru 6/49, 5/40 și Joker din pagina principală loto.ro.
+// Formatul textului (după eliminarea tagurilor HTML) e de forma:
+// "REPORT LOTO 6/49 ... REPORTURI 12.345.678" — extragem prima sumă numerică mare de după fiecare etichetă de joc.
 function parseReportHTML(html){
   const text = html.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
-  const defs = [
-    { key:'649', re:/REPORT\s+LOTO\s*6\s*\/\s*49[\s\S]{0,80}?REPORTURI\s*([\d.,]+)/i },
-    { key:'540', re:/REPORT\s+LOTO\s*5\s*\/\s*40[\s\S]{0,80}?REPORTURI\s*([\d.,]+)/i },
-    { key:'joker', re:/REPORT\s+JOKER[\s\S]{0,80}?REPORTURI\s*([\d.,]+)/i }
-  ];
   const out = {};
-  defs.forEach(d=>{
-    const m = text.match(d.re);
+  const patterns = {
+    '649': /6\s*\/\s*49[\s\S]{0,200}?([\d][\d.,]{4,})\s*(?:lei|RON)/i,
+    '540': /5\s*\/\s*40[\s\S]{0,200}?([\d][\d.,]{4,})\s*(?:lei|RON)/i,
+    'joker': /joker[\s\S]{0,200}?([\d][\d.,]{4,})\s*(?:lei|RON)/i
+  };
+  Object.keys(patterns).forEach(game=>{
+    const m = text.match(patterns[game]);
     if(m){
-      const ron = parseFloat(m[1].replace(/\./g,'').replace(',', '.'));
-      if(!isNaN(ron) && ron>0) out[d.key] = ron;
+      const raw = m[1].replace(/\./g,'').replace(/,/g,'');
+      const val = parseInt(raw, 10);
+      if(!isNaN(val) && val > 0) out[game] = val;
     }
   });
   return out;
 }
 
-function fmtRon(n){
-  return Math.round(n).toLocaleString('ro-RO') + ' lei';
-}
-function fmtEurApprox(ron){
-  return '≈ ' + Math.round(ron / EUR_RON_APPROX).toLocaleString('ro-RO') + ' €';
-}
-function todayISO(){
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-
+// Best-effort: caută în textul paginii/știrilor loto.ro un anunț recent de "premiul cel mare
+// câștigat" per joc, cu o dată. Nu există un API oficial pentru asta — e o citire aproximativă
+// din fluxul de știri, care poate lipsi dacă loto.ro nu a publicat încă un anunț explicit.
 function parseLastWinDates(html){
   const text = html.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
-  const dateRe = /(\d{2})\.(\d{2})\.(\d{4})/;
-  const winKeywordsRe = /(s-a\s+c[âa]știgat|c[âa]știg[ăa]toa\w*|premiul\s+de\s+categoria\s+i\b|categoria\s+i\s+(?:de\s+la|la))/gi;
-  const defs = [
-    { key:'649', nameRe:/6\s*\/\s*49/i },
-    { key:'540', nameRe:/5\s*\/\s*40/i },
-    { key:'joker', nameRe:/joker/i }
-  ];
   const out = {};
-  defs.forEach(d=>{
-    winKeywordsRe.lastIndex = 0;
-    let m;
-    while((m = winKeywordsRe.exec(text)) !== null){
-      const windowStart = Math.max(0, m.index-150);
-      const windowEnd = Math.min(text.length, m.index+150);
-      const windowText = text.slice(windowStart, windowEnd);
-      if(d.nameRe.test(windowText)){
-        const dm = windowText.match(dateRe);
-        if(dm){ out[d.key] = `${dm[1]}.${dm[2]}.${dm[3]}`; break; }
-      }
-    }
+  const gameLabels = { '649':/6\s*\/\s*49/i, '540':/5\s*\/\s*40/i, 'joker':/joker/i };
+  Object.keys(gameLabels).forEach(game=>{
+    const re = new RegExp('(c[âa]știg[^.]{0,120}?)(\\d{2}\\.\\d{2}\\.\\d{4})', 'i');
+    // caută în apropierea etichetei jocului un fragment cu "câștig" urmat de o dată
+    const labelRe = gameLabels[game];
+    const idx = text.search(labelRe);
+    if(idx === -1) return;
+    const windowText = text.substring(Math.max(0, idx-50), idx+400);
+    const m = windowText.match(re);
+    if(m) out[game] = m[2];
   });
   return out;
 }
 
+let lastKnownReportRon = {};
 async function loadReportWidget(){
   const el = document.getElementById('reportWidget');
   if(!el) return;
   try{
     const html = await fetchTextViaProxies(LOTO_RO_URL);
-    const reports = parseReportHTML(html);
+    const reportVals = parseReportHTML(html);
     const lastWins = parseLastWinDates(html);
-
-    el.innerHTML = GAME_ORDER.map(g=>{
-      const cfg = GAMES[g];
-      if(g==='noroc'){
-        return `<div class="rw-item" title="Loteria Română nu publică o valoare de report pentru Noroc."><span class="rw-game">${cfg.label}</span><span class="rw-status" style="color:var(--muted2);">Report: N/A</span></div>`;
+    lastKnownReportRon = Object.assign({}, lastKnownReportRon, reportVals);
+    await persistReportTracking();
+    const order = [['649','Loto 6/49'], ['540','Loto 5/40'], ['joker','Joker'], ['noroc','Noroc']];
+    el.innerHTML = order.map(([g,label])=>{
+      if(g === 'noroc'){
+        return `<div class="rw-item"><span class="rw-game">${label}</span><span class="rw-status no">N/A</span></div>`;
       }
-      const ron = reports[g];
-      const lastWinLine = lastWins[g]
-        ? `<span class="rw-lastwin">Ultima câștigare: ${lastWins[g]}</span>`
-        : `<span class="rw-lastwin">Ultima câștigare: indisponibilă</span>`;
-      if(ron){
-        return `<div class="rw-item" title="Sursă: loto.ro"><span class="rw-game">${cfg.label}</span><span class="rw-status yes">Report: DA</span><span class="rw-val">${fmtRon(ron)} (${fmtEurApprox(ron)})</span>${lastWinLine}</div>`;
-      }
-      return `<div class="rw-item" title="Sursă: loto.ro"><span class="rw-game">${cfg.label}</span><span class="rw-status no">Report: NU</span>${lastWinLine}</div>`;
+      const ron = reportVals[g];
+      const has = typeof ron === 'number' && ron > 0;
+      const eur = has ? Math.round(ron / EUR_RON_APPROX).toLocaleString('ro-RO') : null;
+      const lastWin = lastWins[g];
+      return `<div class="rw-item">
+        <span class="rw-game">${label}</span>
+        <span class="rw-status ${has?'yes':'no'}">Report: ${has?'DA':'NU'}</span>
+        ${has?`<span class="rw-val">~${eur} €</span>`:''}
+        ${lastWin?`<span class="rw-lastwin">ultimul mare: ${lastWin}</span>`:''}
+      </div>`;
     }).join('');
   }catch(e){
-    el.innerHTML = `<span style="color:var(--muted2); font-size:10.5px;">Report indisponibil momentan (sursă offline)</span>`;
+    el.innerHTML = `<span class="small-note" style="font-size:11px; color:var(--muted);">Report live indisponibil momentan (${e.message}) — reîncearcă automat la 5 min.</span>`;
   }
 }
 
-// ---------- CÂȘTIGURI CATEGORIA I ȘI A II-A — citire directă din tabelul oficial per extragere ----------
+// ================================================================================
+// ---------- CÂȘTIGURI (Categoria I și a II-a, date exacte, loto.ro oficial) ----------
+// ================================================================================
 const LOTO_RESULTS_URLS = {
   '649': 'https://www.loto.ro/loto-new/newLotoSiteNexioFinalVersion/web/app2.php/jocuri/649_si_noroc/rezultate_extragere.html',
-  '540': 'https://www.loto.ro/loto-new/newLotoSiteNexioFinalVersion/web/app2.php/jocuri/540_si_super_noroc/rezultate_extrageri.html',
-  'joker': 'https://www.loto.ro/loto-new/newLotoSiteNexioFinalVersion/web/app2.php/jocuri/joker_si_noroc_plus/rezultate_extrageri.html'
+  '540': 'https://www.loto.ro/loto-new/newLotoSiteNexioFinalVersion/web/app2.php/jocuri/540_si_super_noroc/rezultate_extragere.html',
+  'joker': 'https://www.loto.ro/loto-new/newLotoSiteNexioFinalVersion/web/app2.php/jocuri/joker_si_noroc_plus/rezultate_extragere.html'
 };
-const GAME_LABEL_MATCH = {
-  '649': /6\s*\/\s*49/i,
-  '540': /5\s*\/\s*40/i,
-  'joker': /^joker$/i
+const GAME_LABEL_MATCH = { '649': /6\s*\/\s*49/i, '540': /5\s*\/\s*40/i, 'joker': /joker/i };
+const CATEGORY_LABEL = {
+  '649': { I:'6/6', II:'5/6' },
+  '540': { I:'6/6', II:'5/6' },
+  'joker': { I:'5+Joker', II:'5 fără Joker' }
 };
-const CATEGORY_LABEL = { '649':{I:'6/6', II:'5/6'}, '540':{I:'6/6', II:'5/6'}, 'joker':{I:'5+Joker', II:'5 fără Joker'} };
 
-function parseDetaliiCastiguri(html){
+// Fiecare pagină de rezultate conține, pentru fiecare extragere, un bloc "Detalii ... la X din
+// DD.MM.YYYY" urmat (în ~500 caractere) de un tabel cu categoriile de câștig. Extragem, pentru
+// Categoria I și a II-a, fie șirul "REPORT" (nimeni nu a câștigat, se reportează), fie numărul de
+// câștigători (înseamnă că s-a câștigat la acea categorie, la acea dată exactă).
+function parseDetaliiCastiguri(html, game){
   const text = html.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
   const blockRe = /Detalii\s+\S+\s+la\s+(.+?)\s+din\s+(\d{2})\.(\d{2})\.(\d{4})([\s\S]{0,500}?)(?=Detalii\s+\S+\s+la|$)/gi;
-  const blocks = [];
+  const out = [];
   let m;
   while((m = blockRe.exec(text)) !== null){
-    const label = m[1].trim();
+    const label = m[1];
+    if(!GAME_LABEL_MATCH[game].test(label)) continue;
     const date = `${m[4]}-${m[3]}-${m[2]}`;
     const body = m[5];
     const catI = body.match(/\bI\s*\([^)]*\)\s*(REPORT|\d[\d.,]*)/i);
     const catII = body.match(/\bII\s*\([^)]*\)\s*(REPORT|\d[\d.,]*)/i);
-    blocks.push({
-      label, date,
-      catI: catI ? (catI[1].toUpperCase()==='REPORT' ? null : catI[1]) : undefined,
-      catII: catII ? (catII[1].toUpperCase()==='REPORT' ? null : catII[1]) : undefined
+    out.push({
+      date,
+      catIWon: catI ? (catI[1].toUpperCase() !== 'REPORT') : null,
+      catIWinners: catI && catI[1].toUpperCase() !== 'REPORT' ? catI[1] : null,
+      catIIWon: catII ? (catII[1].toUpperCase() !== 'REPORT') : null,
+      catIIWinners: catII && catII[1].toUpperCase() !== 'REPORT' ? catII[1] : null
     });
   }
-  return blocks;
+  return out;
+}
+
+let reportWinEvents = { '649':[], '540':[], joker:[] };
+let processedDrawKeys = {};
+async function persistReportTracking(){
+  await userDocRef.set({ reportWinEvents, processedDrawKeys, lastKnownReportRon }, {merge:true});
 }
 
 async function checkCastiguriLive(){
   let changed = false;
-  for(const g of ['649','540','joker']){
+  for(const game of ['649','540','joker']){
     try{
-      const html = await fetchTextViaProxies(LOTO_RESULTS_URLS[g]);
-      const blocks = parseDetaliiCastiguri(html).filter(b=> GAME_LABEL_MATCH[g].test(b.label));
+      const html = await fetchTextViaProxies(LOTO_RESULTS_URLS[game]);
+      const blocks = parseDetaliiCastiguri(html, game);
       blocks.forEach(b=>{
-        const key = `${g}-${b.date}`;
-        if(processedDrawKeys[key]) return;
-        processedDrawKeys[key] = true;
-        changed = true;
-        reportWinEvents[g] = reportWinEvents[g] || [];
-        if(b.catI !== undefined && b.catI !== null){
-          reportWinEvents[g].unshift({ date:b.date, category:'I', winners:b.catI });
+        const keyI = game+':'+b.date+':I';
+        const keyII = game+':'+b.date+':II';
+        if(b.catIWon && !processedDrawKeys[keyI]){
+          reportWinEvents[game].push({ date:b.date, category:'I', winners:b.catIWinners });
+          processedDrawKeys[keyI] = true; changed = true;
         }
-        if(b.catII !== undefined && b.catII !== null){
-          reportWinEvents[g].unshift({ date:b.date, category:'II', winners:b.catII });
+        if(b.catIIWon && !processedDrawKeys[keyII]){
+          reportWinEvents[game].push({ date:b.date, category:'II', winners:b.catIIWinners });
+          processedDrawKeys[keyII] = true; changed = true;
         }
       });
     }catch(e){
-      // sursă indisponibilă momentan pentru acest joc — reîncercăm la următoarea verificare
+      console.error('Câștiguri live check failed for', game, e.message);
     }
   }
   if(changed){
-    await persistReportTracking().catch(()=>{});
+    reportWinEvents['649'].sort((a,b)=> a.date < b.date ? 1 : -1);
+    reportWinEvents['540'].sort((a,b)=> a.date < b.date ? 1 : -1);
+    reportWinEvents['joker'].sort((a,b)=> a.date < b.date ? 1 : -1);
+    await persistReportTracking();
   }
   renderCastiguriSection();
-}
-
-function findDrawAtOrBefore(game, dateISO){
-  const draws = getAllDraws(game);
-  let match = null;
-  for(const d of draws){ if(d.date <= dateISO) match = d; else break; }
-  return match;
 }
 
 function renderCastiguriSection(){
   const el = document.getElementById('castiguriSection');
   if(!el) return;
-  const games = ['649','540','joker'];
-  const anyEvents = games.some(g=> (reportWinEvents[g]||[]).length>0);
-  if(!anyEvents){
-    el.innerHTML = `<p class="small-note" style="color:var(--muted);">Nicio câștigare de categoria I sau a II-a detectată încă de când urmărim live (din 07.08.2026). Va apărea aici automat de îndată ce se întâmplă.</p>`;
-    return;
-  }
-  el.innerHTML = games.map(g=>{
-    const events = reportWinEvents[g] || [];
-    if(events.length===0) return '';
-    const cfg = GAMES[g];
-    const catLabels = CATEGORY_LABEL[g];
+  let html = '';
+  ['649','540','joker'].forEach(game=>{
+    const cfg = GAMES[game];
+    const events = reportWinEvents[game] || [];
+    html += `<div style="margin-bottom:16px;"><b style="color:var(--gold); font-size:12.5px;">${cfg.label}</b>`;
+    if(events.length===0){
+      html += `<p class="small-note" style="margin-top:4px;">Niciun câștig la Categoria I sau a II-a detectat încă (din 2026 înainte, verificat live).</p></div>`;
+      return;
+    }
     const byYear = {};
     events.forEach(ev=>{
-      const year = ev.date.slice(0,4);
-      (byYear[year] = byYear[year] || []).push(ev);
+      const y = ev.date.slice(0,4);
+      byYear[y] = byYear[y] || [];
+      byYear[y].push(ev);
     });
-    const years = Object.keys(byYear).sort((a,b)=> b-a);
-    const yearBlocks = years.map(year=>{
-      const rows = byYear[year].map(ev=>{
-        const catTxt = ev.category==='I' ? `Categoria I (${catLabels.I})` : `Categoria a II-a (${catLabels.II})`;
-        return `<li><b>${catTxt}</b> — extragerea din ${fmtDateShort(ev.date)}, ${ev.winners} câștigător${ev.winners==='1'?'':'i'}.</li>`;
-      }).join('');
-      return `<div style="margin-top:6px;"><b>${year}</b><ul style="margin:4px 0 0 18px; font-size:12.5px; color:var(--text);">${rows}</ul></div>`;
-    }).join('');
-    return `<div style="margin-top:10px;"><span style="font-weight:700; color:var(--gold);">${cfg.label}</span>${yearBlocks}</div>`;
-  }).join('');
+    Object.keys(byYear).sort((a,b)=> b-a).forEach(y=>{
+      html += `<div style="margin-top:6px; font-size:12px; color:var(--muted); font-weight:600;">${y}</div><ul style="margin:4px 0 0; padding-left:18px; font-size:12.5px; line-height:1.7;">`;
+      byYear[y].forEach(ev=>{
+        const catLabel = ev.category==='I' ? `Categoria I (${CATEGORY_LABEL[game].I})` : `Categoria a II-a (${CATEGORY_LABEL[game].II})`;
+        html += `<li>${fmtDateShort(ev.date)} — ${catLabel}${ev.winners?` — ${ev.winners} câștigător(i)`:''}</li>`;
+      });
+      html += `</ul>`;
+    });
+    html += `</div>`;
+  });
+  el.innerHTML = html;
 }
 
-// ---------- PATTERN-URI & STRUCTURI — analiză statistică descriptivă pe toată arhiva ----------
+// ================================================================================
+// ---------- PATTERN-URI & STRUCTURI — ANALIZOR COMPLEX (ansamblu calibrat + backtest + simulare) ----------
+// ================================================================================
+// Important, de citit înainte de tot ce urmează: fiecare extragere loto e un eveniment
+// independent, complet aleatoriu. Nicio analiză statistică — oricât de complexă — nu poate crește
+// șansele reale de câștig la extragerea viitoare. Ce construim mai jos e o sinteză statistică
+// avansată a arhivei (nu o „predicție"): combină mai multe semnale descriptive într-un model
+// ansamblu, calibrează ponderile alea printr-un backtest onest pe extrageri reale trecute, apoi
+// rulează o simulare Monte Carlo pentru a propune 3 variante. Backtestul e afișat tocmai ca să
+// arate transparent cât de aproape de întâmplare (nu mai bine) performează abordarea — asta e
+// rezultatul așteptat, matematic corect, pentru un joc cu adevărat aleatoriu.
 let patternSelectedGame = '649';
 const PATTERN_GAMES = ['649','540','joker'];
-
-function computePairFrequencies(game){
-  const cfg = GAMES[game];
-  const draws = getAllDraws(game);
-  const pairCounts = {};
-  draws.forEach(d=>{
-    const nums = [...d.nums].sort((a,b)=>a-b);
-    for(let i=0;i<nums.length;i++){
-      for(let j=i+1;j<nums.length;j++){
-        const key = `${nums[i]} + ${nums[j]}`;
-        pairCounts[key] = (pairCounts[key]||0)+1;
-      }
-    }
-  });
-  const total = draws.length;
-  return {
-    total,
-    top: Object.entries(pairCounts).map(([key,count])=>({key,count,pct:(count/total*100)})).sort((a,b)=>b.count-a.count).slice(0,15)
-  };
-}
-
-function computeDrawStructureStats(game){
-  const cfg = GAMES[game];
-  const draws = getAllDraws(game);
-  const half = Math.ceil(cfg.range/2);
-  let sumTotal=0, spreadTotal=0;
-  const oddCounts = {}, lowCounts = {};
-  draws.forEach(d=>{
-    const nums = d.nums;
-    const sum = nums.reduce((a,b)=>a+b,0);
-    const odd = nums.filter(n=> n%2===1).length;
-    const low = nums.filter(n=> n<=half).length;
-    const spread = Math.max(...nums) - Math.min(...nums);
-    sumTotal += sum; spreadTotal += spread;
-    oddCounts[odd] = (oddCounts[odd]||0)+1;
-    lowCounts[low] = (lowCounts[low]||0)+1;
-  });
-  const n = draws.length;
-  const bestOf = (obj)=> Object.entries(obj).sort((a,b)=>b[1]-a[1])[0];
-  const mOdd = bestOf(oddCounts), mLow = bestOf(lowCounts);
-  return {
-    n,
-    avgSum: n? (sumTotal/n).toFixed(1) : '-',
-    avgSpread: n? (spreadTotal/n).toFixed(1) : '-',
-    oddSplit: mOdd ? `${mOdd[0]} impare / ${cfg.pick-mOdd[0]} pare` : '-',
-    oddSplitPct: mOdd ? (mOdd[1]/n*100).toFixed(1) : '-',
-    lowSplit: mLow ? `${mLow[0]} mici (1-${half}) / ${cfg.pick-mLow[0]} mari` : '-',
-    lowSplitPct: mLow ? (mLow[1]/n*100).toFixed(1) : '-'
-  };
-}
-
-function computeGaps(game){
-  const cfg = GAMES[game];
-  const draws = getAllDraws(game);
-  const lastSeenIdx = {};
-  draws.forEach((d,idx)=>{ d.nums.forEach(n=> lastSeenIdx[n]=idx); });
-  const total = draws.length;
-  const gaps = [];
-  for(let n=1;n<=cfg.range;n++){
-    const idx = lastSeenIdx[n];
-    const gap = (idx===undefined) ? total : (total-1-idx);
-    gaps.push({ n, gap, lastDate: idx!==undefined ? draws[idx].date : null });
-  }
-  gaps.sort((a,b)=> b.gap-a.gap);
-  return gaps;
-}
-
-function computeDayOfWeekStats(game){
-  const draws = getAllDraws(game);
-  const dayNames = ['Duminică','Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă'];
-  const byDow = {};
-  draws.forEach(d=>{
-    const dow = new Date(d.date+'T12:00:00').getDay();
-    const sum = d.nums.reduce((a,b)=>a+b,0);
-    const odd = d.nums.filter(x=> x%2===1).length;
-    if(!byDow[dow]) byDow[dow] = {n:0, sumTotal:0, oddTotal:0};
-    byDow[dow].n++; byDow[dow].sumTotal += sum; byDow[dow].oddTotal += odd;
-  });
-  return Object.entries(byDow)
-    .filter(([,s])=> s.n>0)
-    .map(([dow,s])=>({ day:dayNames[dow], n:s.n, avgSum:(s.sumTotal/s.n).toFixed(1), avgOdd:(s.oddTotal/s.n).toFixed(2) }));
-}
-
-function computeCrossGameOverlap(){
-  const d649 = getAllDraws('649');
-  const d540 = getAllDraws('540');
-  const map540 = {};
-  d540.forEach(d=> map540[d.date]=d);
-  let sameDay=0, overlapTotal=0;
-  d649.forEach(d=>{
-    const match = map540[d.date];
-    if(match){
-      sameDay++;
-      const set1 = new Set(d.nums);
-      overlapTotal += match.nums.filter(n=> set1.has(n)).length;
-    }
-  });
-  return { sameDay, avgOverlap: sameDay ? (overlapTotal/sameDay).toFixed(2) : '-' };
-}
+let patternModelCache = {};
+let patternVariantsCache = {};
 
 function renderPatternGameTabs(){
-  const wrap = document.getElementById('patternGameTabs');
-  if(!wrap) return;
-  wrap.innerHTML = '';
+  const el = document.getElementById('patternGameTabs');
+  if(!el) return;
+  el.innerHTML = '';
   PATTERN_GAMES.forEach(k=>{
     const b = document.createElement('button');
     b.className = 'tab' + (k===patternSelectedGame ? ' active' : '');
     b.textContent = GAMES[k].label;
     b.onclick = ()=>{ patternSelectedGame = k; renderPatternGameTabs(); renderPatternSection(); };
-    wrap.appendChild(b);
+    el.appendChild(b);
   });
+}
+
+// Construiește semnalele per-număr din arhivă. uptoIndex, dacă e dat, limitează calculul la
+// extragerile STRICT dinaintea acelui index — esențial pentru un backtest onest, fără scurgere
+// de informație din viitor în trecut.
+function buildNumberSignals(game, uptoIndex){
+  const cfg = GAMES[game];
+  const allDraws = getAllDraws(game);
+  const draws = (uptoIndex===undefined) ? allDraws : allDraws.slice(0, uptoIndex);
+  const n = draws.length;
+  const freq = {}, lastSeenIdx = {};
+  for(let i=1;i<=cfg.range;i++){ freq[i]=0; lastSeenIdx[i]=-1; }
+  const pairCounts = {};
+  draws.forEach((d,idx)=>{
+    const nums = d.nums;
+    nums.forEach(x=>{ freq[x] = (freq[x]||0)+1; lastSeenIdx[x]=idx; });
+    const sorted = [...nums].sort((a,b)=>a-b);
+    for(let i=0;i<sorted.length;i++){
+      for(let j=i+1;j<sorted.length;j++){
+        const key = sorted[i]+'-'+sorted[j];
+        pairCounts[key] = (pairCounts[key]||0)+1;
+      }
+    }
+  });
+  const maxFreq = Math.max(1, ...Object.values(freq));
+  const freqSig = {};
+  for(let i=1;i<=cfg.range;i++) freqSig[i] = freq[i]/maxFreq;
+  const expectedGap = cfg.range/cfg.pick; // interval mediu așteptat între apariții, sub o ipoteză uniformă
+  const gapSig = {};
+  for(let i=1;i<=cfg.range;i++){
+    const gap = lastSeenIdx[i]===-1 ? n : (n-1-lastSeenIdx[i]);
+    gapSig[i] = expectedGap>0 ? Math.min(2, gap/expectedGap)/2 : 0;
+  }
+  return { n, freqSig, gapSig, pairCounts, draws };
+}
+
+function pairAffinity(pairCounts, a, b, totalDraws){
+  const key = a<b ? a+'-'+b : b+'-'+a;
+  const c = pairCounts[key] || 0;
+  return totalDraws>0 ? c/totalDraws : 0;
+}
+
+function scoreCombo(nums, signals, weights){
+  const { freqSig, gapSig, pairCounts, n } = signals;
+  let freqScore=0, gapScore=0, pairScore=0;
+  nums.forEach(x=>{ freqScore += freqSig[x]||0; gapScore += gapSig[x]||0; });
+  freqScore /= nums.length; gapScore /= nums.length;
+  for(let i=0;i<nums.length;i++){
+    for(let j=i+1;j<nums.length;j++){
+      pairScore += pairAffinity(pairCounts, nums[i], nums[j], n);
+    }
+  }
+  const pairPossible = nums.length*(nums.length-1)/2;
+  pairScore /= (pairPossible||1);
+  return weights.freq*freqScore + weights.gap*gapScore + weights.pair*pairScore;
+}
+
+function randomComboForGame(cfg){
+  const pool = [];
+  for(let i=1;i<=cfg.range;i++) pool.push(i);
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
+  return pool.slice(0,cfg.pick).sort((a,b)=>a-b);
+}
+
+// Backtest onest: pentru fiecare din ultimele K extrageri reale, construim semnalele DOAR din ce
+// era cunoscut STRICT înainte de acea extragere, apoi comparăm scorul combinației reale câștigate
+// cu scorul a `samplesPerTest` combinații complet aleatorii, sub fiecare set de ponderi candidat.
+// Media procentajului "combinația reală a scorat mai bine decât aleatoriul" = acuratețea modelului
+// (așteptat ~50% pentru un joc cu adevărat aleatoriu — asta arată onest, nu ascunde).
+function backtestAllWeights(game, weightCandidates, testCount, samplesPerTest){
+  const cfg = GAMES[game];
+  const allDraws = getAllDraws(game);
+  const n = allDraws.length;
+  const K = Math.min(testCount, Math.max(0, n-20));
+  const results = weightCandidates.map(w=> ({ weights:w, sumPct:0 }));
+  if(K<=0) return results.map(r=> ({ weights:r.weights, tested:0, avgPercentile:null }));
+  for(let t=0;t<K;t++){
+    const idx = n-1-t;
+    const signals = buildNumberSignals(game, idx);
+    const actual = allDraws[idx].nums;
+    const randoms = [];
+    for(let s=0;s<samplesPerTest;s++) randoms.push(randomComboForGame(cfg));
+    weightCandidates.forEach((w,wi)=>{
+      const actualScore = scoreCombo(actual, signals, w);
+      let better=0;
+      randoms.forEach(r=>{ if(actualScore >= scoreCombo(r, signals, w)) better++; });
+      results[wi].sumPct += better/samplesPerTest;
+    });
+  }
+  return results.map(r=> ({ weights:r.weights, tested:K, avgPercentile: r.sumPct/K*100 }));
+}
+
+function getOrCalibrateModel(game){
+  const draws = getAllDraws(game);
+  const key = game+':'+draws.length;
+  if(patternModelCache[key]) return patternModelCache[key];
+  const candidates = [
+    {freq:0.5, gap:0.3, pair:0.2},
+    {freq:0.34,gap:0.33,pair:0.33},
+    {freq:0.2, gap:0.5, pair:0.3},
+    {freq:0.6, gap:0.1, pair:0.3},
+    {freq:0.3, gap:0.2, pair:0.5},
+    {freq:0.4, gap:0.4, pair:0.2}
+  ];
+  const results = backtestAllWeights(game, candidates, 20, 50);
+  let best = results[0];
+  results.forEach(r=>{ if(r.avgPercentile!==null && (best.avgPercentile===null || r.avgPercentile>best.avgPercentile)) best = r; });
+  const model = { weights:best.weights, backtest:best, allResults:results };
+  patternModelCache[key] = model;
+  return model;
+}
+
+function simulateTopVariants(game, weights, simCount){
+  const cfg = GAMES[game];
+  const signals = buildNumberSignals(game);
+  const seen = new Set();
+  const candidates = [];
+  for(let i=0;i<simCount;i++){
+    const combo = randomComboForGame(cfg);
+    const key = combo.join(',');
+    if(seen.has(key)) continue;
+    seen.add(key);
+    candidates.push({ combo, score: scoreCombo(combo, signals, weights) });
+  }
+  candidates.sort((a,b)=> b.score-a.score);
+  const picked = [];
+  for(const c of candidates){
+    if(picked.length>=3) break;
+    const tooSimilar = picked.some(p=> c.combo.filter(x=> p.combo.includes(x)).length >= cfg.pick-1);
+    if(!tooSimilar) picked.push(c);
+  }
+  while(picked.length<3 && candidates.length>0) picked.push(candidates[picked.length] || candidates[candidates.length-1]);
+  return picked;
+}
+
+// Cel mai mare overlap (număr de numere comune) dintre o combinație candidat și ORICE extragere
+// reală din arhivă — folosit ca să filtrăm variantele "rare": o combinație e considerată rară dacă
+// nu a avut niciodată în trecut cele mai de sus 2 niveluri de suprapunere cu o extragere reală
+// (pentru jocuri cu 6 numere: nu a avut niciodată 5/6 sau 6/6 în comun cu vreo extragere adevărată).
+function comboMaxOverlap(combo, draws){
+  let max = 0;
+  for(let i=0;i<draws.length;i++){
+    const m = combo.filter(n=> draws[i].nums.includes(n)).length;
+    if(m>max){ max = m; if(max===combo.length) break; }
+  }
+  return max;
+}
+
+// Generează 3 variante finale NOI, folosind exact același model calibrat (aceleași ponderi), dar
+// de data asta filtrate ca să fie "rare": nicio combinație aleasă nu a avut vreodată, cu nicio
+// extragere reală din toată arhiva, o suprapunere de pick-1 sau pick numere (ex. 5/6 sau 6/6 la un
+// joc cu 6 numere) — adică nu s-a "repetat" niciodată la acel nivel înalt. Complet independentă de
+// cele 3 variante deja afișate — apelată din nou la fiecare click, deci dă un set diferit de fiecare dată.
+function generateRareVariants(game){
+  const cfg = GAMES[game];
+  const model = getOrCalibrateModel(game);
+  const signals = buildNumberSignals(game);
+  const draws = getAllDraws(game);
+  const maxOverlapAllowed = cfg.pick - 2; // exclude tot ce a atins vreodată pick-1 sau pick numere comune
+  const seen = new Set();
+  const candidates = [];
+  const simCount = 20000;
+  for(let i=0;i<simCount;i++){
+    const combo = randomComboForGame(cfg);
+    const key = combo.join(',');
+    if(seen.has(key)) continue;
+    seen.add(key);
+    candidates.push({ combo, score: scoreCombo(combo, signals, model.weights) });
+  }
+  candidates.sort((a,b)=> b.score-a.score);
+  const picked = [];
+  for(const c of candidates){
+    if(picked.length>=3) break;
+    if(comboMaxOverlap(c.combo, draws) > maxOverlapAllowed) continue;
+    const tooSimilar = picked.some(p=> c.combo.filter(x=> p.combo.includes(x)).length >= cfg.pick-1);
+    if(tooSimilar) continue;
+    picked.push(c);
+  }
+  return picked;
 }
 
 function renderPatternSection(){
@@ -12692,54 +12850,117 @@ function renderPatternSection(){
   if(!el) return;
   const game = patternSelectedGame;
   const cfg = GAMES[game];
-  const pairs = computePairFrequencies(game);
-  const struct = computeDrawStructureStats(game);
-  const gaps = computeGaps(game);
-  const dow = computeDayOfWeekStats(game);
-  const overlap = game==='649' || game==='540' ? computeCrossGameOverlap() : null;
+  const draws = getAllDraws(game);
+  if(draws.length < 30){
+    el.innerHTML = `<p class="small-note">Arhiva ${cfg.label} are prea puține extrageri pentru un backtest relevant (minimum 30 necesare, are ${draws.length}).</p>`;
+    return;
+  }
+  const model = getOrCalibrateModel(game);
+  const key = game+':'+draws.length;
+  if(!patternVariantsCache[key]) patternVariantsCache[key] = simulateTopVariants(game, model.weights, 15000);
+  const variants = patternVariantsCache[key];
 
-  const pairRows = pairs.top.map(p=> `<tr><td class="mono">${p.key}</td><td class="mono">${p.count}×</td><td class="mono">${p.pct.toFixed(1)}%</td></tr>`).join('');
-  const overdueRows = gaps.slice(0,10).map(g=> `<tr><td class="mono">${g.n}</td><td class="mono">${g.gap} extrageri</td><td class="mono">${g.lastDate ? fmtDateShort(g.lastDate) : 'niciodată'}</td></tr>`).join('');
-  const recentRows = gaps.slice(-10).reverse().map(g=> `<tr><td class="mono">${g.n}</td><td class="mono">${g.gap} extrageri</td><td class="mono">${g.lastDate ? fmtDateShort(g.lastDate) : '-'}</td></tr>`).join('');
-  const dowRows = dow.map(d=> `<tr><td>${d.day}</td><td class="mono">${d.n}</td><td class="mono">${d.avgSum}</td><td class="mono">${d.avgOdd}</td></tr>`).join('');
+  const wPct = (x)=> Math.round(x*100)+'%';
+  const bt = model.backtest;
+  const btTxt = bt.avgPercentile===null ? 'date insuficiente' : bt.avgPercentile.toFixed(1)+'%';
+
+  const signals = buildNumberSignals(game);
+  const pairEntries = Object.entries(signals.pairCounts).sort((a,b)=> b[1]-a[1]).slice(0,8);
+  const gapList = [];
+  for(let i=1;i<=cfg.range;i++) gapList.push({ n:i, sig:signals.gapSig[i] });
+  gapList.sort((a,b)=> b.sig-a.sig);
+  const topOverdue = gapList.slice(0,10).map(g=>g.n).join(', ');
+
+  const jokerNote = cfg.hasJoker ? `<p class="small-note" style="margin-bottom:10px;">Notă: analiza acoperă doar cele 5 numere principale (1-45) — bila Joker (1-20) e un spațiu de numere separat și nu e inclusă în acest model.</p>` : '';
+
+  const variantHTML = variants.map((v,i)=>{
+    const balls = v.combo.map(n=> `<div class="ball">${n}</div>`).join('');
+    return `<div style="background:var(--surface2); border:1px solid var(--border); padding:12px 14px; margin-bottom:10px; border-radius:10px;">
+      <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">Varianta ${i+1} — scor model: ${(v.score*100).toFixed(1)}</div>
+      <div class="ballgrid">${balls}</div>
+      <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);">
+        <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">De câte ori s-au mai repetat, în toată arhiva, combinații de 4/${cfg.pick}, 5/${cfg.pick} și 6/${cfg.pick} cu această variantă:</div>
+        <div id="patternRepeatSlot_${game}_main_${i}"></div>
+      </div>
+    </div>`;
+  }).join('');
 
   el.innerHTML = `
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:16px;">
-      <div class="prob-item"><span class="pct">${struct.avgSum}</span><span style="font-size:10px; color:var(--muted);">Sumă medie / extragere</span></div>
-      <div class="prob-item"><span class="pct">${struct.avgSpread}</span><span style="font-size:10px; color:var(--muted);">Răspândire medie (max-min)</span></div>
-      <div class="prob-item"><span class="pct">${struct.oddSplit}</span><span style="font-size:10px; color:var(--muted);">Split par/impar tipic (${struct.oddSplitPct}%)</span></div>
-      <div class="prob-item"><span class="pct">${struct.lowSplit}</span><span style="font-size:10px; color:var(--muted);">Split mic/mare tipic (${struct.lowSplitPct}%)</span></div>
+    <div style="padding:12px 14px; background:rgba(224,87,74,.10); border:1px solid rgba(224,87,74,.3); border-radius:10px; margin-bottom:16px; font-size:12.5px; line-height:1.5;">
+      <b style="color:var(--red);">Important:</b> fiecare extragere e un eveniment independent, complet aleatoriu — niciun model, oricât de complex, nu poate crește șansele reale de câștig. Ce urmează e o sinteză statistică a arhivei, cu un backtest afișat cinstit — inclusiv atunci când arată performanță egală cu întâmplarea (ceea ce e, matematic, rezultatul corect și așteptat).
+    </div>
+    ${jokerNote}
+    <h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">Ce a calibrat modelul din arhivă (${draws.length} extrageri)</h3>
+    <p class="small-note" style="margin-bottom:10px;">Modelul combină 3 semnale — <b>frecvență</b> istorică, <b>interval</b> de la ultima apariție și <b>afinitate de perechi</b> (numere care apar des împreună) — și alege ponderile testând ${model.allResults.length} combinații candidate împotriva ultimelor ${bt.tested} extrageri reale (backtest, fără scurgere de informație din viitor). Ponderi alese: <b>${wPct(model.weights.freq)}</b> frecvență, <b>${wPct(model.weights.gap)}</b> interval, <b>${wPct(model.weights.pair)}</b> afinitate de perechi.</p>
+    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px;">
+      <div class="prob-item"><span class="pct">${btTxt}</span><span style="font-size:9.5px; color:var(--muted); text-align:center;">Acuratețe backtest (${bt.tested} teste) — 50% = identic cu întâmplarea</span></div>
+      <div class="prob-item"><span class="pct">${signals.n}</span><span style="font-size:9.5px; color:var(--muted); text-align:center;">Extrageri folosite</span></div>
+      <div class="prob-item"><span class="pct">15.000</span><span style="font-size:9.5px; color:var(--muted); text-align:center;">Combinații simulate</span></div>
     </div>
 
-    <h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">Perechi de numere cele mai frecvente (din ${pairs.total} extrageri)</h3>
-    <div class="table-scroll" style="margin-bottom:16px;"><table class="data-table" style="width:100%; max-width:420px;">
-      <thead><tr><th>Pereche</th><th>Apariții</th><th>% din extrageri</th></tr></thead>
-      <tbody>${pairRows}</tbody>
-    </table></div>
+    <h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">Corelații &amp; tipare descoperite în arhivă</h3>
+    <div style="display:flex; flex-wrap:wrap; gap:20px; margin-bottom:18px;">
+      <div style="flex:1; min-width:220px;">
+        <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">Perechi cu cea mai puternică afinitate (apar des împreună)</div>
+        <div style="font-size:12.5px; line-height:1.8;">${pairEntries.map(([k,c])=> `${k.replace('-',' + ')} <span class="mono" style="color:var(--muted);">(${c}×)</span>`).join('<br>')}</div>
+      </div>
+      <div style="flex:1; min-width:220px;">
+        <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">Numerele cele mai "restante" (interval mare de la ultima apariție)</div>
+        <div style="font-size:12.5px; line-height:1.8;">${topOverdue}</div>
+      </div>
+    </div>
 
-    <h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">Numere care nu au mai apărut de cel mai mult timp</h3>
-    <div class="table-scroll" style="margin-bottom:16px;"><table class="data-table" style="width:100%; max-width:420px;">
-      <thead><tr><th>Număr</th><th>Interval curent</th><th>Ultima apariție</th></tr></thead>
-      <tbody>${overdueRows}</tbody>
-    </table></div>
-
-    <h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">Numere apărute cel mai recent</h3>
-    <div class="table-scroll" style="margin-bottom:16px;"><table class="data-table" style="width:100%; max-width:420px;">
-      <thead><tr><th>Număr</th><th>Interval curent</th><th>Ultima apariție</th></tr></thead>
-      <tbody>${recentRows}</tbody>
-    </table></div>
-
-    <h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">Diferențe pe zi de tragere</h3>
-    <div class="table-scroll" style="margin-bottom:${overlap?'16px':'0'};"><table class="data-table" style="width:100%; max-width:420px;">
-      <thead><tr><th>Zi</th><th>Extrageri</th><th>Sumă medie</th><th>Impare medii</th></tr></thead>
-      <tbody>${dowRows}</tbody>
-    </table></div>
-
-    ${overlap ? `<h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">Suprapunere 6/49 ↔ 5/40 (extrageri din aceeași zi)</h3>
-    <p class="small-note">Din <b>${overlap.sameDay}</b> extrageri care au avut loc în aceeași zi la ambele jocuri, în medie <b>${overlap.avgOverlap}</b> numere coincid între cele două rezultate — pur coincidență statistică (jocuri complet independente), util doar ca reper descriptiv.</p>` : ''}
+    <h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">3 variante finale recomandate (Pattern-uri &amp; Structuri)</h3>
+    <p class="small-note" style="margin-bottom:10px;">Generate dintr-o simulare de 15.000 de combinații candidate, scorate cu modelul calibrat mai sus; s-au ales cele mai bine punctate 3 variante, suficient de diferite între ele. Compară-le cu secțiunea "Variante recomandate" (care folosește o metodă separată, cu 14 indicatori) — sunt două abordări independente pe aceeași arhivă.</p>
+    <button class="btn2" id="patternGenRareBtn" style="margin-bottom:14px;">Generează alte 3 variante</button>
+    <p class="small-note" id="patternRareStatus" style="margin-bottom:10px; display:none;">Variantele de mai jos sunt filtrate să fie "rare": niciuna nu a avut vreodată, cu nicio extragere reală din toată arhiva, 5/${cfg.pick} sau 6/${cfg.pick} numere în comun — la fiecare apăsare a butonului primești alt set de 3, tot din modelul calibrat mai sus.</p>
+    <div id="patternRareVariantsWrap" style="margin-bottom:16px;"></div>
+    ${variantHTML}
+    <button class="btn2" id="patternRegenBtn" style="margin-top:6px;">Regenerează simularea</button>
   `;
-}
+  const regenBtn = document.getElementById('patternRegenBtn');
+  if(regenBtn) regenBtn.onclick = ()=>{ delete patternVariantsCache[key]; renderPatternSection(); };
 
+  // Atașează, sub fiecare din cele 3 variante principale, blocul cu istoricul de repetări
+  // 4/pick, 5/pick, 6/pick (reutilizează exact logica din "Arhivă completă" / "Variante recomandate").
+  variants.forEach((v,i)=>{
+    const slot = document.getElementById(`patternRepeatSlot_${game}_main_${i}`);
+    if(slot) slot.appendChild(buildComboRepeatBlockEl(v.combo, draws, cfg.pick, false, 4));
+  });
+
+  const rareBtn = document.getElementById('patternGenRareBtn');
+  if(rareBtn) rareBtn.onclick = ()=>{
+    const wrap = document.getElementById('patternRareVariantsWrap');
+    const statusEl = document.getElementById('patternRareStatus');
+    if(!wrap) return;
+    wrap.innerHTML = '<p class="small-note">Se caută variante rare (fără 5/'+cfg.pick+' sau 6/'+cfg.pick+' repetate vreodată în arhivă)...</p>';
+    setTimeout(()=>{
+      const rare = generateRareVariants(game);
+      wrap.innerHTML = '';
+      if(statusEl) statusEl.style.display = '';
+      if(rare.length===0){
+        wrap.innerHTML = '<p class="small-note">Nu s-au găsit suficiente variante rare în acest lot simulat — încearcă din nou.</p>';
+        return;
+      }
+      rare.forEach((v,i)=>{
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--surface2); border:1px solid var(--gold-dim); padding:12px 14px; margin-bottom:10px; border-radius:10px;';
+        const balls = v.combo.map(n=> `<div class="ball">${n}</div>`).join('');
+        card.innerHTML = `
+          <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">Variantă rară ${i+1} — scor model: ${(v.score*100).toFixed(1)}</div>
+          <div class="ballgrid">${balls}</div>
+          <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);">
+            <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">De câte ori s-au mai repetat, în toată arhiva, combinații de 4/${cfg.pick}, 5/${cfg.pick} și 6/${cfg.pick} cu această variantă:</div>
+          </div>
+        `;
+        const repeatHost = document.createElement('div');
+        repeatHost.appendChild(buildComboRepeatBlockEl(v.combo, draws, cfg.pick, false, 4));
+        card.appendChild(repeatHost);
+        wrap.appendChild(card);
+      });
+    }, 10);
+  };
+}
 
 
 // ---------- JOURNAL STORAGE ----------
@@ -12752,12 +12973,6 @@ let evPrizesByGame = {}; // persisted EV category prize inputs per game, used fo
 // that game's archive, drawKey changes, and the app recomputes — deliberately steering the new pick
 // away from these stored tickets — before overwriting this cache with the new result.
 let recommendedCache = {};
-// Câștiguri categoria I (6/6) și a II-a (5/6), detectate automat prin citirea directă a tabelului
-// oficial "Detalii câștiguri" per extragere de pe loto.ro — vezi checkCastiguriLive(). Urmărim
-// din 07.08.2026 înainte; nu există istoric real dinainte, accesibil automat.
-let reportWinEvents = { '649':[], '540':[], joker:[] };
-let processedDrawKeys = {};
-let lastKnownReportRon = {};
 async function loadJournal(){
   const snap = await userDocRef.get();
   const data = snap.exists ? snap.data() : {};
@@ -12770,9 +12985,6 @@ async function loadJournal(){
 }
 async function persistRecommendedCache(){
   await userDocRef.set({ recommendedCache }, {merge:true});
-}
-async function persistReportTracking(){
-  await userDocRef.set({ reportWinEvents, processedDrawKeys, lastKnownReportRon }, {merge:true});
 }
 async function persistJournal(){
   await userDocRef.set({ journal: journalEntries }, {merge:true});
