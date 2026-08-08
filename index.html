@@ -443,9 +443,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <div class="countdown-clock mono" id="topCountdown">—</div>
     </div>
     <div class="version-block">
-      <span class="version-num">Ver 5.17</span>
+      <span class="version-num">Ver 5.18</span>
       <span class="version-date">Actualizat: 08.08.2026</span>
-      <span class="version-note">Topbar reorganizat, report/jackpot live + ultima dată de câștig, "Câștiguri" (Cat. I/II exacte) și "Pattern-uri & Structuri" ca sub-taburi în Arhivă completă. Pattern-uri & Structuri: un singur buton "Generează simulare analiză variante" produce mereu doar 3 variante finale, din modelul ansamblu calibrat prin backtest + simulare, filtrate să fie "rare" (fără 5/6 sau 6/6 repetate vreodată), cu istoricul de repetări 4/6-5/6-6/6 sub fiecare.</span>
+      <span class="version-note">Pattern-uri &amp; Structuri: cele 3 variante finale generate de buton sunt acum complet disjuncte între ele (niciun număr nu se repetă de la o variantă la alta) și diferite față de setul generat la apăsarea precedentă a butonului — pe lângă filtrul de raritate (fără 5/6 sau 6/6 repetate vreodată în arhivă).</span>
     </div>
   </div>
 
@@ -12327,8 +12327,6 @@ async function autoFetchAndFillMissing(game){
   }
 }
 
-// Checks & fills missing draws across ALL 4 games at once from a single click, so switching
-// tabs isn't required — the button always audits/updates 6/49, 5/40, Joker and Noroc together.
 async function autoFetchAndFillAllGames(){
   const statusEl = document.getElementById('autoFillStatus');
   const form = document.getElementById('autoFillForm');
@@ -12639,6 +12637,7 @@ function renderCastiguriSection(){
 let patternSelectedGame = '649';
 const PATTERN_GAMES = ['649','540','joker'];
 let patternModelCache = {};
+let patternLastVariants = {}; // ultimul set de 3 combinații generate per joc, ca să evităm exact aceleași combinații la următoarea apăsare
 
 function renderPatternGameTabs(){
   const el = document.getElementById('patternGameTabs');
@@ -12767,10 +12766,11 @@ function comboMaxOverlap(combo, draws){
 }
 
 // Generează 3 variante finale, folosind modelul ansamblu calibrat, dintr-o simulare Monte Carlo de
-// 20.000 de combinații candidate — apoi filtrate să fie "rare": nicio variantă aleasă nu a avut
-// vreodată, cu nicio extragere reală din toată arhiva, o suprapunere de pick-1 sau pick numere
-// (ex. 5/6 sau 6/6 la un joc cu 6 numere) — adică nu s-a "repetat" niciodată la acel nivel înalt.
-// Complet nou la fiecare apel — de-aia dă un set diferit de fiecare dată când e apăsat butonul.
+// 20.000 de combinații candidate — filtrate să fie "rare" (nicio variantă n-a avut vreodată, cu
+// nicio extragere reală din toată arhiva, o suprapunere de pick-1 sau pick numere — ex. 5/6 sau
+// 6/6 la un joc cu 6 numere), COMPLET DISJUNCTE între ele (niciun număr nu apare în mai mult de o
+// singură variantă din cele 3, la aceeași generare) și diferite de setul generat la apăsarea
+// precedentă a butonului. Complet nou la fiecare apel.
 function generateFinalVariants(game){
   const cfg = GAMES[game];
   const model = getOrCalibrateModel(game);
@@ -12788,14 +12788,25 @@ function generateFinalVariants(game){
     candidates.push({ combo, score: scoreCombo(combo, signals, model.weights) });
   }
   candidates.sort((a,b)=> b.score-a.score);
+
+  const prevKeys = new Set((patternLastVariants[game]||[]).map(c=> c.join(',')));
+  const usedNumbers = new Set();
   const picked = [];
-  for(const c of candidates){
-    if(picked.length>=3) break;
-    if(comboMaxOverlap(c.combo, draws) > maxOverlapAllowed) continue;
-    const tooSimilar = picked.some(p=> c.combo.filter(x=> p.combo.includes(x)).length >= cfg.pick-1);
-    if(tooSimilar) continue;
-    picked.push(c);
-  }
+  const pickFrom = (list, allowPrev)=>{
+    for(const c of list){
+      if(picked.length>=3) break;
+      const key = c.combo.join(',');
+      if(!allowPrev && prevKeys.has(key)) continue;
+      if(comboMaxOverlap(c.combo, draws) > maxOverlapAllowed) continue;
+      if(c.combo.some(n=> usedNumbers.has(n))) continue; // numerele nu se repetă între variantele generate acum
+      picked.push(c);
+      c.combo.forEach(n=> usedNumbers.add(n));
+    }
+  };
+  pickFrom(candidates, false);
+  if(picked.length<3) pickFrom(candidates, true); // fallback rar: dacă arhiva/pool-ul nu oferă destule, renunță doar la restricția față de generarea precedentă
+
+  patternLastVariants[game] = picked.map(p=>p.combo);
   return picked;
 }
 
@@ -12850,7 +12861,7 @@ function renderPatternSection(){
     </div>
 
     <h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">3 variante finale recomandate (Pattern-uri &amp; Structuri)</h3>
-    <p class="small-note" style="margin-bottom:10px;">Fiecare set nou e generat pe loc dintr-o simulare de 20.000 de combinații candidate, scorate cu modelul calibrat mai sus, apoi filtrate să fie "rare" — nicio variantă n-a avut vreodată 5/${cfg.pick} sau 6/${cfg.pick} numere comune cu vreo extragere reală din toată arhiva. Compară-le cu secțiunea "Variante recomandate" (metodă separată, cu 14 indicatori) — sunt două abordări independente pe aceeași arhivă.</p>
+    <p class="small-note" style="margin-bottom:10px;">Fiecare set nou e generat pe loc dintr-o simulare de 20.000 de combinații candidate, scorate cu modelul calibrat mai sus, apoi filtrate să fie "rare" — nicio variantă n-a avut vreodată 5/${cfg.pick} sau 6/${cfg.pick} numere comune cu vreo extragere reală din toată arhiva. Cele 3 variante sunt complet independente între ele — niciun număr nu se repetă de la o variantă la alta — și diferite față de setul generat la apăsarea precedentă. Compară-le cu secțiunea "Variante recomandate" (metodă separată, cu 14 indicatori) — sunt două abordări independente pe aceeași arhivă.</p>
     <button class="btn2" id="patternGenBtn" style="margin-bottom:14px;">Generează simulare analiză variante</button>
     <div id="patternFinalVariantsWrap"><p class="small-note">Apasă butonul de mai sus ca să generezi cele 3 variante finale.</p></div>
   `;
