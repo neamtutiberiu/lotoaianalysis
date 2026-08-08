@@ -443,9 +443,9 @@ footer{ text-align:center; color:var(--muted2); font-size:11px; margin-top:24px;
       <div class="countdown-clock mono" id="topCountdown">—</div>
     </div>
     <div class="version-block">
-      <span class="version-num">Ver 5.16</span>
+      <span class="version-num">Ver 5.17</span>
       <span class="version-date">Actualizat: 08.08.2026</span>
-      <span class="version-note">Pattern-uri &amp; Structuri: buton nou "Generează alte 3 variante" — la fiecare apăsare propune 3 variante NOI, filtrate să fie "rare" (n-au avut niciodată 5/6 sau 6/6 comune cu vreo extragere reală din toată arhiva). Sub fiecare din cele 6 variante afișate (cele 3 recomandate + cele 3 rare) apare acum și istoricul exact de repetări 4/6, 5/6, 6/6 — cu dată și numărul extragerii.</span>
+      <span class="version-note">Topbar reorganizat, report/jackpot live + ultima dată de câștig, "Câștiguri" (Cat. I/II exacte) și "Pattern-uri & Structuri" ca sub-taburi în Arhivă completă. Pattern-uri & Structuri: un singur buton "Generează simulare analiză variante" produce mereu doar 3 variante finale, din modelul ansamblu calibrat prin backtest + simulare, filtrate să fie "rare" (fără 5/6 sau 6/6 repetate vreodată), cu istoricul de repetări 4/6-5/6-6/6 sub fiecare.</span>
     </div>
   </div>
 
@@ -12454,9 +12454,6 @@ async function fetchTextViaProxies(url, timeoutMs){
   throw lastErr || new Error('toate proxy-urile au eșuat');
 }
 
-// Extrage valorile de report (RON) pentru 6/49, 5/40 și Joker din pagina principală loto.ro.
-// Formatul textului (după eliminarea tagurilor HTML) e de forma:
-// "REPORT LOTO 6/49 ... REPORTURI 12.345.678" — extragem prima sumă numerică mare de după fiecare etichetă de joc.
 function parseReportHTML(html){
   const text = html.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
   const out = {};
@@ -12476,16 +12473,12 @@ function parseReportHTML(html){
   return out;
 }
 
-// Best-effort: caută în textul paginii/știrilor loto.ro un anunț recent de "premiul cel mare
-// câștigat" per joc, cu o dată. Nu există un API oficial pentru asta — e o citire aproximativă
-// din fluxul de știri, care poate lipsi dacă loto.ro nu a publicat încă un anunț explicit.
 function parseLastWinDates(html){
   const text = html.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
   const out = {};
   const gameLabels = { '649':/6\s*\/\s*49/i, '540':/5\s*\/\s*40/i, 'joker':/joker/i };
   Object.keys(gameLabels).forEach(game=>{
     const re = new RegExp('(c[âa]știg[^.]{0,120}?)(\\d{2}\\.\\d{2}\\.\\d{4})', 'i');
-    // caută în apropierea etichetei jocului un fragment cu "câștig" urmat de o dată
     const labelRe = gameLabels[game];
     const idx = text.search(labelRe);
     if(idx === -1) return;
@@ -12542,10 +12535,6 @@ const CATEGORY_LABEL = {
   'joker': { I:'5+Joker', II:'5 fără Joker' }
 };
 
-// Fiecare pagină de rezultate conține, pentru fiecare extragere, un bloc "Detalii ... la X din
-// DD.MM.YYYY" urmat (în ~500 caractere) de un tabel cu categoriile de câștig. Extragem, pentru
-// Categoria I și a II-a, fie șirul "REPORT" (nimeni nu a câștigat, se reportează), fie numărul de
-// câștigători (înseamnă că s-a câștigat la acea categorie, la acea dată exactă).
 function parseDetaliiCastiguri(html, game){
   const text = html.replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
   const blockRe = /Detalii\s+\S+\s+la\s+(.+?)\s+din\s+(\d{2})\.(\d{2})\.(\d{4})([\s\S]{0,500}?)(?=Detalii\s+\S+\s+la|$)/gi;
@@ -12645,13 +12634,11 @@ function renderCastiguriSection(){
 // șansele reale de câștig la extragerea viitoare. Ce construim mai jos e o sinteză statistică
 // avansată a arhivei (nu o „predicție"): combină mai multe semnale descriptive într-un model
 // ansamblu, calibrează ponderile alea printr-un backtest onest pe extrageri reale trecute, apoi
-// rulează o simulare Monte Carlo pentru a propune 3 variante. Backtestul e afișat tocmai ca să
-// arate transparent cât de aproape de întâmplare (nu mai bine) performează abordarea — asta e
-// rezultatul așteptat, matematic corect, pentru un joc cu adevărat aleatoriu.
+// rulează o simulare Monte Carlo pentru a propune 3 variante finale, filtrate să fie "rare"
+// (n-au avut niciodată 5/pick sau 6/pick numere comune cu vreo extragere reală din arhivă).
 let patternSelectedGame = '649';
 const PATTERN_GAMES = ['649','540','joker'];
 let patternModelCache = {};
-let patternVariantsCache = {};
 
 function renderPatternGameTabs(){
   const el = document.getElementById('patternGameTabs');
@@ -12666,9 +12653,6 @@ function renderPatternGameTabs(){
   });
 }
 
-// Construiește semnalele per-număr din arhivă. uptoIndex, dacă e dat, limitează calculul la
-// extragerile STRICT dinaintea acelui index — esențial pentru un backtest onest, fără scurgere
-// de informație din viitor în trecut.
 function buildNumberSignals(game, uptoIndex){
   const cfg = GAMES[game];
   const allDraws = getAllDraws(game);
@@ -12691,7 +12675,7 @@ function buildNumberSignals(game, uptoIndex){
   const maxFreq = Math.max(1, ...Object.values(freq));
   const freqSig = {};
   for(let i=1;i<=cfg.range;i++) freqSig[i] = freq[i]/maxFreq;
-  const expectedGap = cfg.range/cfg.pick; // interval mediu așteptat între apariții, sub o ipoteză uniformă
+  const expectedGap = cfg.range/cfg.pick;
   const gapSig = {};
   for(let i=1;i<=cfg.range;i++){
     const gap = lastSeenIdx[i]===-1 ? n : (n-1-lastSeenIdx[i]);
@@ -12728,11 +12712,6 @@ function randomComboForGame(cfg){
   return pool.slice(0,cfg.pick).sort((a,b)=>a-b);
 }
 
-// Backtest onest: pentru fiecare din ultimele K extrageri reale, construim semnalele DOAR din ce
-// era cunoscut STRICT înainte de acea extragere, apoi comparăm scorul combinației reale câștigate
-// cu scorul a `samplesPerTest` combinații complet aleatorii, sub fiecare set de ponderi candidat.
-// Media procentajului "combinația reală a scorat mai bine decât aleatoriul" = acuratețea modelului
-// (așteptat ~50% pentru un joc cu adevărat aleatoriu — asta arată onest, nu ascunde).
 function backtestAllWeights(game, weightCandidates, testCount, samplesPerTest){
   const cfg = GAMES[game];
   const allDraws = getAllDraws(game);
@@ -12776,33 +12755,8 @@ function getOrCalibrateModel(game){
   return model;
 }
 
-function simulateTopVariants(game, weights, simCount){
-  const cfg = GAMES[game];
-  const signals = buildNumberSignals(game);
-  const seen = new Set();
-  const candidates = [];
-  for(let i=0;i<simCount;i++){
-    const combo = randomComboForGame(cfg);
-    const key = combo.join(',');
-    if(seen.has(key)) continue;
-    seen.add(key);
-    candidates.push({ combo, score: scoreCombo(combo, signals, weights) });
-  }
-  candidates.sort((a,b)=> b.score-a.score);
-  const picked = [];
-  for(const c of candidates){
-    if(picked.length>=3) break;
-    const tooSimilar = picked.some(p=> c.combo.filter(x=> p.combo.includes(x)).length >= cfg.pick-1);
-    if(!tooSimilar) picked.push(c);
-  }
-  while(picked.length<3 && candidates.length>0) picked.push(candidates[picked.length] || candidates[candidates.length-1]);
-  return picked;
-}
-
 // Cel mai mare overlap (număr de numere comune) dintre o combinație candidat și ORICE extragere
-// reală din arhivă — folosit ca să filtrăm variantele "rare": o combinație e considerată rară dacă
-// nu a avut niciodată în trecut cele mai de sus 2 niveluri de suprapunere cu o extragere reală
-// (pentru jocuri cu 6 numere: nu a avut niciodată 5/6 sau 6/6 în comun cu vreo extragere adevărată).
+// reală din arhivă.
 function comboMaxOverlap(combo, draws){
   let max = 0;
   for(let i=0;i<draws.length;i++){
@@ -12812,17 +12766,17 @@ function comboMaxOverlap(combo, draws){
   return max;
 }
 
-// Generează 3 variante finale NOI, folosind exact același model calibrat (aceleași ponderi), dar
-// de data asta filtrate ca să fie "rare": nicio combinație aleasă nu a avut vreodată, cu nicio
-// extragere reală din toată arhiva, o suprapunere de pick-1 sau pick numere (ex. 5/6 sau 6/6 la un
-// joc cu 6 numere) — adică nu s-a "repetat" niciodată la acel nivel înalt. Complet independentă de
-// cele 3 variante deja afișate — apelată din nou la fiecare click, deci dă un set diferit de fiecare dată.
-function generateRareVariants(game){
+// Generează 3 variante finale, folosind modelul ansamblu calibrat, dintr-o simulare Monte Carlo de
+// 20.000 de combinații candidate — apoi filtrate să fie "rare": nicio variantă aleasă nu a avut
+// vreodată, cu nicio extragere reală din toată arhiva, o suprapunere de pick-1 sau pick numere
+// (ex. 5/6 sau 6/6 la un joc cu 6 numere) — adică nu s-a "repetat" niciodată la acel nivel înalt.
+// Complet nou la fiecare apel — de-aia dă un set diferit de fiecare dată când e apăsat butonul.
+function generateFinalVariants(game){
   const cfg = GAMES[game];
   const model = getOrCalibrateModel(game);
   const signals = buildNumberSignals(game);
   const draws = getAllDraws(game);
-  const maxOverlapAllowed = cfg.pick - 2; // exclude tot ce a atins vreodată pick-1 sau pick numere comune
+  const maxOverlapAllowed = cfg.pick - 2;
   const seen = new Set();
   const candidates = [];
   const simCount = 20000;
@@ -12856,9 +12810,6 @@ function renderPatternSection(){
     return;
   }
   const model = getOrCalibrateModel(game);
-  const key = game+':'+draws.length;
-  if(!patternVariantsCache[key]) patternVariantsCache[key] = simulateTopVariants(game, model.weights, 15000);
-  const variants = patternVariantsCache[key];
 
   const wPct = (x)=> Math.round(x*100)+'%';
   const bt = model.backtest;
@@ -12873,18 +12824,6 @@ function renderPatternSection(){
 
   const jokerNote = cfg.hasJoker ? `<p class="small-note" style="margin-bottom:10px;">Notă: analiza acoperă doar cele 5 numere principale (1-45) — bila Joker (1-20) e un spațiu de numere separat și nu e inclusă în acest model.</p>` : '';
 
-  const variantHTML = variants.map((v,i)=>{
-    const balls = v.combo.map(n=> `<div class="ball">${n}</div>`).join('');
-    return `<div style="background:var(--surface2); border:1px solid var(--border); padding:12px 14px; margin-bottom:10px; border-radius:10px;">
-      <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">Varianta ${i+1} — scor model: ${(v.score*100).toFixed(1)}</div>
-      <div class="ballgrid">${balls}</div>
-      <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);">
-        <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">De câte ori s-au mai repetat, în toată arhiva, combinații de 4/${cfg.pick}, 5/${cfg.pick} și 6/${cfg.pick} cu această variantă:</div>
-        <div id="patternRepeatSlot_${game}_main_${i}"></div>
-      </div>
-    </div>`;
-  }).join('');
-
   el.innerHTML = `
     <div style="padding:12px 14px; background:rgba(224,87,74,.10); border:1px solid rgba(224,87,74,.3); border-radius:10px; margin-bottom:16px; font-size:12.5px; line-height:1.5;">
       <b style="color:var(--red);">Important:</b> fiecare extragere e un eveniment independent, complet aleatoriu — niciun model, oricât de complex, nu poate crește șansele reale de câștig. Ce urmează e o sinteză statistică a arhivei, cu un backtest afișat cinstit — inclusiv atunci când arată performanță egală cu întâmplarea (ceea ce e, matematic, rezultatul corect și așteptat).
@@ -12895,7 +12834,7 @@ function renderPatternSection(){
     <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px;">
       <div class="prob-item"><span class="pct">${btTxt}</span><span style="font-size:9.5px; color:var(--muted); text-align:center;">Acuratețe backtest (${bt.tested} teste) — 50% = identic cu întâmplarea</span></div>
       <div class="prob-item"><span class="pct">${signals.n}</span><span style="font-size:9.5px; color:var(--muted); text-align:center;">Extrageri folosite</span></div>
-      <div class="prob-item"><span class="pct">15.000</span><span style="font-size:9.5px; color:var(--muted); text-align:center;">Combinații simulate</span></div>
+      <div class="prob-item"><span class="pct">20.000</span><span style="font-size:9.5px; color:var(--muted); text-align:center;">Combinații simulate / generare</span></div>
     </div>
 
     <h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">Corelații &amp; tipare descoperite în arhivă</h3>
@@ -12911,43 +12850,29 @@ function renderPatternSection(){
     </div>
 
     <h3 style="font-size:13px; color:var(--gold); margin-bottom:6px;">3 variante finale recomandate (Pattern-uri &amp; Structuri)</h3>
-    <p class="small-note" style="margin-bottom:10px;">Generate dintr-o simulare de 15.000 de combinații candidate, scorate cu modelul calibrat mai sus; s-au ales cele mai bine punctate 3 variante, suficient de diferite între ele. Compară-le cu secțiunea "Variante recomandate" (care folosește o metodă separată, cu 14 indicatori) — sunt două abordări independente pe aceeași arhivă.</p>
-    <button class="btn2" id="patternGenRareBtn" style="margin-bottom:14px;">Generează alte 3 variante</button>
-    <p class="small-note" id="patternRareStatus" style="margin-bottom:10px; display:none;">Variantele de mai jos sunt filtrate să fie "rare": niciuna nu a avut vreodată, cu nicio extragere reală din toată arhiva, 5/${cfg.pick} sau 6/${cfg.pick} numere în comun — la fiecare apăsare a butonului primești alt set de 3, tot din modelul calibrat mai sus.</p>
-    <div id="patternRareVariantsWrap" style="margin-bottom:16px;"></div>
-    ${variantHTML}
-    <button class="btn2" id="patternRegenBtn" style="margin-top:6px;">Regenerează simularea</button>
+    <p class="small-note" style="margin-bottom:10px;">Fiecare set nou e generat pe loc dintr-o simulare de 20.000 de combinații candidate, scorate cu modelul calibrat mai sus, apoi filtrate să fie "rare" — nicio variantă n-a avut vreodată 5/${cfg.pick} sau 6/${cfg.pick} numere comune cu vreo extragere reală din toată arhiva. Compară-le cu secțiunea "Variante recomandate" (metodă separată, cu 14 indicatori) — sunt două abordări independente pe aceeași arhivă.</p>
+    <button class="btn2" id="patternGenBtn" style="margin-bottom:14px;">Generează simulare analiză variante</button>
+    <div id="patternFinalVariantsWrap"><p class="small-note">Apasă butonul de mai sus ca să generezi cele 3 variante finale.</p></div>
   `;
-  const regenBtn = document.getElementById('patternRegenBtn');
-  if(regenBtn) regenBtn.onclick = ()=>{ delete patternVariantsCache[key]; renderPatternSection(); };
 
-  // Atașează, sub fiecare din cele 3 variante principale, blocul cu istoricul de repetări
-  // 4/pick, 5/pick, 6/pick (reutilizează exact logica din "Arhivă completă" / "Variante recomandate").
-  variants.forEach((v,i)=>{
-    const slot = document.getElementById(`patternRepeatSlot_${game}_main_${i}`);
-    if(slot) slot.appendChild(buildComboRepeatBlockEl(v.combo, draws, cfg.pick, false, 4));
-  });
-
-  const rareBtn = document.getElementById('patternGenRareBtn');
-  if(rareBtn) rareBtn.onclick = ()=>{
-    const wrap = document.getElementById('patternRareVariantsWrap');
-    const statusEl = document.getElementById('patternRareStatus');
+  const genBtn = document.getElementById('patternGenBtn');
+  const runGenerate = ()=>{
+    const wrap = document.getElementById('patternFinalVariantsWrap');
     if(!wrap) return;
-    wrap.innerHTML = '<p class="small-note">Se caută variante rare (fără 5/'+cfg.pick+' sau 6/'+cfg.pick+' repetate vreodată în arhivă)...</p>';
+    wrap.innerHTML = '<p class="small-note">Se rulează simularea și analiza (20.000 combinații candidate)...</p>';
     setTimeout(()=>{
-      const rare = generateRareVariants(game);
+      const variants = generateFinalVariants(game);
       wrap.innerHTML = '';
-      if(statusEl) statusEl.style.display = '';
-      if(rare.length===0){
-        wrap.innerHTML = '<p class="small-note">Nu s-au găsit suficiente variante rare în acest lot simulat — încearcă din nou.</p>';
+      if(variants.length===0){
+        wrap.innerHTML = '<p class="small-note">Nu s-au găsit suficiente variante rare în acest lot simulat — apasă din nou.</p>';
         return;
       }
-      rare.forEach((v,i)=>{
+      variants.forEach((v,i)=>{
         const card = document.createElement('div');
-        card.style.cssText = 'background:var(--surface2); border:1px solid var(--gold-dim); padding:12px 14px; margin-bottom:10px; border-radius:10px;';
+        card.style.cssText = 'background:var(--surface2); border:1px solid var(--border); padding:12px 14px; margin-bottom:10px; border-radius:10px;';
         const balls = v.combo.map(n=> `<div class="ball">${n}</div>`).join('');
         card.innerHTML = `
-          <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">Variantă rară ${i+1} — scor model: ${(v.score*100).toFixed(1)}</div>
+          <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">Varianta ${i+1} — scor model: ${(v.score*100).toFixed(1)}</div>
           <div class="ballgrid">${balls}</div>
           <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);">
             <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">De câte ori s-au mai repetat, în toată arhiva, combinații de 4/${cfg.pick}, 5/${cfg.pick} și 6/${cfg.pick} cu această variantă:</div>
@@ -12960,6 +12885,7 @@ function renderPatternSection(){
       });
     }, 10);
   };
+  if(genBtn) genBtn.onclick = runGenerate;
 }
 
 
