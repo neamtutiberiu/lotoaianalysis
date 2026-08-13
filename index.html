@@ -10767,6 +10767,14 @@ function generate3FinalTickets(stats, cfg, recCombos, genCombos, prevFinalCombos
     jokerRanked.sort((a,b)=> jokerScores[b]-jokerScores[a]);
   }
 
+  // Diversificare (fix): aceeași tehnică ca la "Generator de variante" (generate3BallTickets) —
+  // alegere ALEATORIE, ponderată de scor, dintre cele mai bune 40 de combinații găsite, nu mereu
+  // combinația #1. Plus un filtru de suprapunere față de ORICARE din cele 3 variante anterioare
+  // (nu doar slotul cu același index) — împreună, garantează o schimbare vizibilă de fiecare dată
+  // când apeși din nou "Generează alte 3 variante finale", păstrând în același timp aceeași
+  // rigoare de scorare (14 indicatori + consens) — modelul de calcul nu s-a schimbat.
+  const prevCombosAll = (prevFinalCombos||[]).filter(Boolean);
+  const overlapLimit = maxAllowedOverlap(cfg.pick);
   const tickets = [];
   for(let t=0; t<3; t++){
     // Hard exclusion, aceeași tehnică folosită la "Generator de variante": dacă lotul anterior de
@@ -10774,23 +10782,30 @@ function generate3FinalTickets(stats, cfg, recCombos, genCombos, prevFinalCombos
     // slot — garantează o schimbare vizibilă de fiecare dată când intrările (Generator/Recomandate)
     // chiar s-au schimbat, nu doar o schimbare probabilă (blocată altfel de scorul din arhivă, care
     // rămâne dominant și aproape identic de la o generare la alta).
-    const prevSameSlot = (prevFinalCombos||[])[t];
+    const prevSameSlot = prevCombosAll[t];
     let ticketPool = pool;
     if(prevSameSlot && prevSameSlot.length){
       const filtered = pool.filter(n => !prevSameSlot.includes(n));
       if(filtered.length >= cfg.pick) ticketPool = filtered;
     }
     const topK = bestKCombosFromPool(ticketPool, cfg.pick, cfg, stats, blendedScores, mn, mx, 40);
-    const best = topK[0];
-    const combo = best.combo.slice().sort((a,b)=>a-b);
+    let candidates = topK.filter(c => !prevCombosAll.some(pc => comboOverlapCount(c.combo, pc) > overlapLimit));
+    if(candidates.length === 0) candidates = topK; // fallback rar: nimic sub prag, renunțăm doar la acest filtru
+    const minS = Math.min(...candidates.map(x=>x.score));
+    const weights = candidates.map(x => (x.score - minS) + 0.0005);
+    const total = weights.reduce((a,b)=>a+b, 0);
+    let r = Math.random()*total, chosenIdx = candidates.length-1;
+    for(let i=0;i<candidates.length;i++){ r -= weights[i]; if(r<=0){ chosenIdx=i; break; } }
+    const combo = candidates[chosenIdx].combo.slice().sort((a,b)=>a-b);
     pool = pool.filter(x=> !combo.includes(x));
     tickets.push({ combo, joker: jokerRanked ? jokerRanked[t] : null });
   }
-  // NU se re-sortează după scor: fiecare slot deja alege cea mai bună combinație din pool-ul rămas
-  // (care se micșorează progresiv), deci ordinea de generare (t=0,1,2) e deja practic în ordinea
-  // punctajului — exact convenția folosită și la "Variante recomandate". O re-sortare separată ar
-  // strica excluderea fermă de mai sus (un bilet neexclus dintr-un alt slot ar putea "sări" înapoi
-  // pe poziția 1 doar pentru că are scor mai mare, anulând garanția de diversitate).
+  // NU se re-sortează după scor: fiecare slot deja alege dintre cele mai bune combinații din
+  // pool-ul rămas (care se micșorează progresiv), deci ordinea de generare (t=0,1,2) rămâne
+  // practic în ordinea punctajului — exact convenția folosită și la "Variante recomandate". O
+  // re-sortare separată ar strica excluderea fermă de mai sus (un bilet neexclus dintr-un alt slot
+  // ar putea "sări" înapoi pe poziția 1 doar pentru că are scor mai mare, anulând garanția de
+  // diversitate).
   return { tickets, baseScores, blendedScores, agreementCount, maxAgreement, poolTop35 };
 }
 
@@ -10830,29 +10845,39 @@ function generate3FinalNorocTickets(stats, recDigitTickets, genDigitTickets, pre
     return blended;
   });
 
-  const tickets = [[],[],[]];
-  for(let pos=0; pos<7; pos++){
-    const usedDigits = new Set();
-    for(let t=0;t<3;t++){
-      // Aceeași excludere fermă ca la jocurile cu bile mai sus: dacă lotul anterior de variante
-      // finale a avut exact această cifră pe această poziție/slot, o evităm — garantează schimbare
-      // vizibilă când Generator/Recomandate chiar s-au schimbat.
-      const avoid = (prevFinalDigitTickets||[])[t] !== undefined ? prevFinalDigitTickets[t][pos] : null;
-      let candidates = [];
-      for(let d=0; d<10; d++){ if(!usedDigits.has(d) && d !== avoid) candidates.push(d); }
-      if(candidates.length === 0){
-        for(let d=0; d<10; d++){ if(!usedDigits.has(d)) candidates.push(d); }
+  // Diversificare (fix): aceeași tehnică ca la generate3NorocTickets (Generator de variante) —
+  // alegere ALEATORIE, ponderată de scor, pentru fiecare poziție/slot, nu mereu cifra cu scorul
+  // maxim. Plus reîncercare (până la 30x) dacă vreo variantă tot iese prea asemănătoare cu vreuna
+  // din cele 3 anterioare (prea multe poziții identice) — model de scorare neschimbat.
+  const prevDigitTicketsAll = (prevFinalDigitTickets||[]).filter(Boolean);
+  const overlapLimit = maxAllowedOverlap(7);
+  function positionMatchCount(a, b){ let n=0; for(let i=0;i<7;i++) if(a[i]===b[i]) n++; return n; }
+  let tickets, attempts = 0;
+  do{
+    tickets = [[],[],[]];
+    for(let pos=0; pos<7; pos++){
+      const usedDigits = new Set();
+      for(let t=0;t<3;t++){
+        // Aceeași excludere fermă ca la jocurile cu bile mai sus: dacă lotul anterior de variante
+        // finale a avut exact această cifră pe această poziție/slot, o evităm — garantează schimbare
+        // vizibilă când Generator/Recomandate chiar s-au schimbat.
+        const avoid = prevDigitTicketsAll[t] !== undefined ? prevDigitTicketsAll[t][pos] : null;
+        let candidates = [];
+        for(let d=0; d<10; d++){ if(!usedDigits.has(d) && d !== avoid) candidates.push(d); }
+        if(candidates.length === 0){
+          for(let d=0; d<10; d++){ if(!usedDigits.has(d)) candidates.push(d); }
+        }
+        const picked = weightedPickFromCandidates(candidates, blendedPosScores[pos]);
+        usedDigits.add(picked);
+        tickets[t].push(picked);
       }
-      candidates.sort((a,b)=> (blendedPosScores[pos][b]||0)-(blendedPosScores[pos][a]||0));
-      const picked = candidates[0];
-      usedDigits.add(picked);
-      tickets[t].push(picked);
     }
-  }
+    attempts++;
+  } while(attempts < 30 && tickets.some(tk => prevDigitTicketsAll.some(pd => positionMatchCount(tk, pd) > overlapLimit)));
   // NU se re-sortează după scor, din același motiv ca la jocurile cu bile mai sus: fiecare poziție
-  // alege deja cifra cu scorul cel mai mare disponibilă pentru acel slot, deci ordinea de generare
-  // e deja practic în ordinea punctajului — iar o re-sortare separată ar strica excluderea fermă
-  // (garanția de diversitate) de mai sus.
+  // alege deja dintre cele mai bine punctate cifre disponibile pentru acel slot, deci ordinea de
+  // generare rămâne practic în ordinea punctajului — iar o re-sortare separată ar strica
+  // excluderea fermă (garanția de diversitate) de mai sus.
   return { tickets, posScores, blendedPosScores, agreementByPos, maxAgreement };
 }
 
@@ -12210,6 +12235,46 @@ function corsProxyUrl(url){
   return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 }
 
+// v3 fix: LotteryExtreme.com renders each drawn number directly next to the last, with NO
+// separating space/character (e.g. the 6 numbers 5,23,11,6,33,37 come through as the single
+// fused string "5231163337") — the old `\d+` regex treated that whole block as one giant
+// number, which always failed the 1..49 range check, so nothing was ever found. Fixed by
+// segmenting the fused digit string with backtracking: try every way to split it into the
+// exact count of tokens needed (1 or 2 digits each, no leading zero), each within its
+// game-specific range, requiring the WHOLE string to be consumed with no leftover digits.
+// A fused string can usually be split more than one valid way (e.g. "2516541426" could read as
+// either {5,6,16,25,41,42} or {4,5,14,16,25,26} — both distinct, both in range, both consume
+// every digit). Tried against the one date where the real answer is already known in this app
+// (06.08.2026 -> {5,6,16,25,41,42}), trying the 2-DIGIT token FIRST at each step reproduces it
+// exactly, while trying 1-digit first does not — so 2-digit-first is the tie-break used below.
+function segmentFusedDigits(digitStr, ranges, distinctGroups){
+  const count = ranges.length;
+  const n = digitStr.length;
+  const result = new Array(count);
+  function usedInGroup(group, value, upTo){
+    for(let i=0;i<upTo;i++) if(distinctGroups[i]===group && result[i]===value) return true;
+    return false;
+  }
+  function rec(pos, idx){
+    if(idx===count) return pos===n;
+    const remaining = count - idx;
+    if(n-pos < remaining || n-pos > remaining*2) return false; // not enough / too many digits left
+    for(let len=2; len>=1; len--){
+      if(pos+len>n) continue;
+      const tok = digitStr.substring(pos,pos+len);
+      if(tok.length===2 && tok[0]==='0') continue; // real draw numbers are never written "0x"
+      const val = parseInt(tok,10);
+      const { min, max } = ranges[idx];
+      if(val<min || val>max) continue;
+      if(usedInGroup(distinctGroups[idx], val, idx)) continue;
+      result[idx]=val;
+      if(rec(pos+len, idx+1)) return true;
+    }
+    return false;
+  }
+  return rec(0,0) ? result.slice() : null;
+}
+
 // Parse the HTML response from LotteryExtreme to extract draw dates and numbers.
 // The page format is: "DD.MM.YYYY DayOfWeek" followed by numbers on the next line(s).
 function parseLotteryExtremeHTML(html, game){
@@ -12228,28 +12293,29 @@ function parseLotteryExtremeHTML(html, game){
     const start = dates[i].endIdx;
     const end = (i+1 < dates.length) ? dates[i+1].idx : start + 120;
     const numBlock = text.substring(start, end).trim();
-    // Extract all numbers from the block between two dates
-    const allNums = numBlock.match(/\d+/g);
-    if(!allNums) continue;
-    const nums = allNums.map(Number);
+    // The numbers are fused with no separator — work off the raw digit characters directly,
+    // not `\d+` matches (which would just be the whole fused block as one run).
+    const digitStr = numBlock.replace(/\D/g,'');
+    if(!digitStr) continue;
     if(cfg.isDigit){
-      // Noroc: 7 single digits
-      const digits = nums.filter(n=> n>=0 && n<=9);
-      if(digits.length>=7) results.push({ date: dates[i].date, digits: digits.slice(0,7), raw: digits.slice(0,7).join('') });
-    } else if(cfg.hasJoker){
-      // Joker: 5 main numbers (1-45) + 1 joker (1-20)
-      const main = nums.filter(n=> n>=1 && n<=45);
-      const jokerCandidates = nums.filter(n=> n>=1 && n<=20);
-      if(main.length>=5){
-        const picked = main.slice(0,5);
-        // Joker number is typically the last one listed (after the 5 main numbers)
-        const joker = nums.length>=6 ? nums[5] : (jokerCandidates.length ? jokerCandidates[jokerCandidates.length-1] : null);
-        results.push({ date: dates[i].date, nums: picked, joker });
+      // Noroc: 7 single digits, one character each — no segmentation ambiguity.
+      if(digitStr.length>=7){
+        const digits = digitStr.slice(0,7).split('').map(Number);
+        results.push({ date: dates[i].date, digits, raw: digits.join('') });
       }
+    } else if(cfg.hasJoker){
+      // Joker: 5 main numbers (1-45, distinct from each other) + 1 joker (1-20, separate pool —
+      // can legitimately coincide in value with a main number, so no cross-distinctness).
+      const ranges = [{min:1,max:45},{min:1,max:45},{min:1,max:45},{min:1,max:45},{min:1,max:45},{min:1,max:20}];
+      const groups = [0,0,0,0,0,1];
+      const parsed = segmentFusedDigits(digitStr, ranges, groups);
+      if(parsed) results.push({ date: dates[i].date, nums: parsed.slice(0,5), joker: parsed[5] });
     } else {
-      // 6/49 or 5/40: pick-sized set of numbers
-      const valid = nums.filter(n=> n>=1 && n<=cfg.range);
-      if(valid.length>=cfg.pick) results.push({ date: dates[i].date, nums: valid.slice(0, cfg.pick) });
+      // 6/49 or 5/40: pick-sized set of distinct numbers in 1..range.
+      const ranges = new Array(cfg.pick).fill({min:1,max:cfg.range});
+      const groups = new Array(cfg.pick).fill(0);
+      const parsed = segmentFusedDigits(digitStr, ranges, groups);
+      if(parsed) results.push({ date: dates[i].date, nums: parsed });
     }
   }
   return results;
@@ -12275,9 +12341,10 @@ async function autoFetchAndFillMissing(game){
   try{
     const url = LOTTERY_EXTREME_URLS[game];
     if(!url) throw new Error('Jocul selectat nu are o sursă externă configurată.');
-    const resp = await fetch(corsProxyUrl(url));
-    if(!resp.ok) throw new Error(`Eroare la accesarea LotteryExtreme.com: HTTP ${resp.status}`);
-    const html = await resp.text();
+    // v2 fix: foloseste fetchTextViaProxies (multi-proxy, cu fallback si timeout) in loc de
+    // fetch(corsProxyUrl(...)) simplu — daca api.allorigins.win e jos/lent, incearca automat
+    // corsproxy.io si api.codetabs.com inainte sa esueze.
+    const html = await fetchTextViaProxies(url);
     const parsed = parseLotteryExtremeHTML(html, game);
 
     const missingSet = new Set(missing);
@@ -12355,9 +12422,9 @@ async function autoFetchAndFillAllGames(){
     if(perGame[game].missing.length===0) continue;
     try{
       const url = LOTTERY_EXTREME_URLS[game];
-      const resp = await fetch(corsProxyUrl(url));
-      if(!resp.ok) throw new Error('HTTP '+resp.status);
-      const html = await resp.text();
+      // v2 fix: multi-proxy cu fallback (vezi fetchTextViaProxies) — aceeasi rezilienta ca la
+      // auto-fill single-game, in loc de un singur proxy (api.allorigins.win) ca punct unic de esec.
+      const html = await fetchTextViaProxies(url);
       const parsed = parseLotteryExtremeHTML(html, game);
       const missingSet = new Set(perGame[game].missing);
       perGame[game].found = parsed.filter(r=> missingSet.has(r.date));
