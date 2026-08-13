@@ -12235,31 +12235,40 @@ function corsProxyUrl(url){
   return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 }
 
-// v3 fix: LotteryExtreme.com renders each drawn number directly next to the last, with NO
-// separating space/character (e.g. the 6 numbers 5,23,11,6,33,37 come through as the single
-// fused string "5231163337") — the old `\d+` regex treated that whole block as one giant
-// number, which always failed the 1..49 range check, so nothing was ever found. Fixed by
-// segmenting the fused digit string with backtracking: try every way to split it into the
-// exact count of tokens needed (1 or 2 digits each, no leading zero), each within its
-// game-specific range, requiring the WHOLE string to be consumed with no leftover digits.
-// A fused string can usually be split more than one valid way (e.g. "2516541426" could read as
-// either {5,6,16,25,41,42} or {4,5,14,16,25,26} — both distinct, both in range, both consume
-// every digit). Tried against the one date where the real answer is already known in this app
-// (06.08.2026 -> {5,6,16,25,41,42}), trying the 2-DIGIT token FIRST at each step reproduces it
-// exactly, while trying 1-digit first does not — so 2-digit-first is the tie-break used below.
+// v4 fix (09.08.2026 report): LotteryExtreme.com renders each drawn number directly next to
+// the last, with NO separating space/character (e.g. 5,2,31,16,33,37 comes through as the
+// single fused string "5231163337"). The v3 fix segmented this by backtracking and picking
+// whichever split a fixed tie-break rule ("try 2-digit tokens first") found. That rule was
+// PROVEN WRONG in production: for date 09.08.2026, "5231163337" has (at least) two valid
+// splits — {5,2,31,16,33,37} (the real result, confirmed against loto.ro) and
+// {5,23,11,6,33,37} (what the tie-break picked instead) — both distinct, both in range, both
+// consume every digit. A fused string is fundamentally ambiguous; no fixed rule can always
+// guess right. Fix: segmentFusedDigits now searches for ALL valid segmentations (capped at 2,
+// just to detect "more than one" cheaply) and returns a result ONLY when the split is UNIQUE.
+// When ambiguous, it returns null and the caller skips that date rather than risking a wrong
+// save. The real fix for accuracy is `parseLotoRoHTML` below, which reads from loto.ro (the
+// official Loteria Română site) where each number is its own image file (bile/<n>.png) — no
+// ambiguity possible. LotteryExtreme + this safer segmenter is now only a fallback for dates
+// old enough to have scrolled off loto.ro's current-month view.
 function segmentFusedDigits(digitStr, ranges, distinctGroups){
   const count = ranges.length;
   const n = digitStr.length;
   const result = new Array(count);
+  const solutions = [];
   function usedInGroup(group, value, upTo){
     for(let i=0;i<upTo;i++) if(distinctGroups[i]===group && result[i]===value) return true;
     return false;
   }
   function rec(pos, idx){
-    if(idx===count) return pos===n;
+    if(solutions.length>=2) return; // already ambiguous — no need to keep searching
+    if(idx===count){
+      if(pos===n) solutions.push(result.slice());
+      return;
+    }
     const remaining = count - idx;
-    if(n-pos < remaining || n-pos > remaining*2) return false; // not enough / too many digits left
+    if(n-pos < remaining || n-pos > remaining*2) return; // not enough / too many digits left
     for(let len=2; len>=1; len--){
+      if(solutions.length>=2) return;
       if(pos+len>n) continue;
       const tok = digitStr.substring(pos,pos+len);
       if(tok.length===2 && tok[0]==='0') continue; // real draw numbers are never written "0x"
@@ -12268,11 +12277,88 @@ function segmentFusedDigits(digitStr, ranges, distinctGroups){
       if(val<min || val>max) continue;
       if(usedInGroup(distinctGroups[idx], val, idx)) continue;
       result[idx]=val;
-      if(rec(pos+len, idx+1)) return true;
+      rec(pos+len, idx+1);
     }
-    return false;
   }
-  return rec(0,0) ? result.slice() : null;
+  rec(0,0);
+  return solutions.length===1 ? solutions[0] : null;
+}
+
+// Official Loteria Română archive (loto.ro) for 6/49, 5/40 and Joker: each drawn number is its
+// own ball image, named ".../bile/<number>.png" (Joker's 6th "Joker" ball is under
+// ".../bile/joker/<number>.png" specifically, which is how it's told apart from the 5 main
+// numbers) — there's no fused-digit ambiguity to resolve here, we just read the filenames off
+// in document order. Each group of ball images is immediately followed by a
+// "Detalii castiguri la <joc> din DD.MM.YYYY" caption, which tells us the date and which game
+// that group belongs to (needed because the 6/49 page also shows Noroc, the 5/40 page also
+// shows Super Noroc, and the Joker page also shows Noroc Plus — none of which this app tracks,
+// and none of which use ball images, so they're naturally ignored by this parser). Only Noroc
+// is left on the LotteryExtreme path below (unchanged) since its 7 single fixed digits were
+// never ambiguous in the first place.
+const LOTO_RO_ARCHIVE_URLS = {
+  '649': 'https://www.loto.ro/loto-new/newLotoSiteNexioFinalVersion/web/app2.php/jocuri/649_si_noroc/rezultate_extragere.html',
+  '540': 'https://www.loto.ro/loto-new/newLotoSiteNexioFinalVersion/web/app2.php/jocuri/540_si_super_noroc/rezultate_extrageri.html',
+  'joker': 'https://www.loto.ro/loto-new/newLotoSiteNexioFinalVersion/web/app2.php/jocuri/joker_si_noroc_plus/rezultate_extrageri.html'
+};
+function parseLotoRoHTML(html, game){
+  const cfg = GAMES[game];
+  if(cfg.isDigit) return []; // Noroc isn't on this path — see comment above
+  const results = [];
+  const ballRe = /bile\/(?:(joker)\/)?(\d{1,2})\.png/g;
+  const balls = [];
+  let bm;
+  while((bm = ballRe.exec(html)) !== null){
+    balls.push({ val: parseInt(bm[2],10), isJoker: !!bm[1], idx: bm.index });
+  }
+  // Tolerant to markup between the words (tags, spans, whitespace) — we only know the visible
+  // text from a readability-style fetch, not the exact raw tag structure.
+  const capRe = /Detalii\s+castiguri\s+la[\s\S]{0,15}?(super\s*noroc|noroc\s*plus|6\s*\/\s*49|5\s*\/\s*40|noroc|joker)[\s\S]{0,15}?din[\s\S]{0,15}?(\d{2})\.(\d{2})\.(\d{4})/gi;
+  const wantLabel = game==='joker' ? 'joker' : (game==='540' ? '5/40' : '6/49');
+  const needCount = cfg.hasJoker ? cfg.pick+1 : cfg.pick;
+  let cm;
+  while((cm = capRe.exec(html)) !== null){
+    const normLabel = cm[1].toLowerCase().replace(/\s+/g,'');
+    if(normLabel !== wantLabel.replace(/\s+/g,'')) continue;
+    const date = `${cm[4]}-${cm[3]}-${cm[2]}`;
+    const groupBalls = balls.filter(b => b.idx < cm.index).slice(-needCount);
+    if(groupBalls.length !== needCount) continue; // not enough nearby data — skip, don't guess
+    if(cfg.hasJoker){
+      const main = groupBalls.filter(b=>!b.isJoker).map(b=>b.val);
+      const jokerBall = groupBalls.filter(b=>b.isJoker).map(b=>b.val);
+      if(main.length!==cfg.pick || jokerBall.length!==1) continue;
+      results.push({ date, nums: main, joker: jokerBall[0] });
+    } else {
+      const main = groupBalls.map(b=>b.val);
+      if(main.length!==cfg.pick) continue;
+      results.push({ date, nums: main });
+    }
+  }
+  return results;
+}
+
+// Combines both sources for a game: tries the official loto.ro archive first (unambiguous, but
+// only covers the current month), then fills any gaps from LotteryExtreme (longer history, but
+// falls back to "skip if ambiguous" per the fix above). Official results win on overlap.
+async function fetchLotteryResults(game){
+  let official = [];
+  if(LOTO_RO_ARCHIVE_URLS[game]){
+    try{
+      const html = await fetchTextViaProxies(LOTO_RO_ARCHIVE_URLS[game]);
+      official = parseLotoRoHTML(html, game);
+    }catch(e){ /* ignoram - mergem pe fallback */ }
+  }
+  let extreme = [];
+  const url = LOTTERY_EXTREME_URLS[game];
+  if(url){
+    try{
+      const html2 = await fetchTextViaProxies(url);
+      extreme = parseLotteryExtremeHTML(html2, game);
+    }catch(e){ /* ignoram */ }
+  }
+  const byDate = new Map();
+  for(const r of extreme) byDate.set(r.date, r);
+  for(const r of official) byDate.set(r.date, r); // oficial (loto.ro) are prioritate
+  return Array.from(byDate.values());
 }
 
 // Parse the HTML response from LotteryExtreme to extract draw dates and numbers.
@@ -12339,13 +12425,11 @@ async function autoFetchAndFillMissing(game){
   form.innerHTML = '';
 
   try{
-    const url = LOTTERY_EXTREME_URLS[game];
-    if(!url) throw new Error('Jocul selectat nu are o sursă externă configurată.');
-    // v2 fix: foloseste fetchTextViaProxies (multi-proxy, cu fallback si timeout) in loc de
-    // fetch(corsProxyUrl(...)) simplu — daca api.allorigins.win e jos/lent, incearca automat
-    // corsproxy.io si api.codetabs.com inainte sa esueze.
-    const html = await fetchTextViaProxies(url);
-    const parsed = parseLotteryExtremeHTML(html, game);
+    if(!LOTTERY_EXTREME_URLS[game] && !LOTO_RO_ARCHIVE_URLS[game]) throw new Error('Jocul selectat nu are o sursă externă configurată.');
+    // v3 fix: fetchLotteryResults incearca intai loto.ro (sursa oficiala, fara ambiguitate),
+    // apoi completeaza din LotteryExtreme (istoric mai lung, dar sare peste datele ambigue in
+    // loc sa ghiceasca gresit — vezi segmentFusedDigits).
+    const parsed = await fetchLotteryResults(game);
 
     const missingSet = new Set(missing);
     const found = parsed.filter(r=> missingSet.has(r.date));
@@ -12421,11 +12505,9 @@ async function autoFetchAndFillAllGames(){
   for(const game of GAME_ORDER){
     if(perGame[game].missing.length===0) continue;
     try{
-      const url = LOTTERY_EXTREME_URLS[game];
-      // v2 fix: multi-proxy cu fallback (vezi fetchTextViaProxies) — aceeasi rezilienta ca la
-      // auto-fill single-game, in loc de un singur proxy (api.allorigins.win) ca punct unic de esec.
-      const html = await fetchTextViaProxies(url);
-      const parsed = parseLotteryExtremeHTML(html, game);
+      // v3 fix: fetchLotteryResults incearca intai loto.ro (sursa oficiala, fara ambiguitate),
+      // apoi completeaza din LotteryExtreme (istoric mai lung, dar sare peste datele ambigue).
+      const parsed = await fetchLotteryResults(game);
       const missingSet = new Set(perGame[game].missing);
       perGame[game].found = parsed.filter(r=> missingSet.has(r.date));
     }catch(e){
