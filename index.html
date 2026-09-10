@@ -12339,26 +12339,40 @@ function parseLotoRoHTML(html, game){
 // Combines both sources for a game: tries the official loto.ro archive first (unambiguous, but
 // only covers the current month), then fills any gaps from LotteryExtreme (longer history, but
 // falls back to "skip if ambiguous" per the fix above). Official results win on overlap.
+// v5.19 fix: inainte, erorile de aici erau inghitite complet ("ignoram"), iar apelantul vedea
+// doar un array gol — identic cu "am cautat si n-am gasit nimic". Asta facea ca un esec total
+// de retea (ambele surse indisponibile) sa arate exact ca "arhiva LotteryExtreme nu are ce
+// lipseste", care e un mesaj complet fals si inselator. Acum functia raporteaza separat daca
+// cele doua surse chiar au raspuns sau daca au picat, ca apelantul sa poata arata mesajul corect.
 async function fetchLotteryResults(game){
   let official = [];
+  let officialFailed = false, officialErr = null;
   if(LOTO_RO_ARCHIVE_URLS[game]){
     try{
       const html = await fetchTextViaProxies(LOTO_RO_ARCHIVE_URLS[game]);
       official = parseLotoRoHTML(html, game);
-    }catch(e){ /* ignoram - mergem pe fallback */ }
+    }catch(e){ officialFailed = true; officialErr = e.message; }
   }
   let extreme = [];
+  let extremeFailed = false, extremeErr = null;
   const url = LOTTERY_EXTREME_URLS[game];
   if(url){
     try{
       const html2 = await fetchTextViaProxies(url);
       extreme = parseLotteryExtremeHTML(html2, game);
-    }catch(e){ /* ignoram */ }
+    }catch(e){ extremeFailed = true; extremeErr = e.message; }
   }
   const byDate = new Map();
   for(const r of extreme) byDate.set(r.date, r);
   for(const r of official) byDate.set(r.date, r); // oficial (loto.ro) are prioritate
-  return Array.from(byDate.values());
+  // "sursele au picat complet" doar daca AMBELE au esuat (daca macar una a raspuns, chiar
+  // daca a gasit 0 rezultate relevante, e un rezultat real, nu un esec de retea)
+  const bothFailed = officialFailed && extremeFailed;
+  return {
+    results: Array.from(byDate.values()),
+    bothFailed,
+    errorDetail: bothFailed ? (extremeErr || officialErr || 'sursele externe sunt indisponibile') : null
+  };
 }
 
 // Parse the HTML response from LotteryExtreme to extract draw dates and numbers.
@@ -12429,14 +12443,20 @@ async function autoFetchAndFillMissing(game){
     // v3 fix: fetchLotteryResults incearca intai loto.ro (sursa oficiala, fara ambiguitate),
     // apoi completeaza din LotteryExtreme (istoric mai lung, dar sare peste datele ambigue in
     // loc sa ghiceasca gresit — vezi segmentFusedDigits).
-    const parsed = await fetchLotteryResults(game);
+    const { results: parsed, bothFailed, errorDetail } = await fetchLotteryResults(game);
+
+    if(bothFailed){
+      statusEl.className = 'status-msg err';
+      statusEl.textContent = `Nu am putut contacta sursele externe (loto.ro și LotteryExtreme.com) — probabil proxy-urile publice sunt temporar indisponibile, nu că arhiva ar fi la zi. Detaliu tehnic: ${errorDetail}. Mai încearcă în câteva minute, sau adaugă manual cu butonul de mai sus.`;
+      return;
+    }
 
     const missingSet = new Set(missing);
     const found = parsed.filter(r=> missingSet.has(r.date));
 
     if(found.length === 0){
       statusEl.className = 'status-msg err';
-      statusEl.textContent = `Nu s-au găsit pe LotteryExtreme.com niciuna din cele ${missing.length} extrageri lipsă. Posibil că site-ul nu a fost încă actualizat, sau extragerile sunt prea vechi (afișează doar ultimele 20). Poți adăuga manual cu butonul "Adaugă extragere manual" de mai sus.`;
+      statusEl.textContent = `Sursele externe au răspuns, dar niciuna din cele ${missing.length} extrageri lipsă nu a fost găsită. Posibil că site-ul nu a fost încă actualizat, sau extragerile sunt prea vechi (afișează doar ultimele 20). Poți adăuga manual cu butonul "Adaugă extragere manual" de mai sus.`;
       return;
     }
 
@@ -12446,7 +12466,7 @@ async function autoFetchAndFillMissing(game){
       return `<tr><td class="mono">${fmtDateShort(r.date)}</td><td class="mono">${numsStr}</td></tr>`;
     }).join('');
     form.innerHTML = `
-      <p class="small-note" style="margin:10px 0;">S-au găsit <b>${found.length}</b> din ${missing.length} extrageri lipsă pe <a href="${url}" target="_blank" rel="noopener" style="color:var(--blue);">LotteryExtreme.com</a>. Verifică numerele de mai jos, apoi apasă "Confirmă și salvează":</p>
+      <p class="small-note" style="margin:10px 0;">S-au găsit <b>${found.length}</b> din ${missing.length} extrageri lipsă pe <a href="${LOTTERY_EXTREME_URLS[game] || LOTO_RO_ARCHIVE_URLS[game]}" target="_blank" rel="noopener" style="color:var(--blue);">sursa externă</a>. Verifică numerele de mai jos, apoi apasă "Confirmă și salvează":</p>
       <div class="table-scroll"><table class="data-table" style="width:100%; max-width:480px;">
         <thead><tr><th>Data</th><th>Numere</th></tr></thead>
         <tbody>${previewRows}</tbody>
@@ -12507,7 +12527,8 @@ async function autoFetchAndFillAllGames(){
     try{
       // v3 fix: fetchLotteryResults incearca intai loto.ro (sursa oficiala, fara ambiguitate),
       // apoi completeaza din LotteryExtreme (istoric mai lung, dar sare peste datele ambigue).
-      const parsed = await fetchLotteryResults(game);
+      const { results: parsed, bothFailed, errorDetail } = await fetchLotteryResults(game);
+      if(bothFailed){ perGame[game].fetchFailed = true; perGame[game].errorDetail = errorDetail; continue; }
       const missingSet = new Set(perGame[game].missing);
       perGame[game].found = parsed.filter(r=> missingSet.has(r.date));
     }catch(e){
@@ -12516,9 +12537,16 @@ async function autoFetchAndFillAllGames(){
   }
 
   const totalFound = GAME_ORDER.reduce((s,g)=> s+perGame[g].found.length, 0);
+  const anyFetchFailed = GAME_ORDER.some(g=> perGame[g].fetchFailed);
+  if(totalFound===0 && anyFetchFailed){
+    statusEl.className = 'status-msg err';
+    const firstErr = GAME_ORDER.map(g=>perGame[g].errorDetail).find(Boolean);
+    statusEl.textContent = `Nu am putut contacta sursele externe (loto.ro și LotteryExtreme.com) — probabil proxy-urile publice sunt temporar indisponibile, nu că arhiva ar fi la zi. Detaliu tehnic: ${firstErr}. Mai încearcă în câteva minute, sau adaugă manual cu formularul de mai sus.`;
+    return;
+  }
   if(totalFound===0){
     statusEl.className = 'status-msg err';
-    statusEl.textContent = 'Nu s-a găsit nicio extragere lipsă pe LotteryExtreme.com pentru niciun joc. Poți adăuga manual cu formularul de mai sus.';
+    statusEl.textContent = 'Sursele externe au răspuns, dar nu au avut niciuna din extragerile lipsă pentru niciun joc. Poți adăuga manual cu formularul de mai sus.';
     return;
   }
 
@@ -12578,24 +12606,38 @@ const EUR_RON_APPROX = 5.25; // aproximativ, doar pentru orientare — nu e un c
 const PUBLIC_CORS_PROXIES = [
   (u)=> `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   (u)=> `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-  (u)=> `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`
+  (u)=> `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+  (u)=> `https://thingproxy.freeboard.io/fetch/${u}`,
+  (u)=> `https://api.allorigins.win/get?url=${encodeURIComponent(u)}` // v5.19: variantă JSON a allorigins — uneori merge când /raw pică
 ];
+// v5.19 fix: proxy-urile publice CORS gratuite au uptime inconstant — de-asta widgetul de
+// raport live și auto-fetch-ul de extrageri lipsă eșuau recurent ("signal is aborted without
+// reason" = timeout-ul de mai jos a expirat înainte ca vreun proxy să răspundă). Rezolvare:
+// (1) timeout mai mare per încercare (9s -> 14s, proxy-urile publice sunt lente), (2) fiecare
+// proxy se încearcă de 2 ori înainte de a trece la următorul (multe eșecuri sunt tranzitorii),
+// (3) am adăugat 2 proxy-uri suplimentare la lista de fallback.
 async function fetchTextViaProxies(url, timeoutMs){
-  timeoutMs = timeoutMs || 9000;
+  timeoutMs = timeoutMs || 14000;
   let lastErr = null;
   for(const build of PUBLIC_CORS_PROXIES){
-    const controller = new AbortController();
-    const t = setTimeout(()=> controller.abort(), timeoutMs);
-    try{
-      const resp = await fetch(build(url), { signal: controller.signal });
-      clearTimeout(t);
-      if(!resp.ok) throw new Error('HTTP '+resp.status);
-      const text = await resp.text();
-      if(text && text.length > 50) return text;
-      throw new Error('răspuns gol');
-    }catch(e){
-      clearTimeout(t);
-      lastErr = e;
+    for(let attempt=0; attempt<2; attempt++){
+      const controller = new AbortController();
+      const t = setTimeout(()=> controller.abort(), timeoutMs);
+      try{
+        const resp = await fetch(build(url), { signal: controller.signal });
+        clearTimeout(t);
+        if(!resp.ok) throw new Error('HTTP '+resp.status);
+        let text = await resp.text();
+        // varianta /get a allorigins.win intoarce JSON {contents: "<html>..."} in loc de HTML brut
+        if(text.trim().startsWith('{')){
+          try{ const j = JSON.parse(text); if(j && typeof j.contents==='string') text = j.contents; }catch(_e){}
+        }
+        if(text && text.length > 50) return text;
+        throw new Error('răspuns gol');
+      }catch(e){
+        clearTimeout(t);
+        lastErr = e;
+      }
     }
   }
   throw lastErr || new Error('toate proxy-urile au eșuat');
@@ -12663,7 +12705,10 @@ async function loadReportWidget(){
       </div>`;
     }).join('');
   }catch(e){
-    el.innerHTML = `<span class="small-note" style="font-size:11px; color:var(--muted);">Report live indisponibil momentan (${e.message}) — reîncearcă automat la 5 min.</span>`;
+    // v5.19: nu mai aratam textul tehnic brut al erorii (ex. "signal is aborted without
+    // reason", care nu inseamna nimic pentru un utilizator non-tehnic) — explicam ce s-a
+    // intamplat de fapt, in termeni normali.
+    el.innerHTML = `<span class="small-note" style="font-size:11px; color:var(--muted);">Report live indisponibil momentan — proxy-urile publice folosite pentru citirea loto.ro par picate/lente chiar acum. Reîncearcă automat la 5 min.</span>`;
   }
 }
 
